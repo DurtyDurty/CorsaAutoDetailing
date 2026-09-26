@@ -12,7 +12,7 @@ import { LaunchListForm } from "@/components/forms/LaunchListForm";
 import { HOME_FAQ } from "@/content/faq";
 
 export const metadata: Metadata = {
-  title: `${business.brand.name} — Mobile detailing in Clay County, FL`,
+  title: { absolute: `${business.brand.name} — Mobile detailing in Clay County, FL` },
   description:
     "Hand washing and interior maintenance at your driveway or workplace in Middleburg, Fleming Island, Green Cove Springs and Orange Park. Join the launch list.",
   alternates: { canonical: "/" },
