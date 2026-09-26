@@ -55,7 +55,7 @@ export function MobileNav({ cta }: { cta: { label: string; href: string } }) {
       <div
         id={panelId}
         hidden={!open}
-        className="absolute inset-x-0 top-full bg-ivory border-b border-line shadow-[0_20px_40px_-20px_rgba(32,35,38,0.35)]"
+        className="absolute inset-x-0 top-full bg-asphalt border-b border-line-dark shadow-[0_24px_48px_-20px_rgba(0,0,0,0.6)]"
       >
         <nav aria-label="Primary mobile" className="px-5 py-4 flex flex-col">
           {NAV_LINKS.map((l, i) => (
@@ -63,12 +63,15 @@ export function MobileNav({ cta }: { cta: { label: string; href: string } }) {
               key={l.href}
               href={l.href}
               ref={i === 0 ? firstLinkRef : undefined}
-              className="py-3.5 border-b border-line last:border-0 text-lg"
+              className="flex items-baseline gap-4 py-3.5 border-b border-line-dark last:border-0 font-display text-3xl hover:text-apex"
             >
+              <span className="font-mono text-xs font-normal text-apex" aria-hidden="true">
+                0{i + 1}
+              </span>
               {l.label}
             </Link>
           ))}
-          <ButtonLink href={cta.href} className="mt-4 w-full">
+          <ButtonLink href={cta.href} variant="apex" className="mt-4 w-full">
             {cta.label}
           </ButtonLink>
         </nav>

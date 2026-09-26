@@ -20,12 +20,16 @@ export function Wordmark({
   const inner = logo ? (
     <Image src={logo} alt={business.brand.name} width={180} height={40} priority className="h-9 w-auto" />
   ) : (
-    <span className={cn("inline-flex items-baseline gap-2", onDark ? "text-ivory" : "text-charcoal")}>
-      <span className="font-display text-[1.45rem] leading-none tracking-tight">Corsa</span>
+    <span className={cn("inline-flex items-center gap-2.5", onDark ? "text-chalk" : "text-asphalt")}>
+      <span className="flex gap-[3px] -skew-x-[20deg]" aria-hidden="true">
+        <span className={cn("block h-5 w-[5px]", onDark ? "bg-apex" : "bg-apex-deep")} />
+        <span className={cn("block h-5 w-[5px]", onDark ? "bg-apex/60" : "bg-apex-deep/60")} />
+      </span>
+      <span className="font-display italic font-extrabold text-[1.75rem] leading-none tracking-[0.01em]">Corsa</span>
       <span
         className={cn(
-          "text-[0.68rem] font-semibold uppercase tracking-[0.22em] leading-none",
-          onDark ? "text-champagne" : "text-champagne-deep",
+          "hidden min-[380px]:block lg:hidden xl:block whitespace-nowrap font-mono text-[0.62rem] font-medium uppercase tracking-[0.2em] leading-none pt-1",
+          onDark ? "text-chalk/60" : "text-ink-muted",
         )}
       >
         Auto Detailing

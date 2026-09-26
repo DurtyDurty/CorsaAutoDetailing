@@ -13,15 +13,21 @@ export function PageHero({
   children?: ReactNode;
 }) {
   return (
-    <div className="border-b border-line bg-ivory">
-      <Container className="py-14 sm:py-20">
+    <div className="relative overflow-hidden bg-asphalt text-chalk on-dark">
+      <div className="grid-lines absolute inset-0" aria-hidden="true" />
+      <div
+        className="absolute -right-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-apex/15 blur-3xl"
+        aria-hidden="true"
+      />
+      <Container className="relative py-16 sm:py-24">
         <div className="max-w-3xl">
-          {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-          <h1 className="font-display text-4xl sm:text-5xl mt-3 text-balance">{title}</h1>
-          {lede && <p className="mt-5 text-lg sm:text-xl text-ink-muted leading-relaxed">{lede}</p>}
+          {eyebrow && <Eyebrow onDark>{eyebrow}</Eyebrow>}
+          <h1 className="font-display italic font-extrabold text-5xl sm:text-7xl mt-5 text-balance">{title}</h1>
+          {lede && <p className="mt-6 text-lg sm:text-xl text-chalk/75 leading-relaxed">{lede}</p>}
           {children && <div className="mt-8">{children}</div>}
         </div>
       </Container>
+      <div className="kerb relative" aria-hidden="true" />
     </div>
   );
 }

@@ -10,7 +10,7 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
     <>
       <a
         href="#main"
-        className="sr-only-focusable fixed left-4 top-4 z-[100] bg-charcoal text-ivory px-4 py-2 rounded-sm"
+        className="sr-only-focusable fixed left-4 top-4 z-[100] bg-asphalt text-chalk px-4 py-2 rounded-sm"
       >
         Skip to content
       </a>

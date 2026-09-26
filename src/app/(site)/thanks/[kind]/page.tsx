@@ -77,13 +77,13 @@ export default async function ThanksPage({ params, searchParams }: PageProps<"/t
 
   return (
     <Container className="py-20 max-w-2xl">
-      <p className="text-xs uppercase tracking-[0.18em] font-semibold text-champagne-deep">Reference {shortRef(lead.id)}</p>
+      <p className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-apex-deep">Reference {shortRef(lead.id)}</p>
       <h1 className="font-display text-4xl sm:text-5xl mt-3 text-balance">{copy.title}</h1>
       <p className="mt-5 text-lg text-ink-muted leading-relaxed">{copy.body}</p>
 
       {lead.estimate && (
         <div className="mt-8 border border-line bg-white rounded-md p-5">
-          <p className="text-xs uppercase tracking-[0.18em] font-semibold text-champagne-deep">Your estimate</p>
+          <p className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-apex-deep">Your estimate</p>
           <p className="mt-2 flex items-baseline justify-between gap-4">
             <span>
               {lead.estimate.serviceName} · {lead.estimate.vehicleCategoryLabel}

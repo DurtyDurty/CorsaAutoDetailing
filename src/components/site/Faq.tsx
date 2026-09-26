@@ -6,10 +6,10 @@ export interface FaqItem {
 /** Native disclosure widgets: keyboard-accessible, no JS. */
 export function Faq({ items }: { items: FaqItem[] }) {
   return (
-    <div className="divide-y divide-line border-y border-line">
+    <div className="divide-y divide-line border-y-2 border-asphalt">
       {items.map((item) => (
         <details key={item.q} className="group py-1">
-          <summary className="flex items-center justify-between gap-4 py-4 cursor-pointer list-none font-medium [&::-webkit-details-marker]:hidden">
+          <summary className="flex items-center justify-between gap-4 py-4 cursor-pointer list-none font-semibold text-lg hover:text-apex-deep [&::-webkit-details-marker]:hidden">
             <span>{item.q}</span>
             <svg
               width="18"
@@ -19,7 +19,7 @@ export function Faq({ items }: { items: FaqItem[] }) {
               stroke="currentColor"
               strokeWidth="1.5"
               aria-hidden="true"
-              className="flex-none transition-transform group-open:rotate-45"
+              className="flex-none text-apex-deep transition-transform group-open:rotate-45"
             >
               <path d="M9 3v12M3 9h12" />
             </svg>

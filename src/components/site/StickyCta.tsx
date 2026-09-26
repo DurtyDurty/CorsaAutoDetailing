@@ -19,10 +19,10 @@ export function StickyCta({ label, href }: { label: string; href: string }) {
   if (hidden) return null;
   return (
     <div
-      className="lg:hidden fixed inset-x-0 bottom-0 z-30 border-t border-line bg-ivory/95 backdrop-blur px-5 pt-3"
+      className="lg:hidden fixed inset-x-0 bottom-0 z-30 border-t border-line-dark bg-asphalt/95 backdrop-blur px-5 pt-3"
       style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
     >
-      <ButtonLink href={cta.href} className="w-full">
+      <ButtonLink href={cta.href} variant="apex" className="w-full">
         {cta.label}
       </ButtonLink>
     </div>

@@ -34,7 +34,7 @@ export default function AboutPage() {
         </div>
       </Section>
 
-      <Section tone="ivory">
+      <Section tone="chalk">
         <SectionHeading
           eyebrow="How we work"
           title="What you can expect from us."
@@ -54,7 +54,7 @@ export default function AboutPage() {
               b: "We're starting with two packages and four communities. Studio services like film and tint are ideas for later, not promises for now.",
             },
           ].map((item) => (
-            <div key={item.t} className="border-t border-charcoal pt-5">
+            <div key={item.t} className="border-t border-asphalt pt-5">
               <h3 className="font-medium text-lg">{item.t}</h3>
               <p className="mt-2 text-ink-muted leading-relaxed">{item.b}</p>
             </div>
@@ -65,7 +65,7 @@ export default function AboutPage() {
       <Section tone="dark">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
           <h2 className="font-display text-3xl text-balance">Want to hear when we open?</h2>
-          <ButtonLink href={cta.href} variant="champagne" size="lg">
+          <ButtonLink href={cta.href} variant="apex" size="lg">
             {cta.label}
           </ButtonLink>
         </div>

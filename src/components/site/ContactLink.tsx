@@ -15,7 +15,7 @@ export function ContactLink({
   className?: string;
 }) {
   return (
-    <a href={href} className={className ?? "hover:text-ivory"} onClick={() => track("contact_clicked", { method })}>
+    <a href={href} className={className ?? "hover:text-chalk"} onClick={() => track("contact_clicked", { method })}>
       {children}
     </a>
   );

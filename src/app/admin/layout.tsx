@@ -30,9 +30,9 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const session = await getOwnerSession();
   const demo = storeKind() === "demo";
   return (
-    <div className="min-h-full flex flex-col bg-ivory">
+    <div className="min-h-full flex flex-col bg-chalk">
       {demo && (
-        <div className="bg-champagne text-charcoal text-center text-sm px-4 py-2 font-medium">
+        <div className="bg-apex text-asphalt text-center text-sm px-4 py-2 font-medium">
           DEMO MODE — local data only. Not connected to a production database.
         </div>
       )}
@@ -40,13 +40,13 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
         <div className="mx-auto max-w-6xl px-5 sm:px-8 h-16 flex items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <Wordmark />
-            <span className="text-xs uppercase tracking-[0.18em] font-semibold text-champagne-deep hidden sm:inline">Owner</span>
+            <span className="text-xs uppercase tracking-[0.18em] font-semibold text-apex-deep hidden sm:inline">Owner</span>
           </div>
           {session && (
             <div className="flex items-center gap-4 text-sm">
               <nav aria-label="Dashboard" className="hidden md:flex gap-5">
                 {NAV.map((n) => (
-                  <Link key={n.href} href={n.href} className="hover:text-champagne-deep">
+                  <Link key={n.href} href={n.href} className="hover:text-apex-deep">
                     {n.label}
                   </Link>
                 ))}
@@ -63,7 +63,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           <nav aria-label="Dashboard mobile" className="md:hidden border-t border-line overflow-x-auto">
             <div className="flex gap-5 px-5 py-2.5 text-sm whitespace-nowrap">
               {NAV.map((n) => (
-                <Link key={n.href} href={n.href} className="hover:text-champagne-deep">
+                <Link key={n.href} href={n.href} className="hover:text-apex-deep">
                   {n.label}
                 </Link>
               ))}

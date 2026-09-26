@@ -13,12 +13,12 @@ const TYPE_LABEL: Record<LeadRecord["leadType"], string> = {
 
 export function StageBadge({ stage }: { stage: LeadRecord["stage"] }) {
   const tone: Record<LeadRecord["stage"], string> = {
-    new: "bg-charcoal text-ivory",
-    contacted: "bg-ivory-deep text-ink",
-    quote_sent: "bg-champagne/40 text-ink",
+    new: "bg-asphalt text-chalk",
+    contacted: "bg-chalk-deep text-ink",
+    quote_sent: "bg-apex/40 text-ink",
     scheduled: "bg-[#dfeee2] text-success",
     completed: "bg-success text-white",
-    lost: "bg-ivory-deep text-ink-muted",
+    lost: "bg-chalk-deep text-ink-muted",
     spam: "bg-[#fbeeeb] text-error",
   };
   return (

@@ -32,7 +32,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/admin/logi
     <div className="max-w-md">
       <h1 className="font-display text-3xl">Owner sign-in</h1>
       {mode === "demo" && (
-        <p className="mt-2 text-sm text-champagne-deep">Demo mode: enter the DEMO_ADMIN_PASSWORD from your .env.local.</p>
+        <p className="mt-2 text-sm text-apex-deep">Demo mode: enter the DEMO_ADMIN_PASSWORD from your .env.local.</p>
       )}
       <form action={loginAction} className="mt-8 flex flex-col gap-5 bg-white border border-line rounded-md p-6">
         {mode === "supabase" && (

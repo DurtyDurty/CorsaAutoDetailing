@@ -63,7 +63,7 @@ export default function ContactPage() {
               collects the vehicle details we need.
             </p>
           </div>
-          <div className="border border-line bg-ivory rounded-md p-6 sm:p-8">
+          <div className="border border-line bg-chalk rounded-md p-6 sm:p-8">
             {unavailable ? <UnavailableNotice /> : <ContactForm />}
           </div>
         </div>

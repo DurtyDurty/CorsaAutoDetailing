@@ -55,7 +55,7 @@ export default function ServiceAreasPage() {
         </div>
       </Section>
 
-      <Section tone="ivory">
+      <Section tone="chalk">
         <div className="grid lg:grid-cols-2 gap-12 items-start">
           <SectionHeading
             eyebrow="ZIP check"
@@ -69,7 +69,7 @@ export default function ServiceAreasPage() {
       <Section tone="dark">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
           <h2 className="font-display text-3xl text-balance">Live nearby? Get on the list.</h2>
-          <ButtonLink href={cta.href} variant="champagne" size="lg">
+          <ButtonLink href={cta.href} variant="apex" size="lg">
             {cta.label}
           </ButtonLink>
         </div>

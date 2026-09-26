@@ -151,7 +151,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
         {STEPS.map((label, i) => (
           <li key={label} className="flex flex-col gap-1.5">
             <span
-              className={cn("h-1 rounded-full", i <= step ? "bg-charcoal" : "bg-line")}
+              className={cn("h-1 rounded-full", i <= step ? "bg-asphalt" : "bg-line")}
               aria-hidden="true"
             />
             <span className={cn("text-xs sm:text-sm truncate", i === step ? "text-ink font-medium" : "text-ink-muted")}>
@@ -435,7 +435,7 @@ function EstimatePanel({
   }
   return (
     <div className="border border-line bg-white rounded-sm px-5 py-4" aria-live="polite">
-      <p className="text-xs uppercase tracking-[0.18em] text-champagne-deep font-semibold">
+      <p className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-apex-deep font-semibold">
         {mode === "PRELAUNCH" ? "Planned estimate" : "Estimate"}
       </p>
       <div className="mt-2 flex items-baseline justify-between gap-4">
