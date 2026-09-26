@@ -1,0 +1,471 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { submitQuoteRequest } from "@/app/actions/leads";
+import { business, type BusinessMode } from "@/config/business";
+import { track } from "@/lib/analytics";
+import { CONDITION_FLAGS, computeEstimate, conditionFlagLabel, formatUsd } from "@/lib/pricing";
+import { lookupZip, isValidZip } from "@/lib/zip";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/Button";
+import {
+  ChoiceGroup,
+  ConsentFields,
+  Field,
+  FormMessage,
+  FormMeta,
+  Select,
+  SubmitButton,
+  Textarea,
+  TextInput,
+  useLeadForm,
+} from "./primitives";
+
+const STEPS = ["Service & vehicle", "Condition", "Location & timing", "Contact & review"] as const;
+
+/** Which step each server-validated field lives on, so errors jump to the right place. */
+const FIELD_STEP: Record<string, number> = {
+  serviceId: 0,
+  vehicleCategory: 0,
+  vehicleYear: 0,
+  vehicleMake: 0,
+  vehicleModel: 0,
+  condition: 1,
+  conditionFlags: 1,
+  concerns: 1,
+  photos: 1,
+  zip: 2,
+  city: 2,
+  locationType: 2,
+  timeWindows: 2,
+  preferredDate: 2,
+  notes: 2,
+  firstName: 3,
+  lastName: 3,
+  email: 3,
+  phone: 3,
+  preferredContact: 3,
+  serviceConsent: 3,
+};
+
+interface Props {
+  mode: BusinessMode;
+  /** Earliest date preference the server will accept, or null when dates are not accepted yet. */
+  earliestDate: string | null;
+  photosEnabled: boolean;
+  initialService?: string;
+  initialVehicle?: string;
+}
+
+export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialService, initialVehicle }: Props) {
+  const { onSubmit, pending, errors, message, onStart } = useLeadForm(submitQuoteRequest, {
+    formName: "quote_request",
+    leadType: "quote_request",
+  });
+  const [step, setStep] = useState(0);
+  const [serviceId, setServiceId] = useState(initialService ?? "");
+  const [vehicle, setVehicle] = useState(initialVehicle ?? "");
+  const [condition, setCondition] = useState("");
+  const [flags, setFlags] = useState<string[]>([]);
+  const [contactMethod, setContactMethod] = useState("email");
+  const [zip, setZip] = useState("");
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // Jump to the first step that has a server-side error (state adjusted during render).
+  const [seenErrors, setSeenErrors] = useState(errors);
+  if (errors !== seenErrors) {
+    setSeenErrors(errors);
+    const keys = Object.keys(errors);
+    if (keys.length > 0) setStep(Math.min(...keys.map((k) => FIELD_STEP[k] ?? 3)));
+  }
+
+  useEffect(() => {
+    headingRef.current?.focus({ preventScroll: false });
+  }, [step]);
+
+  const estimate = useMemo(
+    () =>
+      serviceId && vehicle
+        ? computeEstimate({ serviceId, vehicleCategoryId: vehicle, condition: condition as never, conditionFlags: flags })
+        : null,
+    [serviceId, vehicle, condition, flags],
+  );
+  const zipInfo = isValidZip(zip) ? lookupZip(zip) : null;
+
+  function goNext() {
+    const form = formRef.current;
+    if (!form) return;
+    // Validate only controls in the current step with native constraints.
+    const panel = form.querySelector<HTMLElement>(`[data-step="${step}"]`);
+    const controls = panel?.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+      "input, select, textarea",
+    );
+    let firstInvalid: HTMLElement | null = null;
+    controls?.forEach((c) => {
+      if (!c.checkValidity() && !firstInvalid) firstInvalid = c;
+    });
+    if (firstInvalid) {
+      (firstInvalid as HTMLElement).focus();
+      form.reportValidity();
+      return;
+    }
+    if (step === 0 && serviceId && vehicle) {
+      track("pricing_vehicle_selected", { service: serviceId, vehicle_category: vehicle });
+    }
+    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+  }
+
+  function onPhotosChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length > 5) {
+      setPhotoError("Please choose up to 5 photos.");
+      e.target.value = "";
+      return;
+    }
+    const tooBig = files.find((f) => f.size > 10 * 1024 * 1024);
+    if (tooBig) {
+      setPhotoError(`${tooBig.name} is larger than 10MB.`);
+      e.target.value = "";
+      return;
+    }
+    setPhotoError(null);
+  }
+
+  const isLast = step === STEPS.length - 1;
+
+  return (
+    <form
+      ref={formRef}
+      onSubmit={onSubmit}
+      className="flex flex-col gap-6"
+      onFocus={onStart}
+      aria-label="Service request"
+      encType="multipart/form-data"
+    >
+      <FormMeta />
+
+      {/* Progress */}
+      <ol className="grid grid-cols-4 gap-1.5" aria-label="Progress">
+        {STEPS.map((label, i) => (
+          <li key={label} className="flex flex-col gap-1.5">
+            <span
+              className={cn("h-1 rounded-full", i <= step ? "bg-charcoal" : "bg-line")}
+              aria-hidden="true"
+            />
+            <span className={cn("text-xs sm:text-sm truncate", i === step ? "text-ink font-medium" : "text-ink-muted")}>
+              <span className="sr-only">Step {i + 1}: </span>
+              {label}
+              {i === step && <span className="sr-only"> (current)</span>}
+            </span>
+          </li>
+        ))}
+      </ol>
+
+      <h2 ref={headingRef} tabIndex={-1} className="font-display text-2xl sm:text-3xl outline-none">
+        {STEPS[step]}
+      </h2>
+
+      {mode === "PRELAUNCH" && (
+        <FormMessage
+          tone="info"
+          message="We're preparing to launch and aren't confirming appointments yet. Submitting this request saves your details so we can send a quote and timing when we open."
+        />
+      )}
+
+      {/* Step 1 */}
+      <div data-step="0" hidden={step !== 0} className="flex flex-col gap-5">
+        <ChoiceGroup
+          legend="Service"
+          name="serviceId"
+          type="radio"
+          required
+          defaultValue={serviceId}
+          onChange={setServiceId}
+          error={errors.serviceId}
+          options={business.services.map((s) => ({ value: s.id, label: s.name, description: s.tagline }))}
+        />
+        <ChoiceGroup
+          legend="Vehicle type"
+          name="vehicleCategory"
+          type="radio"
+          columns={2}
+          required
+          defaultValue={vehicle}
+          onChange={setVehicle}
+          error={errors.vehicleCategory}
+          options={business.vehicleCategories.map((v) => ({
+            value: v.id,
+            label: v.label,
+            description: v.priced ? v.examples : `${v.examples} — custom quote`,
+          }))}
+        />
+        <div className="grid gap-5 sm:grid-cols-3">
+          <Field name="vehicleYear" label="Year" optional error={errors.vehicleYear}>
+            {(p) => <TextInput name="vehicleYear" inputMode="numeric" maxLength={4} placeholder="2019" {...p} />}
+          </Field>
+          <Field name="vehicleMake" label="Make" optional error={errors.vehicleMake}>
+            {(p) => <TextInput name="vehicleMake" placeholder="Toyota" {...p} />}
+          </Field>
+          <Field name="vehicleModel" label="Model" optional error={errors.vehicleModel}>
+            {(p) => <TextInput name="vehicleModel" placeholder="4Runner" {...p} />}
+          </Field>
+        </div>
+        <EstimatePanel estimate={estimate} mode={mode} compact />
+      </div>
+
+      {/* Step 2 */}
+      <div data-step="1" hidden={step !== 1} className="flex flex-col gap-5">
+        <ChoiceGroup
+          legend="How would you describe the vehicle's condition?"
+          name="condition"
+          type="radio"
+          required
+          defaultValue={condition}
+          onChange={setCondition}
+          error={errors.condition}
+          options={[
+            { value: "normal", label: "Normal maintenance", description: "Driven regularly, cleaned occasionally." },
+            { value: "deeper", label: "Needs deeper cleaning", description: "It's been a while, or there's a specific problem." },
+            { value: "unsure", label: "Not sure", description: "We'll figure it out together." },
+          ]}
+        />
+        <ChoiceGroup
+          legend="Anything we should know about?"
+          name="conditionFlags"
+          type="checkbox"
+          columns={3}
+          hint="Checking a box never changes the estimate. It tells us what to look at before quoting."
+          defaultValue={flags}
+          onChange={(v) => setFlags((f) => (f.includes(v) ? f.filter((x) => x !== v) : [...f, v]))}
+          error={errors.conditionFlags}
+          options={CONDITION_FLAGS.map((f) => ({ value: f, label: conditionFlagLabel(f) }))}
+        />
+        <Field name="concerns" label="Describe any concerns" optional error={errors.concerns}>
+          {(p) => <Textarea name="concerns" maxLength={1000} {...p} />}
+        </Field>
+        {photosEnabled && (
+          <Field
+            name="photos"
+            label="Vehicle photos"
+            optional
+            hint="Up to 5 JPEG, PNG or WebP images, 10MB each. Photos are stored privately and only used to prepare your quote."
+            error={errors.photos ?? photoError ?? undefined}
+          >
+            {(p) => (
+              <input
+                id={p.id}
+                name="photos"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                className="field py-2.5"
+                onChange={onPhotosChange}
+                aria-describedby={p.describedBy}
+              />
+            )}
+          </Field>
+        )}
+      </div>
+
+      {/* Step 3 */}
+      <div data-step="2" hidden={step !== 2} className="flex flex-col gap-5">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field name="zip" label="ZIP code" error={errors.zip} hint={zipInfo?.message}>
+            {(p) => (
+              <TextInput
+                name="zip"
+                inputMode="numeric"
+                autoComplete="postal-code"
+                maxLength={5}
+                required={step === 2}
+                onChange={(e) => setZip(e.target.value)}
+                {...p}
+              />
+            )}
+          </Field>
+          <Field name="city" label="City or neighborhood" optional error={errors.city}>
+            {(p) => <TextInput name="city" autoComplete="address-level2" {...p} />}
+          </Field>
+        </div>
+        <ChoiceGroup
+          legend="Where would the vehicle be?"
+          name="locationType"
+          type="radio"
+          columns={3}
+          required
+          error={errors.locationType}
+          hint="We don't need your street address yet — only when we schedule."
+          options={[
+            { value: "home", label: "Home" },
+            { value: "work", label: "Workplace" },
+            { value: "other", label: "Somewhere else" },
+          ]}
+        />
+        <ChoiceGroup
+          legend="Preferred time windows"
+          name="timeWindows"
+          type="checkbox"
+          columns={2}
+          hint="Preferences only — not a reservation. We'll confirm a time with you."
+          error={errors.timeWindows}
+          options={business.scheduling.timeWindows.map((w) => ({ value: w.id, label: w.label }))}
+        />
+        {earliestDate ? (
+          <Field
+            name="preferredDate"
+            label="Preferred date"
+            optional
+            hint={`Earliest we can consider is ${earliestDate} (Eastern time). This is a preference, not a booking.`}
+            error={errors.preferredDate}
+          >
+            {(p) => <TextInput name="preferredDate" type="date" min={earliestDate} {...p} />}
+          </Field>
+        ) : (
+          <p className="text-sm text-ink-muted border border-line bg-white px-4 py-3 rounded-sm">
+            We&rsquo;ll ask about specific dates once an opening date is set.
+          </p>
+        )}
+        <Field
+          name="notes"
+          label="Notes about the space"
+          optional
+          hint="Is there room to work around the vehicle? Is water or an outdoor outlet nearby? This just helps us plan — it isn't a requirement."
+          error={errors.notes}
+        >
+          {(p) => <Textarea name="notes" maxLength={1500} {...p} />}
+        </Field>
+      </div>
+
+      {/* Step 4 */}
+      <div data-step="3" hidden={step !== 3} className="flex flex-col gap-5">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field name="firstName" label="First name" error={errors.firstName}>
+            {(p) => <TextInput name="firstName" autoComplete="given-name" required={step === 3} {...p} />}
+          </Field>
+          <Field name="lastName" label="Last name" optional error={errors.lastName}>
+            {(p) => <TextInput name="lastName" autoComplete="family-name" {...p} />}
+          </Field>
+          <Field name="email" label="Email" error={errors.email}>
+            {(p) => <TextInput name="email" type="email" autoComplete="email" required={step === 3} {...p} />}
+          </Field>
+          <Field
+            name="phone"
+            label="Phone"
+            optional={contactMethod === "email"}
+            error={errors.phone}
+            hint={contactMethod !== "email" ? "Required for phone or text contact." : undefined}
+          >
+            {(p) => (
+              <TextInput
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                required={step === 3 && contactMethod !== "email"}
+                {...p}
+              />
+            )}
+          </Field>
+        </div>
+        <Field name="preferredContact" label="How should we reach you?" error={errors.preferredContact}>
+          {(p) => (
+            <Select
+              name="preferredContact"
+              value={contactMethod}
+              onChange={(e) => setContactMethod(e.target.value)}
+              {...p}
+            >
+              <option value="email">Email</option>
+              <option value="phone">Phone call</option>
+              <option value="text">Text message</option>
+            </Select>
+          )}
+        </Field>
+
+        <EstimatePanel estimate={estimate} mode={mode} />
+
+        <ConsentFields
+          serviceText={business.consent.serviceText}
+          marketingText={business.consent.marketingText}
+          error={errors.serviceConsent}
+        />
+      </div>
+
+      <FormMessage message={message} />
+
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-line pt-5">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => setStep((s) => Math.max(0, s - 1))}
+          disabled={step === 0 || pending}
+        >
+          Back
+        </Button>
+        {isLast ? (
+          <SubmitButton pending={pending} className="w-full sm:w-auto">
+            {mode === "PRELAUNCH" ? "Send my request" : "Request an appointment"}
+          </SubmitButton>
+        ) : (
+          <Button type="button" size="lg" onClick={goNext} className="w-full sm:w-auto">
+            Continue
+          </Button>
+        )}
+      </div>
+    </form>
+  );
+}
+
+function EstimatePanel({
+  estimate,
+  mode,
+  compact = false,
+}: {
+  estimate: ReturnType<typeof computeEstimate>;
+  mode: BusinessMode;
+  compact?: boolean;
+}) {
+  if (!estimate) {
+    return compact ? null : (
+      <div className="border border-line bg-white rounded-sm px-5 py-4 text-sm text-ink-muted">
+        Choose a service and vehicle type to see an estimate.
+      </div>
+    );
+  }
+  return (
+    <div className="border border-line bg-white rounded-sm px-5 py-4" aria-live="polite">
+      <p className="text-xs uppercase tracking-[0.18em] text-champagne-deep font-semibold">
+        {mode === "PRELAUNCH" ? "Planned estimate" : "Estimate"}
+      </p>
+      <div className="mt-2 flex items-baseline justify-between gap-4">
+        <p className="font-medium">
+          {estimate.serviceName} <span className="text-ink-muted">· {estimate.vehicleCategoryLabel}</span>
+        </p>
+        <p className="font-display text-2xl">
+          {estimate.total !== null ? formatUsd(estimate.total) : "Custom quote"}
+        </p>
+      </div>
+      {estimate.addOns.length > 0 && (
+        <ul className="mt-2 text-sm text-ink-muted">
+          {estimate.addOns.map((a) => (
+            <li key={a.label} className="flex justify-between">
+              <span>{a.label}</span>
+              <span>{formatUsd(a.amount)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {!compact && estimate.reviewNotes.length > 0 && (
+        <ul className="mt-3 text-sm text-ink-muted list-disc pl-5 space-y-1">
+          {estimate.reviewNotes.map((n) => (
+            <li key={n}>{n}</li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-3 text-xs text-ink-muted">
+        {estimate.finalQuoteNotice} {estimate.taxNotice} This is an estimate, not an invoice.
+      </p>
+    </div>
+  );
+}

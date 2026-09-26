@@ -1,0 +1,77 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { getOwnerSession, signOut } from "@/lib/auth/owner";
+import { storeKind } from "@/lib/leads/store";
+import { Wordmark } from "@/components/site/Wordmark";
+import { redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+  title: { default: "Owner dashboard", template: "%s — Owner dashboard" },
+  robots: { index: false, follow: false },
+};
+
+// Every admin route depends on the session cookie; never prerender.
+export const dynamic = "force-dynamic";
+
+const NAV = [
+  { href: "/admin", label: "Leads" },
+  { href: "/admin/launch-list", label: "Launch list" },
+  { href: "/admin/membership", label: "Plan interest" },
+  { href: "/admin/appointments", label: "Appointments" },
+];
+
+async function signOutAction() {
+  "use server";
+  await signOut();
+  redirect("/admin/login");
+}
+
+export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
+  const session = await getOwnerSession();
+  const demo = storeKind() === "demo";
+  return (
+    <div className="min-h-full flex flex-col bg-ivory">
+      {demo && (
+        <div className="bg-champagne text-charcoal text-center text-sm px-4 py-2 font-medium">
+          DEMO MODE — local data only. Not connected to a production database.
+        </div>
+      )}
+      <header className="border-b border-line bg-white">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8 h-16 flex items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <Wordmark />
+            <span className="text-xs uppercase tracking-[0.18em] font-semibold text-champagne-deep hidden sm:inline">Owner</span>
+          </div>
+          {session && (
+            <div className="flex items-center gap-4 text-sm">
+              <nav aria-label="Dashboard" className="hidden md:flex gap-5">
+                {NAV.map((n) => (
+                  <Link key={n.href} href={n.href} className="hover:text-champagne-deep">
+                    {n.label}
+                  </Link>
+                ))}
+              </nav>
+              <form action={signOutAction}>
+                <button type="submit" className="underline underline-offset-4 min-h-10">
+                  Sign out
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
+        {session && (
+          <nav aria-label="Dashboard mobile" className="md:hidden border-t border-line overflow-x-auto">
+            <div className="flex gap-5 px-5 py-2.5 text-sm whitespace-nowrap">
+              {NAV.map((n) => (
+                <Link key={n.href} href={n.href} className="hover:text-champagne-deep">
+                  {n.label}
+                </Link>
+              ))}
+            </div>
+          </nav>
+        )}
+      </header>
+      <main className="flex-1 mx-auto w-full max-w-6xl px-5 sm:px-8 py-8">{children}</main>
+    </div>
+  );
+}

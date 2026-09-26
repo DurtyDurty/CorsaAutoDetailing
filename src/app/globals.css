@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+/*
+  Palette — see brief. Champagne is an accent; the readable "deep" variant is
+  used for any small champagne-coloured text on ivory (≥ 5.6:1 contrast).
+*/
+@theme {
+  --color-charcoal: #202326;
+  --color-charcoal-soft: #2c3034;
+  --color-ivory: #f7f3e9;
+  --color-ivory-deep: #efe9da;
+  --color-champagne: #b49a69;
+  --color-champagne-deep: #745d36;
+  --color-ink: #202326;
+  --color-ink-muted: #5b5f63;
+  --color-line: #d9d2c2;
+  --color-line-dark: #3a3e43;
+  --color-success: #2f6b3a;
+  --color-error: #a63a2b;
+
+  --font-sans: var(--font-body), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-display), Georgia, "Times New Roman", serif;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Keep anchored/focused elements clear of the sticky header. */
+  scroll-padding-top: 6rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+body {
+  background: var(--color-ivory);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+/* Visible, consistent focus ring for keyboard users. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-charcoal);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+.on-dark :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline-color: var(--color-champagne);
+}
+
+/* Form controls */
+.field {
+  width: 100%;
+  border: 1px solid var(--color-line);
+  background: #fff;
+  color: var(--color-ink);
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  line-height: 1.4;
+  min-height: 3rem;
+}
+.field:focus {
+  border-color: var(--color-charcoal);
+}
+.field[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+.field::placeholder {
+  color: #8a8d90;
+}
+select.field {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23202326' stroke-width='1.5'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.5rem;
+}
+.checkbox,
+.radio {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--color-charcoal);
+  flex: none;
+  margin-top: 0.125rem;
+}
+
+/* Choice cards (radio/checkbox as a bordered block) */
+.choice {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  border: 1px solid var(--color-line);
+  background: #fff;
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.choice:has(input:checked) {
+  border-color: var(--color-charcoal);
+  box-shadow: inset 0 0 0 1px var(--color-charcoal);
+}
+.choice:has(input:focus-visible) {
+  outline: 2px solid var(--color-charcoal);
+  outline-offset: 3px;
+}
+
+.prose-basic :where(h2) {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  margin-top: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+.prose-basic :where(h3) {
+  font-weight: 600;
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+}
+.prose-basic :where(p, ul, ol) {
+  margin-bottom: 1rem;
+  line-height: 1.65;
+}
+.prose-basic :where(ul) {
+  list-style: disc;
+  padding-left: 1.5rem;
+}
+.prose-basic :where(a) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sr-only-focusable:not(:focus):not(:focus-within) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
