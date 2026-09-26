@@ -13,7 +13,7 @@ export function SiteFooter() {
 
   return (
     <footer className="bg-asphalt text-chalk on-dark pb-24 lg:pb-0">
-      <div className="kerb" aria-hidden="true" />
+      <div className="kerb h-[3px] opacity-80" aria-hidden="true" />
       <Container className="py-14 grid gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
         <div>
           <Wordmark onDark />

@@ -6,7 +6,7 @@ import { Arrow, ButtonLink } from "@/components/ui/Button";
 import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/Section";
 import { PricingTable } from "@/components/site/PricingTable";
 import { ProcessSteps } from "@/components/site/ProcessSteps";
-import { ApexLine } from "@/components/site/ApexLine";
+import { HeroVideo } from "@/components/site/HeroVideo";
 import { Faq } from "@/components/site/Faq";
 import { OrganizationJsonLd } from "@/components/site/JsonLd";
 import { LaunchListForm } from "@/components/forms/LaunchListForm";
@@ -29,7 +29,7 @@ export default function HomePage() {
   const core = business.serviceAreas.communities.filter((c) => c.coverage === "core");
   const confirm = business.serviceAreas.communities.filter((c) => c.coverage === "confirm");
   const startingAt = Math.min(...business.services.flatMap((s) => Object.values(s.prices)));
-  // "Thoughtful car care. Right at your driveway." → second sentence gets the apex red.
+  // "Thoughtful car care. Right at your driveway." → one sentence per line.
   const [taglineLead, ...taglineRest] = business.brand.tagline.split(/(?<=\.)\s+/);
   const ticker = [
     ...business.services.map((s) => s.name),
@@ -44,24 +44,33 @@ export default function HomePage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden bg-asphalt text-chalk on-dark">
-        <div className="grid-lines absolute inset-0" aria-hidden="true" />
-        <div
-          className="absolute right-[-10%] top-[10%] h-[36rem] w-[36rem] rounded-full bg-apex/20 blur-[120px]"
-          aria-hidden="true"
-        />
-        <Container className="relative pt-16 pb-10 sm:pt-24 lg:pt-28">
-          <div className="grid lg:grid-cols-[1.15fr_1fr] gap-10 items-center">
-            <div>
+        <div className="relative min-h-[88svh] lg:min-h-[92svh] flex flex-col">
+          <HeroVideo />
+          {/* Scrims: darken for legibility, heavier at the bottom and left where the text sits. */}
+          <div
+            className="absolute inset-0 bg-gradient-to-t from-asphalt via-asphalt/45 to-asphalt/0"
+            aria-hidden="true"
+          />
+          <div
+            className="absolute inset-0 hidden sm:block bg-gradient-to-r from-asphalt/75 via-asphalt/15 to-transparent"
+            aria-hidden="true"
+          />
+
+          <Container className="relative z-10 mt-auto pt-32 pb-10 sm:pb-14">
+            <div className="max-w-3xl">
               <Eyebrow onDark>Mobile auto detailing · {business.serviceAreas.region}</Eyebrow>
-              <h1 className="font-display italic font-extrabold text-[3.5rem] leading-[0.9] sm:text-8xl lg:text-[6.5rem] mt-6 text-balance">
+              <h1 className="font-display italic font-extrabold text-[3.5rem] leading-[0.9] sm:text-8xl lg:text-[7rem] mt-6 text-balance">
                 {taglineLead}
-                {taglineRest.length > 0 && <span className="block text-apex">{taglineRest.join(" ")}</span>}
+                {taglineRest.length > 0 && <span className="block">{taglineRest.join(" ")}</span>}
               </h1>
-              <p className="mt-7 text-lg sm:text-xl text-chalk/75 max-w-xl leading-relaxed">
+              <div className="mt-6 flex items-center gap-4" aria-hidden="true">
+                <span className="kerb h-1.5 w-24" />
+              </div>
+              <p className="mt-6 text-lg sm:text-xl text-chalk/80 max-w-xl leading-relaxed">
                 Mobile exterior washing and interior maintenance for daily-driven cars and SUVs — done by hand, at your
                 home or workplace, without the wait at a car wash.
               </p>
-              <div className="mt-10 flex flex-col sm:flex-row gap-3">
+              <div className="mt-9 flex flex-col sm:flex-row gap-3">
                 <ButtonLink href={cta.href} variant="apex" size="lg">
                   {cta.label}
                   <Arrow />
@@ -71,15 +80,16 @@ export default function HomePage() {
                 </ButtonLink>
               </div>
             </div>
-            <ApexLine className="hidden lg:block w-full max-w-[34rem] justify-self-end" />
-          </div>
+          </Container>
+        </div>
 
+        <Container className="relative">
           {/* Telemetry strip */}
-          <dl className="mt-16 lg:mt-12 grid grid-cols-2 lg:grid-cols-4 border-t border-line-dark">
+          <dl className="grid grid-cols-2 lg:grid-cols-4 border-t border-line-dark">
             <div className="py-5 pr-4 border-b lg:border-b-0 border-line-dark">
               <dt className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-chalk/50">01 / Starting at</dt>
               <dd className="mt-1.5 flex items-baseline gap-2">
-                <span className="font-display italic font-extrabold text-5xl text-apex">${startingAt}</span>
+                <span className="font-display italic font-extrabold text-5xl">${startingAt}</span>
                 <span className="text-xs text-chalk/60">{business.priceLabel[business.mode].toLowerCase()}</span>
               </dd>
             </div>
@@ -120,17 +130,17 @@ export default function HomePage() {
                 {[...ticker, ...ticker].map((t, i) => (
                   <span
                     key={`${dup}-${i}`}
-                    className="flex items-center gap-6 px-6 py-4 font-display italic font-bold text-xl uppercase tracking-wide text-chalk/80"
+                    className="flex items-center gap-6 px-6 py-3.5 font-display italic font-bold text-lg uppercase tracking-wide text-chalk/60"
                   >
                     {t}
-                    <span className="h-2 w-2 -skew-x-[20deg] bg-apex" />
+                    <span className="h-1.5 w-1.5 -skew-x-[20deg] bg-chalk/30" />
                   </span>
                 ))}
               </div>
             ))}
           </div>
         </div>
-        <div className="kerb" aria-hidden="true" />
+        <div className="kerb h-[3px] opacity-80" aria-hidden="true" />
       </section>
 
       {/* Services + pricing */}
@@ -207,10 +217,10 @@ export default function HomePage() {
           <div>
             <Eyebrow onDark>From the owner</Eyebrow>
             <h2 className="font-display italic font-extrabold text-5xl sm:text-6xl mt-5 text-balance">
-              Twenty years of taking care of people and equipment. <span className="text-apex">Now, your car.</span>
+              Twenty years of taking care of people and equipment. Now, your car.
             </h2>
           </div>
-          <div className="border-l-[3px] border-apex pl-6 sm:pl-8 space-y-5 text-lg text-chalk/80 leading-relaxed">
+          <div className="border-l-2 border-apex/70 pl-6 sm:pl-8 space-y-5 text-lg text-chalk/80 leading-relaxed">
             {business.owner.bio.slice(0, 2).map((p) => (
               <p key={p.slice(0, 24)}>{p}</p>
             ))}
@@ -272,7 +282,7 @@ export default function HomePage() {
       <section id="launch-list" className="relative overflow-hidden bg-asphalt text-chalk on-dark scroll-mt-20">
         <div className="grid-lines absolute inset-0" aria-hidden="true" />
         <div
-          className="absolute -left-40 bottom-[-30%] h-[32rem] w-[32rem] rounded-full bg-apex/20 blur-[120px]"
+          className="absolute -left-40 bottom-[-30%] h-[32rem] w-[32rem] rounded-full bg-chalk/[0.04] blur-[120px]"
           aria-hidden="true"
         />
         <Container className="relative py-16 sm:py-24">
@@ -282,11 +292,11 @@ export default function HomePage() {
               <h2 className="font-display italic font-extrabold text-6xl sm:text-7xl mt-5 text-balance">
                 {isPrelaunch ? (
                   <>
-                    Be first in line <span className="text-apex">when we open.</span>
+                    Be first in line when we open.
                   </>
                 ) : (
                   <>
-                    Ready <span className="text-apex">when you are.</span>
+                    Ready when you are.
                   </>
                 )}
               </h2>
@@ -296,7 +306,7 @@ export default function HomePage() {
                   : "Tell us about your vehicle and we'll reply with a quote and available times."}
               </p>
             </div>
-            <div className="relative bg-white text-ink rounded-sm p-6 sm:p-8 shadow-[0_30px_80px_-30px_rgba(255,59,47,0.35)]">
+            <div className="relative bg-white text-ink rounded-sm p-6 sm:p-8 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.8)]">
               <span className="absolute inset-x-0 top-0 h-1 bg-apex" aria-hidden="true" />
               {isPrelaunch ? (
                 <LaunchListForm />

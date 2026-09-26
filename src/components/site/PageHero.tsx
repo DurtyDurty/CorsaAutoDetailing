@@ -15,10 +15,6 @@ export function PageHero({
   return (
     <div className="relative overflow-hidden bg-asphalt text-chalk on-dark">
       <div className="grid-lines absolute inset-0" aria-hidden="true" />
-      <div
-        className="absolute -right-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-apex/15 blur-3xl"
-        aria-hidden="true"
-      />
       <Container className="relative py-16 sm:py-24">
         <div className="max-w-3xl">
           {eyebrow && <Eyebrow onDark>{eyebrow}</Eyebrow>}
@@ -27,7 +23,7 @@ export function PageHero({
           {children && <div className="mt-8">{children}</div>}
         </div>
       </Container>
-      <div className="kerb relative" aria-hidden="true" />
+      <div className="kerb relative h-[3px] opacity-80" aria-hidden="true" />
     </div>
   );
 }

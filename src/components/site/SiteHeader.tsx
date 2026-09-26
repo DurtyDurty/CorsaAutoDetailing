@@ -29,7 +29,7 @@ export function SiteHeader() {
         </div>
         <MobileNav cta={cta} />
       </Container>
-      <div className="kerb h-[3px] opacity-90" aria-hidden="true" />
+      <div className="kerb h-0.5 opacity-70" aria-hidden="true" />
     </header>
   );
 }
