@@ -5,9 +5,10 @@ import { useEffect, useRef, useState } from "react";
 /**
  * Full-bleed, muted, looping background video for the home hero.
  *
- * Footage: Pexels video 6872068 ("Person washing coupe with a sponge"), used
- * under the Pexels license as background mood only — it is NOT presented as
- * our work. Replace with owner footage when available (OWNER_DECISIONS.md).
+ * Footage: Pexels video 6157780 ("Black shiny car"), cropped to remove a studio
+ * logo on the back wall and looped forward-then-reverse. Used under the Pexels
+ * license as background mood only — it is NOT presented as our work. Replace
+ * with owner footage when available (OWNER_DECISIONS.md).
  *
  * - Doesn't autoplay for visitors who prefer reduced motion (poster only).
  * - Visible pause/play control, since the loop runs longer than 5 seconds.
@@ -43,7 +44,7 @@ export function HeroVideo() {
       <video
         ref={ref}
         className="absolute inset-0 h-full w-full object-cover"
-        poster="/media/hero-wash-poster.jpg"
+        poster="/media/hero-shine-poster.jpg"
         muted
         loop
         playsInline
@@ -51,8 +52,8 @@ export function HeroVideo() {
         aria-hidden="true"
         tabIndex={-1}
       >
-        <source src="/media/hero-wash-360.mp4" type="video/mp4" media="(max-width: 640px)" />
-        <source src="/media/hero-wash-720.mp4" type="video/mp4" />
+        <source src="/media/hero-shine-360.mp4" type="video/mp4" media="(max-width: 640px)" />
+        <source src="/media/hero-shine-720.mp4" type="video/mp4" />
       </video>
       <button
         type="button"

@@ -47,6 +47,7 @@ export default function HomePage() {
         <div className="relative min-h-[88svh] lg:min-h-[92svh] flex flex-col">
           <HeroVideo />
           {/* Scrims: darken for legibility, heavier at the bottom and left where the text sits. */}
+          <div className="absolute inset-0 bg-asphalt/55 sm:bg-asphalt/35" aria-hidden="true" />
           <div
             className="absolute inset-0 bg-gradient-to-t from-asphalt via-asphalt/45 to-asphalt/0"
             aria-hidden="true"
@@ -57,7 +58,7 @@ export default function HomePage() {
           />
 
           <Container className="relative z-10 mt-auto pt-32 pb-10 sm:pb-14">
-            <div className="max-w-3xl">
+            <div className="max-w-3xl [text-shadow:0_2px_24px_rgb(12_13_16/0.6)]">
               <Eyebrow onDark>Mobile auto detailing · {business.serviceAreas.region}</Eyebrow>
               <h1 className="font-display italic font-extrabold text-[3.5rem] leading-[0.9] sm:text-8xl lg:text-[7rem] mt-6 text-balance">
                 {taglineLead}
