@@ -83,4 +83,4 @@ Any Node host works (Vercel, Fly, Render, a VPS). See [docs/SETUP.md](docs/SETUP
 
 ## Logo assets
 
-The logo lives in `public/brand/`: `logo-original.png` is the file the owner supplied, and `logo-dark.png` / `logo-light.png` are transparent versions for light and dark backgrounds. The paths are set in `business.brand.logos`, and `Wordmark.tsx` picks the variant by background (falling back to a typographic wordmark if a path is `null`). The browser-tab icons are `public/icon-512.png` and `public/apple-icon.png`, made from the logo's "C" mark.
+The logo lives in `public/brand/`: `logo-master.svg` is the owner's vector master (charcoal `#202326` + red `#E52435`), and `logo-dark.svg` / `logo-light.svg` are cropped web versions for light and dark backgrounds (the light one swaps charcoal for `#F3F3F1`). The paths are set in `business.brand.logos`, and `Wordmark.tsx` picks the variant by background (falling back to a typographic wordmark if a path is `null`). The browser-tab icons (`public/icon.svg`, `icon-512.png`, `apple-icon.png`) are the logo's "C" mark on asphalt.

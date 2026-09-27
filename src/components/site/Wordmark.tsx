@@ -21,10 +21,10 @@ export function Wordmark({
     <Image
       src={logo}
       alt={business.brand.name}
-      width={1597}
-      height={313}
+      width={1612}
+      height={326}
       priority
-      sizes="(min-width: 640px) 210px, 170px"
+      unoptimized
       className="h-8 sm:h-10 w-auto"
     />
   ) : (
