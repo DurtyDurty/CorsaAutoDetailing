@@ -5,6 +5,7 @@ import { Wordmark } from "./Wordmark";
 import { NAV_LINKS } from "./nav";
 import { formatPhone } from "@/lib/utils";
 import { ContactLink } from "./ContactLink";
+import { VeteranBadge } from "./VeteranBadge";
 
 export function SiteFooter() {
   const { contact } = business;
@@ -20,9 +21,7 @@ export function SiteFooter() {
           <p className="mt-4 text-chalk/75 max-w-sm leading-relaxed">
             Mobile exterior washing and interior maintenance for daily drivers in {business.serviceAreas.region}.
           </p>
-          {business.owner.veteranOwned && (
-            <p className="mt-4 inline-block border border-line-dark px-2.5 py-1 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-apex">Veteran-owned · U.S. Navy, retired</p>
-          )}
+          <VeteranBadge size="sm" className="mt-5" />
         </div>
         <nav aria-label="Footer">
           <h2 className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-apex">Explore</h2>

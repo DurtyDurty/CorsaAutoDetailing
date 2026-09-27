@@ -93,12 +93,7 @@ export const business = {
 
   owner: {
     name: "Herson Sanchez",
-    /** Publicly accurate, owner-supplied facts only. */
-    bio: [
-      "I spent twenty years in the U.S. Navy and retired as a Chief. The job taught me to run a tight operation, take care of the people and equipment in front of me, and never skip the checklist.",
-      "I've always liked cars — I keep a Lexus IS F and an FJ Cruiser — and I want to bring that same discipline to keeping yours clean without you rearranging your day for it.",
-      "Corsa Auto Detailing is a new business. I'm building it carefully: buying the equipment, practicing on real vehicles, and only opening the schedule when the work meets my standard.",
-    ],
+    /** Shows the "Veteran owned" badge with the U.S. flag (hero, About, footer). */
     veteranOwned: true,
   },
 

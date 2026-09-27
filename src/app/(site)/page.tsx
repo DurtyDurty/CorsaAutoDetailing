@@ -7,6 +7,7 @@ import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/Sec
 import { PricingTable } from "@/components/site/PricingTable";
 import { ProcessSteps } from "@/components/site/ProcessSteps";
 import { HeroVideo } from "@/components/site/HeroVideo";
+import { VeteranBadge } from "@/components/site/VeteranBadge";
 import { Faq } from "@/components/site/Faq";
 import { OrganizationJsonLd } from "@/components/site/JsonLd";
 import { LaunchListForm } from "@/components/forms/LaunchListForm";
@@ -57,6 +58,10 @@ export default function HomePage() {
             aria-hidden="true"
           />
 
+          <Container className="absolute inset-x-0 top-0 z-20 flex justify-end pt-5 sm:pt-8">
+            <VeteranBadge />
+          </Container>
+
           <Container className="relative z-10 mt-auto pt-32 pb-10 sm:pb-14">
             <div className="max-w-3xl [text-shadow:0_2px_24px_rgb(12_13_16/0.6)]">
               <Eyebrow onDark>Mobile auto detailing · {business.serviceAreas.region}</Eyebrow>
@@ -104,10 +109,13 @@ export default function HomePage() {
               </dd>
             </div>
             <div className="py-5 pr-4 lg:pl-4 lg:border-l border-line-dark">
-              <dt className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-chalk/50">03 / Owner</dt>
+              <dt className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-chalk/50">03 / Packages</dt>
               <dd className="mt-2 text-chalk text-sm leading-relaxed">
-                {business.owner.name}
-                {business.owner.veteranOwned && <span className="block text-chalk/60">U.S. Navy Chief, retired</span>}
+                {business.services.map((s) => (
+                  <span key={s.id} className="block">
+                    {s.name}
+                  </span>
+                ))}
               </dd>
             </div>
             <div className="py-5 pl-4 border-l border-line-dark">
@@ -205,32 +213,6 @@ export default function HomePage() {
               className="group mt-8 inline-flex items-center gap-2 font-semibold uppercase tracking-[0.1em] text-sm text-apex-deep"
             >
               Check your ZIP
-              <Arrow />
-            </Link>
-          </div>
-        </div>
-      </Section>
-
-      {/* Owner */}
-      <Section tone="dark" className="relative overflow-hidden">
-        <div className="grid-lines absolute inset-0" aria-hidden="true" />
-        <div className="relative grid lg:grid-cols-[1fr_1.2fr] gap-12 items-start">
-          <div>
-            <Eyebrow onDark>From the owner</Eyebrow>
-            <h2 className="font-display italic font-extrabold text-5xl sm:text-6xl mt-5 text-balance">
-              Twenty years of taking care of people and equipment. Now, your car.
-            </h2>
-          </div>
-          <div className="border-l-2 border-apex/70 pl-6 sm:pl-8 space-y-5 text-lg text-chalk/80 leading-relaxed">
-            {business.owner.bio.slice(0, 2).map((p) => (
-              <p key={p.slice(0, 24)}>{p}</p>
-            ))}
-            <p className="font-mono text-sm uppercase tracking-[0.14em] text-apex">— {business.owner.name}</p>
-            <Link
-              href="/about"
-              className="group inline-flex items-center gap-2 font-semibold uppercase tracking-[0.1em] text-sm text-chalk hover:text-apex"
-            >
-              More about Corsa
               <Arrow />
             </Link>
           </div>

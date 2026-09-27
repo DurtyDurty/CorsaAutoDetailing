@@ -8,8 +8,8 @@ Things the website is deliberately silent or provisional about until you decide.
 - [x] **Domain.** `corsaautodetailing.com` purchased 2026-09-25. `NEXT_PUBLIC_SITE_URL` set in `.env.example`; DNS is pointed at the host in LAUNCH_CHECKLIST §6.
 - [x] **Logo.** Supplied 2026-09-26 and live in the header, footer and admin (`public/brand/`), plus the browser-tab icon from the "C" mark. Transparent dark and light versions were generated from your PNG.
 - [ ] **Vector logo (optional).** Ask the designer for SVG (or AI/EPS) files. The PNGs are fine on screen, but vectors stay sharp on signage, shirts and vehicle graphics.
-- [ ] **"Veteran-owned" statement.** Currently shown; confirm you want it and the wording "U.S. Navy Chief, retired · 20 years of service". → `business.owner`
-- [ ] **Owner bio copy.** Three paragraphs drafted from your brief; edit freely. → `business.owner.bio`
+- [x] **"Veteran-owned" statement.** Decided 2026-09-26: show only "Veteran owned" with a U.S. flag (home hero top-right, About, footer). No rank or branch details. → `business.owner.veteranOwned`
+- [x] **Owner bio.** Decided 2026-09-26: removed from the site.
 
 ## Contact & hours
 

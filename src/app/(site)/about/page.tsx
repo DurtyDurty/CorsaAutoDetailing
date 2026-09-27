@@ -3,10 +3,11 @@ import { business, primaryCta } from "@/config/business";
 import { ButtonLink } from "@/components/ui/Button";
 import { Section, SectionHeading } from "@/components/ui/Section";
 import { PageHero } from "@/components/site/PageHero";
+import { VeteranBadge } from "@/components/site/VeteranBadge";
 
 export const metadata: Metadata = {
   title: "About",
-  description: `${business.brand.name} is a veteran-owned mobile detailing startup in Clay County, Florida, founded by retired U.S. Navy Chief ${business.owner.name}.`,
+  description: `${business.brand.name} is a ${business.owner.veteranOwned ? "veteran-owned " : ""}mobile detailing startup in Clay County, Florida.`,
   alternates: { canonical: "/about" },
 };
 
@@ -18,23 +19,11 @@ export default function AboutPage() {
         eyebrow="About"
         title="A small, careful company. On purpose."
         lede={`${business.brand.name} is a new, ${business.owner.veteranOwned ? "veteran-owned " : ""}mobile detailing business serving ${business.serviceAreas.region}.`}
-      />
+      >
+        {business.owner.veteranOwned && <VeteranBadge />}
+      </PageHero>
 
       <Section tone="white">
-        <div className="grid lg:grid-cols-[1fr_1.4fr] gap-12">
-          <div>
-            <SectionHeading eyebrow="The owner" title={business.owner.name} />
-            <p className="mt-3 text-ink-muted">U.S. Navy Chief, retired · 20 years of service</p>
-          </div>
-          <div className="space-y-5 text-lg leading-relaxed">
-            {business.owner.bio.map((p) => (
-              <p key={p.slice(0, 24)}>{p}</p>
-            ))}
-          </div>
-        </div>
-      </Section>
-
-      <Section tone="chalk">
         <SectionHeading
           eyebrow="How we work"
           title="What you can expect from us."
