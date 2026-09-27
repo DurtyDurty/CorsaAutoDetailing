@@ -6,7 +6,7 @@ describe("computeEstimate", () => {
   it("returns the configured base price for every priced vehicle category", () => {
     const expected: Record<string, Record<string, number>> = {
       exterior: { sedan: 79, suv2: 89, large: 109 },
-      maintenance: { sedan: 109, suv2: 129, large: 149 },
+      full: { sedan: 140, suv2: 160, large: 200 },
     };
     for (const service of business.services) {
       for (const [vehicle, price] of Object.entries(expected[service.id])) {
@@ -28,9 +28,9 @@ describe("computeEstimate", () => {
   });
 
   it("never changes the price for condition answers or flags", () => {
-    const base = computeEstimate({ serviceId: "maintenance", vehicleCategoryId: "suv2" });
+    const base = computeEstimate({ serviceId: "full", vehicleCategoryId: "suv2" });
     const worse = computeEstimate({
-      serviceId: "maintenance",
+      serviceId: "full",
       vehicleCategoryId: "suv2",
       condition: "deeper",
       conditionFlags: ["pet_hair", "sand", "stains", "odor", "mud"],

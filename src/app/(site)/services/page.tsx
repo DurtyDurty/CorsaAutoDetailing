@@ -11,7 +11,7 @@ import { ServiceViewTracker } from "@/components/site/ServiceViewTracker";
 export const metadata: Metadata = {
   title: "Services & pricing",
   description:
-    "Exterior Wash & Protect and Maintenance Clean packages with planned starting prices by vehicle type. What's included, what isn't, and how quotes work.",
+    "Exterior Wash & Protect and Full Detail packages with planned starting prices by vehicle type. What's included, what isn't, and how quotes work.",
   alternates: { canonical: "/services" },
 };
 

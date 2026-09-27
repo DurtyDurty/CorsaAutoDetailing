@@ -31,7 +31,9 @@ Things the website is deliberately silent or provisional about until you decide.
 
 ## Pricing & scope
 
-- [ ] **Validate the planned prices** ($79/$89/$109 exterior; $109/$129/$149 maintenance) after practice jobs. Bump `business.pricingVersion` whenever you change them. → `business.services[].prices`
+- [ ] **Second package.** Full Detail ($140/$160/$200) is set. Exterior Wash & Protect ($79/$89/$109) is holding the second slot until you decide what the other package is (name, what's included, prices).
+- [ ] **3-month protectant wording.** The site says "protectant that lasts up to 3 months". Confirm the product actually supports that claim.
+- [ ] **Validate the planned prices** ($79/$89/$109 exterior; $140/$160/$200 full detail) after practice jobs. Bump `business.pricingVersion` whenever you change them. → `business.services[].prices`
 - [ ] **Typical durations.** Not published until validated. → `SERVICES_FAQ` in `src/content/faq.ts`
 - [ ] **Fixed add-ons** (none approved). Add to `business.addOns` only with a firm price.
 - [ ] **Sales tax treatment.** Site shows "Any applicable tax will be disclosed in your final quote" until you confirm with the Florida DOR / your accountant whether detailing services are taxable for you and at what rate. → `business.taxNotice`

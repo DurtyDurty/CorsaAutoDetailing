@@ -88,7 +88,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
             <section className="border border-line bg-white rounded-md p-5">
               <h2 className="font-medium">Vehicle & service</h2>
               <dl className="mt-3">
-                <Row label="Service" value={lead.serviceId ? getService(lead.serviceId)?.name : null} />
+                <Row label="Service" value={lead.serviceId ? (getService(lead.serviceId)?.name ?? lead.serviceId) : null} />
                 <Row label="Category" value={lead.vehicleCategory ? getVehicleCategory(lead.vehicleCategory)?.label : null} />
                 <Row label="Vehicle" value={[lead.vehicleYear, lead.vehicleMake, lead.vehicleModel].filter(Boolean).join(" ")} />
                 <Row label="Condition" value={lead.condition} />

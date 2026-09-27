@@ -20,7 +20,7 @@ export type VehicleCategoryId =
   | "oversized"
   | "other";
 
-export type ServiceId = "exterior" | "maintenance";
+export type ServiceId = "exterior" | "full";
 
 export interface VehicleCategory {
   id: VehicleCategoryId;
@@ -121,7 +121,7 @@ export const business = {
    * Bump whenever a price or service scope changes. Stored with each lead's
    * estimate so old inquiries can be understood later.
    */
-  pricingVersion: "2026-09-planned-v1",
+  pricingVersion: "2026-09-planned-v2",
   /** Shown next to all prices while in PRELAUNCH mode. */
   priceLabel: {
     PRELAUNCH: "Planned starting prices",
@@ -132,8 +132,8 @@ export const business = {
 
   vehicleCategories: [
     { id: "sedan", label: "Sedan / coupe", examples: "Camry, Civic, IS F, Mustang", priced: true },
-    { id: "suv2", label: "Two-row SUV / crossover", examples: "RAV4, CX-5, FJ Cruiser, Model Y", priced: true },
-    { id: "large", label: "Large SUV / pickup", examples: "Tahoe, Expedition, F-150, Silverado", priced: true },
+    { id: "suv2", label: "Mid-size SUV / crossover", examples: "RAV4, CX-5, FJ Cruiser, Model Y", priced: true },
+    { id: "large", label: "XL SUV / truck", examples: "Tahoe, Expedition, F-150, Silverado", priced: true },
     { id: "minivan", label: "Minivan", examples: "Odyssey, Sienna, Pacifica", priced: false },
     { id: "oversized", label: "Oversized / lifted / dually", examples: "F-250 dually, lifted trucks, vans", priced: false },
     { id: "other", label: "Other / not sure", examples: "Anything unusual", priced: false },
@@ -156,18 +156,20 @@ export const business = {
       prices: { sedan: 79, suv2: 89, large: 109 },
     },
     {
-      id: "maintenance",
-      name: "Maintenance Clean",
-      tagline: "Inside and outside, kept up.",
+      id: "full",
+      name: "Full Detail",
+      tagline: "Inside and out, sealed for up to 3 months.",
       description:
-        "Everything in Exterior Wash & Protect plus a light interior refresh. Designed for routine upkeep, not restoration.",
+        "A complete inside-and-out clean finished with a protectant that lasts up to 3 months. Done by hand at your location.",
       includes: [
-        "Everything in Exterior Wash & Protect",
-        "Light interior vacuum",
-        "Accessible dashboard, console, and surface wipe-down",
-        "Interior glass",
+        "Hand wash and hand dry",
+        "Wheel faces and tires cleaned, tire dressing",
+        "Exterior and interior glass",
+        "Interior vacuum",
+        "Dashboard, console, and surface wipe-down",
+        "3-month protectant",
       ],
-      prices: { sedan: 109, suv2: 129, large: 149 },
+      prices: { sedan: 140, suv2: 160, large: 200 },
     },
   ] satisfies ServiceDefinition[],
 

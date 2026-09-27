@@ -27,14 +27,14 @@ test.describe("lead forms (demo store)", () => {
   });
 
   test("quote request: multi-step, estimate shown, phone required for text contact, saves", async ({ page }) => {
-    await page.goto("/request?service=maintenance");
+    await page.goto("/request?service=full");
     const form = page.getByRole("form", { name: "Service request" });
     await expect(page.getByText(/aren't confirming appointments yet/)).toBeVisible();
 
     // Step 1
-    await expect(form.getByRole("radio", { name: /Maintenance Clean/ })).toBeChecked();
-    await form.getByRole("radio", { name: /Two-row SUV/ }).check();
-    await expect(form.locator('[data-step="0"]').getByText("$129")).toBeVisible();
+    await expect(form.getByRole("radio", { name: /Full Detail/ })).toBeChecked();
+    await form.getByRole("radio", { name: /Mid-size SUV/ }).check();
+    await expect(form.locator('[data-step="0"]').getByText("$160")).toBeVisible();
     // Optional fields are labelled "Year (optional)" etc., so anchor on the leading word.
     await form.getByLabel(/^Year\b/).fill("2012");
     await form.getByLabel(/^Make\b/).fill("Toyota");
@@ -59,7 +59,7 @@ test.describe("lead forms (demo store)", () => {
 
     // Step 4
     await expect(form.getByRole("heading", { name: "Contact & review" })).toBeVisible();
-    await expect(form.locator('[data-step="3"]').getByText("$129")).toBeVisible(); // still $129 despite flags
+    await expect(form.locator('[data-step="3"]').getByText("$160")).toBeVisible(); // still $160 despite flags
     await form.getByLabel("First name").fill("Herson");
     await form.getByLabel("Email", { exact: true }).fill(`${unique()}@example.com`);
     await form.getByLabel("How should we reach you?").selectOption("text");
@@ -73,7 +73,7 @@ test.describe("lead forms (demo store)", () => {
 
     await expect(page).toHaveURL(/\/thanks\/request\?ref=/);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Request saved");
-    await expect(page.getByText("$129")).toBeVisible();
+    await expect(page.getByText("$160")).toBeVisible();
     await expect(page.getByText(/not confirming appointments/i)).toBeVisible();
   });
 

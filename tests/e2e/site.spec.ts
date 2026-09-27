@@ -60,7 +60,7 @@ test.describe("public site", () => {
   test("services page shows every planned base price", async ({ page }) => {
     await page.goto("/services");
     const text = (await page.textContent("main")) ?? "";
-    for (const price of ["$79", "$89", "$109", "$129", "$149"]) expect(text).toContain(price);
+    for (const price of ["$79", "$89", "$109", "$140", "$160", "$200"]) expect(text).toContain(price);
     expect(text).toMatch(/Planned starting prices/);
     expect(text).toMatch(/Any applicable tax will be disclosed/);
   });
