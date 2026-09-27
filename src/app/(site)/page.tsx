@@ -7,7 +7,6 @@ import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/Sec
 import { PricingTable } from "@/components/site/PricingTable";
 import { ProcessSteps } from "@/components/site/ProcessSteps";
 import { HeroVideo } from "@/components/site/HeroVideo";
-import { VeteranBadge } from "@/components/site/VeteranBadge";
 import { Faq } from "@/components/site/Faq";
 import { OrganizationJsonLd } from "@/components/site/JsonLd";
 import { LaunchListForm } from "@/components/forms/LaunchListForm";
@@ -57,10 +56,6 @@ export default function HomePage() {
             className="absolute inset-0 hidden sm:block bg-gradient-to-r from-asphalt/75 via-asphalt/15 to-transparent"
             aria-hidden="true"
           />
-
-          <Container className="absolute inset-x-0 top-0 z-20 flex justify-end pt-5 sm:pt-8">
-            <VeteranBadge />
-          </Container>
 
           <Container className="relative z-10 mt-auto pt-32 pb-10 sm:pb-14">
             <div className="max-w-3xl [text-shadow:0_2px_24px_rgb(12_13_16/0.6)]">

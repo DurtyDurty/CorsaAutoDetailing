@@ -24,8 +24,19 @@ function Flag({ className }: { className?: string }) {
   );
 }
 
-/** "Veteran owned" badge with the U.S. flag. Renders nothing unless the owner has confirmed the claim. */
-export function VeteranBadge({ className, size = "md" }: { className?: string; size?: "sm" | "md" }) {
+/**
+ * "Veteran owned" badge with the U.S. flag. Renders nothing unless the owner has confirmed the claim.
+ * `flagOnlyBelowWide` shows just the flag under 1400px (tight header), keeping the words for screen readers.
+ */
+export function VeteranBadge({
+  className,
+  flagOnlyBelowWide = false,
+  size = "md",
+}: {
+  className?: string;
+  flagOnlyBelowWide?: boolean;
+  size?: "sm" | "md";
+}) {
   if (!business.owner.veteranOwned) return null;
   return (
     <p
@@ -38,12 +49,14 @@ export function VeteranBadge({ className, size = "md" }: { className?: string; s
       <Flag className={cn("shrink-0 rounded-[1px]", size === "md" ? "h-4 w-[30px]" : "h-3 w-[23px]")} />
       <span
         className={cn(
-          "font-mono uppercase tracking-[0.16em] font-medium leading-none",
+          "font-mono uppercase tracking-[0.16em] font-medium leading-none whitespace-nowrap",
           size === "md" ? "text-[0.72rem]" : "text-[0.65rem]",
+          flagOnlyBelowWide && "hidden min-[1400px]:inline",
         )}
       >
         Veteran owned
       </span>
+      {flagOnlyBelowWide && <span className="sr-only min-[1400px]:hidden">Veteran owned</span>}
     </p>
   );
 }
