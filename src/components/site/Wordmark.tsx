@@ -18,7 +18,15 @@ export function Wordmark({
 }) {
   const logo = onDark ? business.brand.logos.horizontalLight : business.brand.logos.horizontalDark;
   const inner = logo ? (
-    <Image src={logo} alt={business.brand.name} width={180} height={40} priority className="h-9 w-auto" />
+    <Image
+      src={logo}
+      alt={business.brand.name}
+      width={1597}
+      height={313}
+      priority
+      sizes="(min-width: 640px) 210px, 170px"
+      className="h-8 sm:h-10 w-auto"
+    />
   ) : (
     <span className={cn("inline-flex items-center gap-2.5", onDark ? "text-chalk" : "text-asphalt")}>
       <span className="flex gap-[3px] -skew-x-[20deg]" aria-hidden="true">

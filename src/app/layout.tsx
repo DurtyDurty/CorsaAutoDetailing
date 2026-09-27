@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     url: absoluteUrl("/"),
   },
   robots: noindex ? { index: false, follow: false } : { index: true, follow: true },
-  icons: { icon: "/favicon.svg" },
+  icons: { icon: "/icon-512.png", apple: "/apple-icon.png" },
 };
 
 export const viewport: Viewport = {

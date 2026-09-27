@@ -83,4 +83,4 @@ Any Node host works (Vercel, Fly, Render, a VPS). See [docs/SETUP.md](docs/SETUP
 
 ## Logo assets
 
-No logo files were supplied in this repository, so the site uses a typographic wordmark (`src/components/site/Wordmark.tsx`). Drop SVG/PNG files into `public/brand/` and set the paths in `business.brand.logos` to switch; the light/dark variants are chosen automatically by background.
+The logo lives in `public/brand/`: `logo-original.png` is the file the owner supplied, and `logo-dark.png` / `logo-light.png` are transparent versions for light and dark backgrounds. The paths are set in `business.brand.logos`, and `Wordmark.tsx` picks the variant by background (falling back to a typographic wordmark if a path is `null`). The browser-tab icons are `public/icon-512.png` and `public/apple-icon.png`, made from the logo's "C" mark.

@@ -80,8 +80,9 @@ export const business = {
     tagline: "Thoughtful car care. Right at your driveway.",
     /** Logo files. `null` = not supplied; the UI falls back to a text wordmark. */
     logos: {
-      horizontalDark: null as string | null,
-      horizontalLight: null as string | null,
+      /** Dark ink for light backgrounds; light ink for dark backgrounds. Source: public/brand/logo-original.png. */
+      horizontalDark: "/brand/logo-dark.png" as string | null,
+      horizontalLight: "/brand/logo-light.png" as string | null,
       stackedDark: null as string | null,
       stackedLight: null as string | null,
     },
