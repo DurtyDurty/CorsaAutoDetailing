@@ -20,22 +20,23 @@ Things the website is deliberately silent or provisional about until you decide.
 
 ## Launch
 
-- [ ] **Opening date.** The site never invents one. Set it only when confirmed; it enables date preferences on the request form. → `NEXT_PUBLIC_LAUNCH_DATE`
+- [ ] **Opening date.** The site never invents one. Set it only when confirmed; it turns on the "Preferred date" field in the booking form (until then customers pick time windows). → `NEXT_PUBLIC_LAUNCH_DATE`
 - [ ] **Switch to LIVE** once you're taking jobs. → `NEXT_PUBLIC_BUSINESS_MODE=LIVE`
 
 ## Service area
 
 - [ ] **Verify ZIP → community mapping.** Current mapping is a best guess: Middleburg 32068, Fleming Island 32003, Green Cove Springs 32043, Orange Park 32065/32073, plus 32079/32656/32234 as "travel confirmation". Fix any errors. → `business.serviceAreas`
+- [ ] **Jacksonville coverage.** Added 2026-09-26 as "travel confirmed on review" with 33 Duval County ZIPs (32099, 322xx). Remove any you won't drive to (e.g. the Beaches), or move nearby ones to core coverage. → `business.serviceAreas.communities[jacksonville]`
 - [ ] **Decide which Orange Park locations count as "selected".** The site says travel eligibility is confirmed on review. → `business.serviceAreas.communities[orange-park].blurb`
 - [ ] **Travel radius / cutoff policy** (currently: no surcharges, we just say yes or no).
 
 ## Pricing & scope
 
-- [ ] **Second package.** Full Detail ($140/$160/$200) is set. Exterior Wash & Protect ($79/$89/$109) is holding the second slot until you decide what the other package is (name, what's included, prices).
-- [ ] **3-month protectant wording.** The site says "protectant that lasts up to 3 months". Confirm the product actually supports that claim.
-- [ ] **Validate the planned prices** ($79/$89/$109 exterior; $140/$160/$200 full detail) after practice jobs. Bump `business.pricingVersion` whenever you change them. → `business.services[].prices`
-- [ ] **Typical durations.** Not published until validated. → `SERVICES_FAQ` in `src/content/faq.ts`
-- [ ] **Fixed add-ons** (none approved). Add to `business.addOns` only with a firm price.
+- [x] **Packages.** Set 2026-09-26: Corsa Essential Detail ($120/$160/$200, 2–3 hrs) and Corsa Signature Detail ($275/$325/$375, 4–6 hrs, "Best First Visit"), with your exact inclusions and disclosure wording. → `business.services`, `business.disclosures`
+- [ ] **Protection claims.** The site says the Essential sealant lasts "approximately 4–8 weeks" and the Signature ceramic sealant "up to 4–6 months". Keep the products' data sheets on file to back those numbers.
+- [ ] **Validate the planned prices and durations** after practice jobs. Bump `business.pricingVersion` whenever you change them (now `2026-09-planned-v3`). → `business.services[].prices`
+- [x] **Additional services.** Six range-priced add-ons are listed and confirmed at inspection; they're never added to an online estimate automatically. → `business.additionalServices`
+- [ ] **"Complimentary Corsa-branded air freshener."** Promised on the Signature card; have them made before your first Signature job.
 - [ ] **Sales tax treatment.** Site shows "Any applicable tax will be disclosed in your final quote" until you confirm with the Florida DOR / your accountant whether detailing services are taxable for you and at what rate. → `business.taxNotice`
 - [ ] **Vehicle category edge cases** (three-row crossovers, small pickups, two-door trucks). Adjust category labels/examples. → `business.vehicleCategories`
 - [ ] **Accepted payment methods** (cash, card, Zelle…) — terms page says "will be listed before we open".

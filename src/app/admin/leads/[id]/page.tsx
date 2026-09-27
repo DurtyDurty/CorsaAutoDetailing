@@ -81,6 +81,14 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
               <Row label="Prefers" value={lead.preferredContact} />
               <Row label="Marketing email" value={lead.consent.marketingEmail ? `Opted in (${lead.consent.marketingTextVersion})` : "Not opted in"} />
               <Row label="Service consent" value={`${lead.consent.serviceTextVersion} · ${formatEastern(lead.consent.serviceAcceptedAt)}`} />
+              <Row
+                label="Price estimate ack."
+                value={
+                  lead.consent.priceAcknowledgedAt
+                    ? `${lead.consent.priceAcknowledgmentTextVersion} · ${formatEastern(lead.consent.priceAcknowledgedAt)}`
+                    : null
+                }
+              />
             </dl>
           </section>
 
@@ -107,11 +115,12 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
             </section>
           )}
 
-          {(lead.zip || lead.timeWindows.length > 0 || lead.notes || lead.message) && (
+          {(lead.zip || lead.serviceAddress || lead.timeWindows.length > 0 || lead.notes || lead.message) && (
             <section className="border border-line bg-white rounded-md p-5">
               <h2 className="font-medium">Location, timing & notes</h2>
               <dl className="mt-3">
                 <Row label="ZIP" value={lead.zip ? `${lead.zip} · ${lead.zipEligibility}` : null} />
+                <Row label="Service address" value={lead.serviceAddress} />
                 <Row label="City" value={lead.city} />
                 <Row label="Location" value={lead.locationType} />
                 <Row label="Windows" value={lead.timeWindows} />

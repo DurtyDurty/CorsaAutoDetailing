@@ -76,33 +76,43 @@ export async function submitQuoteRequest(_prev: FormResult | null, formData: For
     leadType: "quote_request",
     schema: quoteRequestSchema,
     formData,
-    build: (d) => ({
-      ...baseLead("quote_request", d),
-      lastName: d.lastName,
-      phone: d.phone,
-      preferredContact: d.preferredContact,
-      vehicleCategory: d.vehicleCategory,
-      vehicleYear: d.vehicleYear,
-      vehicleMake: d.vehicleMake,
-      vehicleModel: d.vehicleModel,
-      serviceId: d.serviceId,
-      condition: d.condition,
-      conditionFlags: d.conditionFlags,
-      concerns: d.concerns,
-      zip: d.zip,
-      zipEligibility: lookupZip(d.zip).eligibility,
-      city: d.city,
-      locationType: d.locationType,
-      timeWindows: d.timeWindows,
-      preferredDate: d.preferredDate,
-      notes: d.notes,
-      estimate: computeEstimate({
+    build: (d) => {
+      const base = baseLead("quote_request", d);
+      return {
+        ...base,
+        // Schema requires the acknowledgment checkbox; record when it was given.
+        consent: {
+          ...base.consent,
+          priceAcknowledgmentTextVersion: business.consent.priceAcknowledgmentTextVersion,
+          priceAcknowledgedAt: base.consent.serviceAcceptedAt,
+        },
+        lastName: d.lastName,
+        phone: d.phone,
+        preferredContact: d.preferredContact,
+        vehicleCategory: d.vehicleCategory,
+        vehicleYear: d.vehicleYear,
+        vehicleMake: d.vehicleMake,
+        vehicleModel: d.vehicleModel,
         serviceId: d.serviceId,
-        vehicleCategoryId: d.vehicleCategory,
         condition: d.condition,
         conditionFlags: d.conditionFlags,
-      }),
-    }),
+        concerns: d.concerns,
+        zip: d.zip,
+        zipEligibility: lookupZip(d.zip).eligibility,
+        city: d.city,
+        serviceAddress: d.serviceAddress,
+        locationType: d.locationType,
+        timeWindows: d.timeWindows,
+        preferredDate: d.preferredDate,
+        notes: d.notes,
+        estimate: computeEstimate({
+          serviceId: d.serviceId,
+          vehicleCategoryId: d.vehicleCategory,
+          condition: d.condition,
+          conditionFlags: d.conditionFlags,
+        }),
+      };
+    },
     afterSave: async (lead, fd) => {
       if (!photosEnabled()) return;
       const files = fd.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);

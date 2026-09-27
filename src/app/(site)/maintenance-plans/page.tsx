@@ -33,7 +33,7 @@ export default function MaintenancePlansPage() {
             <ul className="mt-6 space-y-4 text-ink-muted leading-relaxed">
               <li className="flex gap-3">
                 <span aria-hidden="true" className="text-apex-deep">—</span>
-                A recurring visit on a cadence you choose — monthly or twice-monthly — using the Exterior Wash &amp; Protect or Full Detail package.
+                A recurring visit on a cadence you choose — monthly or twice-monthly — built around the Corsa Essential Detail, ideally after a Corsa Signature Detail first visit.
               </li>
               <li className="flex gap-3">
                 <span aria-hidden="true" className="text-apex-deep">—</span>

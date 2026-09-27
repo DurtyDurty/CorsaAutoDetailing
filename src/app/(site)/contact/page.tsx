@@ -10,7 +10,7 @@ import { UnavailableNotice } from "@/components/site/UnavailableNotice";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: `Questions about mobile detailing in Clay County? Contact ${business.brand.name}. Every message is read and answered personally.`,
+  description: `Questions about mobile detailing in Clay County or Jacksonville? Contact ${business.brand.name}. Every message is read and answered personally.`,
   alternates: { canonical: "/contact" },
 };
 

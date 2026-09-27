@@ -11,6 +11,7 @@
 export type AnalyticsEvent =
   | "service_viewed"
   | "pricing_vehicle_selected"
+  | "book_package_clicked"
   | "lead_form_started"
   | "lead_form_submitted"
   | "membership_interest_submitted"

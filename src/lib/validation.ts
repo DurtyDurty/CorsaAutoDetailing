@@ -113,25 +113,24 @@ export const quoteRequestSchema = z
     serviceId: z.enum(serviceIds, { message: "Choose a service." }),
     vehicleCategory: z.enum(vehicleIds, { message: "Choose a vehicle type." }),
     vehicleYear: z
-      .string()
+      .string({ message: "Enter the vehicle year." })
       .trim()
-      .optional()
       .transform((v, ctx) => {
-        if (!v) return null;
         const n = Number(v);
-        if (!Number.isInteger(n) || n < 1950 || n > currentYear + 1) {
+        if (!v || !Number.isInteger(n) || n < 1950 || n > currentYear + 1) {
           ctx.addIssue({ code: "custom", message: `Enter a year between 1950 and ${currentYear + 1}.` });
           return z.NEVER;
         }
         return n;
       }),
-    vehicleMake: optionalText(60),
-    vehicleModel: optionalText(60),
+    vehicleMake: text(60).pipe(z.string().min(1, "Enter the vehicle make.")),
+    vehicleModel: text(60).pipe(z.string().min(1, "Enter the vehicle model.")),
     // Step 2
     condition: z.enum(["normal", "deeper", "unsure"], { message: "Tell us about the vehicle's condition." }),
     conditionFlags: arrayField(z.enum(CONDITION_FLAGS as [string, ...string[]])).default([]),
     concerns: optionalText(1000),
     // Step 3
+    serviceAddress: text(200).pipe(z.string().min(5, "Enter the street address where the vehicle will be.")),
     zip: zipSchema,
     city: optionalText(80),
     locationType: z.enum(["home", "work", "other"], { message: "Where would the vehicle be?" }),
@@ -171,14 +170,13 @@ export const quoteRequestSchema = z
     email: emailSchema,
     phone: phoneSchema.optional().transform((v) => v ?? null),
     preferredContact: contactMethod,
+    priceAcknowledgment: z.literal("on", {
+      message: "Please confirm you understand the price is an estimate until we inspect the vehicle.",
+    }),
   })
   .superRefine((data, ctx) => {
-    if ((data.preferredContact === "phone" || data.preferredContact === "text") && !data.phone) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["phone"],
-        message: "A phone number is required for phone or text contact.",
-      });
+    if (!data.phone) {
+      ctx.addIssue({ code: "custom", path: ["phone"], message: "Enter your phone number." });
     }
   });
 

@@ -34,6 +34,9 @@ export interface ConsentRecord {
   marketingEmail: boolean;
   marketingTextVersion: string | null;
   marketingAcceptedAt: string | null;
+  /** Booking requests only: customer acknowledged the online price is an estimate pending inspection. */
+  priceAcknowledgmentTextVersion?: string | null;
+  priceAcknowledgedAt?: string | null;
 }
 
 export interface LeadSource {
@@ -73,6 +76,8 @@ export interface LeadRecord {
   zip: string | null;
   zipEligibility: string | null;
   city: string | null;
+  /** Street address where the vehicle will be (booking requests). */
+  serviceAddress: string | null;
   locationType: LocationType | null;
   timeWindows: string[];
   preferredDate: string | null;

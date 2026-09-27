@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { submitQuoteRequest } from "@/app/actions/leads";
 import { business, type BusinessMode } from "@/config/business";
 import { track } from "@/lib/analytics";
@@ -8,6 +8,7 @@ import { CONDITION_FLAGS, computeEstimate, conditionFlagLabel, formatUsd } from 
 import { lookupZip, isValidZip } from "@/lib/zip";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { InspectionDisclaimer } from "@/components/site/Disclosures";
 import {
   ChoiceGroup,
   ConsentFields,
@@ -34,6 +35,7 @@ const FIELD_STEP: Record<string, number> = {
   conditionFlags: 1,
   concerns: 1,
   photos: 1,
+  serviceAddress: 2,
   zip: 2,
   city: 2,
   locationType: 2,
@@ -46,6 +48,7 @@ const FIELD_STEP: Record<string, number> = {
   phone: 3,
   preferredContact: 3,
   serviceConsent: 3,
+  priceAcknowledgment: 3,
 };
 
 interface Props {
@@ -184,7 +187,11 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
           defaultValue={serviceId}
           onChange={setServiceId}
           error={errors.serviceId}
-          options={business.services.map((s) => ({ value: s.id, label: s.name, description: s.tagline }))}
+          options={business.services.map((s) => ({
+            value: s.id,
+            label: s.badge ? `${s.name} — ${s.badge}` : s.name,
+            description: `${s.tagline} Est. ${s.duration}.`,
+          }))}
         />
         <ChoiceGroup
           legend="Vehicle type"
@@ -202,14 +209,24 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
           }))}
         />
         <div className="grid gap-5 sm:grid-cols-3">
-          <Field name="vehicleYear" label="Year" optional error={errors.vehicleYear}>
-            {(p) => <TextInput name="vehicleYear" inputMode="numeric" maxLength={4} placeholder="2019" {...p} />}
+          <Field name="vehicleYear" label="Year" error={errors.vehicleYear}>
+            {(p) => (
+              <TextInput
+                name="vehicleYear"
+                inputMode="numeric"
+                maxLength={4}
+                pattern="\d{4}"
+                placeholder="2019"
+                required={step === 0}
+                {...p}
+              />
+            )}
           </Field>
-          <Field name="vehicleMake" label="Make" optional error={errors.vehicleMake}>
-            {(p) => <TextInput name="vehicleMake" placeholder="Toyota" {...p} />}
+          <Field name="vehicleMake" label="Make" error={errors.vehicleMake}>
+            {(p) => <TextInput name="vehicleMake" placeholder="Toyota" required={step === 0} {...p} />}
           </Field>
-          <Field name="vehicleModel" label="Model" optional error={errors.vehicleModel}>
-            {(p) => <TextInput name="vehicleModel" placeholder="4Runner" {...p} />}
+          <Field name="vehicleModel" label="Model" error={errors.vehicleModel}>
+            {(p) => <TextInput name="vehicleModel" placeholder="4Runner" required={step === 0} {...p} />}
           </Field>
         </div>
         <EstimatePanel estimate={estimate} mode={mode} compact />
@@ -271,6 +288,22 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
 
       {/* Step 3 */}
       <div data-step="2" hidden={step !== 2} className="flex flex-col gap-5">
+        <Field
+          name="serviceAddress"
+          label="Service address"
+          hint="Street address where the vehicle will be. Used only to plan and confirm your visit."
+          error={errors.serviceAddress}
+        >
+          {(p) => (
+            <TextInput
+              name="serviceAddress"
+              autoComplete="street-address"
+              maxLength={200}
+              required={step === 2}
+              {...p}
+            />
+          )}
+        </Field>
         <div className="grid gap-5 sm:grid-cols-2">
           <Field name="zip" label="ZIP code" error={errors.zip} hint={zipInfo?.message}>
             {(p) => (
@@ -296,7 +329,6 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
           columns={3}
           required
           error={errors.locationType}
-          hint="We don't need your street address yet — only when we schedule."
           options={[
             { value: "home", label: "Home" },
             { value: "work", label: "Workplace" },
@@ -350,22 +382,8 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
           <Field name="email" label="Email" error={errors.email}>
             {(p) => <TextInput name="email" type="email" autoComplete="email" required={step === 3} {...p} />}
           </Field>
-          <Field
-            name="phone"
-            label="Phone"
-            optional={contactMethod === "email"}
-            error={errors.phone}
-            hint={contactMethod !== "email" ? "Required for phone or text contact." : undefined}
-          >
-            {(p) => (
-              <TextInput
-                name="phone"
-                type="tel"
-                autoComplete="tel"
-                required={step === 3 && contactMethod !== "email"}
-                {...p}
-              />
-            )}
+          <Field name="phone" label="Phone" error={errors.phone}>
+            {(p) => <TextInput name="phone" type="tel" autoComplete="tel" required={step === 3} {...p} />}
           </Field>
         </div>
         <Field name="preferredContact" label="How should we reach you?" error={errors.preferredContact}>
@@ -390,6 +408,8 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
           marketingText={business.consent.marketingText}
           error={errors.serviceConsent}
         />
+
+        <PriceAcknowledgment required={step === 3} error={errors.priceAcknowledgment} />
       </div>
 
       <FormMessage message={message} />
@@ -414,6 +434,34 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
         )}
       </div>
     </form>
+  );
+}
+
+/** Inspection disclaimer + required acknowledgment, placed directly above the submit button. */
+function PriceAcknowledgment({ required, error }: { required: boolean; error?: string }) {
+  const id = useId();
+  return (
+    <div className="flex flex-col gap-3 border-t border-line pt-5">
+      <InspectionDisclaimer id={`${id}-text`} />
+      <label className="flex gap-3 items-start text-sm leading-relaxed font-medium">
+        <input
+          type="checkbox"
+          name="priceAcknowledgment"
+          className="checkbox"
+          required={required}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={[`${id}-text`, error ? `${id}-err` : null].filter(Boolean).join(" ")}
+        />
+        <span>
+          {business.consent.priceAcknowledgmentText} <span className="text-error" aria-hidden="true">*</span>
+        </span>
+      </label>
+      {error && (
+        <p id={`${id}-err`} className="text-sm text-error -mt-1 ml-8" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -464,7 +512,8 @@ function EstimatePanel({
         </ul>
       )}
       <p className="mt-3 text-xs text-ink-muted">
-        {estimate.finalQuoteNotice} {estimate.taxNotice} This is an estimate, not an invoice.
+        Starting price for a vehicle in average condition. {estimate.finalQuoteNotice} {estimate.taxNotice} No
+        payment is collected until availability and final pricing are confirmed.
       </p>
     </div>
   );

@@ -20,7 +20,8 @@ export type VehicleCategoryId =
   | "oversized"
   | "other";
 
-export type ServiceId = "exterior" | "full";
+export type ServiceId = "essential" | "signature";
+export type PricedVehicleId = Extract<VehicleCategoryId, "sedan" | "suv2" | "large">;
 
 export interface VehicleCategory {
   id: VehicleCategoryId;
@@ -33,11 +34,27 @@ export interface VehicleCategory {
 export interface ServiceDefinition {
   id: ServiceId;
   name: string;
+  /** Short line used in the booking form and emails. */
   tagline: string;
   description: string;
+  /** Owner-supplied estimate shown on the card. */
+  duration: string;
+  /** Optional ribbon, e.g. "Best First Visit". */
+  badge: string | null;
+  /** When set, the card shows "Everything in <that package>, plus:" above `includes`. */
+  includesEverythingIn: ServiceId | null;
   includes: string[];
-  /** Base prices in USD by priced vehicle category. */
-  prices: Record<Extract<VehicleCategoryId, "sedan" | "suv2" | "large">, number>;
+  /** Starting prices in USD by priced vehicle category. */
+  prices: Record<PricedVehicleId, number>;
+}
+
+/** Extra work quoted as a range and confirmed at inspection. Never added to an online estimate automatically. */
+export interface AdditionalService {
+  id: string;
+  name: string;
+  priceMin: number;
+  /** Same as priceMin for a flat price. */
+  priceMax: number;
 }
 
 export interface FixedAddOn {
@@ -77,7 +94,7 @@ export const business = {
     /** Provisional working name. Name/trademark/domain clearance is still pending. */
     name: "Corsa Auto Detailing",
     shortName: "Corsa",
-    tagline: "Thoughtful car care. Right at your driveway.",
+    tagline: "Driven by Detail.",
     /** Logo files. `null` = not supplied; the UI falls back to a text wordmark. */
     logos: {
       /** Dark ink for light backgrounds; light ink for dark backgrounds. Source vector: public/brand/logo-master.svg. */
@@ -117,19 +134,29 @@ export const business = {
    * Bump whenever a price or service scope changes. Stored with each lead's
    * estimate so old inquiries can be understood later.
    */
-  pricingVersion: "2026-09-planned-v2",
+  pricingVersion: "2026-09-planned-v3",
   /** Shown next to all prices while in PRELAUNCH mode. */
   priceLabel: {
     PRELAUNCH: "Planned starting prices",
     LIVE: "Starting prices",
   } satisfies Record<BusinessMode, string>,
   taxNotice: "Any applicable tax will be disclosed in your final quote.",
-  finalQuoteNotice: "Final quote confirmed after vehicle and location review.",
+  finalQuoteNotice: "Final price confirmed after an in-person inspection.",
+
+  /** Owner-supplied disclosure copy. Keep wording exact; bump the version when it changes. */
+  disclosures: {
+    pricing:
+      "Prices shown are starting prices and apply to vehicles in average condition. Final pricing may vary based on vehicle size and condition. Excessive pet hair, sand, stains, odors, biological contamination, heavy mud or neglected interiors may require additional labor and charges. Corsa Auto Detailing will disclose any additional charges before beginning the service.",
+    protection:
+      "Protection durability is an estimate and depends on mileage, storage, weather exposure and maintenance practices. The Signature Detail includes a ceramic sealant, not a professionally installed ceramic coating.",
+    inspection:
+      "Final pricing is subject to an in-person vehicle inspection before service begins. Online prices are estimates based on vehicles in average condition. Vehicle size, condition, excessive pet hair, sand, mud, stains, odors, biological contamination, oxidation and other conditions requiring additional labor may affect the final price. Corsa Auto Detailing will inspect the vehicle, explain any recommended services or additional charges, and receive the customer’s approval before beginning work. Customers are under no obligation to accept additional services.",
+  },
 
   vehicleCategories: [
-    { id: "sedan", label: "Sedan / coupe", examples: "Camry, Civic, IS F, Mustang", priced: true },
-    { id: "suv2", label: "Mid-size SUV / crossover", examples: "RAV4, CX-5, FJ Cruiser, Model Y", priced: true },
-    { id: "large", label: "XL SUV / truck", examples: "Tahoe, Expedition, F-150, Silverado", priced: true },
+    { id: "sedan", label: "Coupe or sedan", examples: "Civic, Camry, Mustang, IS F", priced: true },
+    { id: "suv2", label: "Small crossover or two-row SUV", examples: "RAV4, CR-V, CX-5, FJ Cruiser", priced: true },
+    { id: "large", label: "Pickup truck or three-row SUV", examples: "F-150, Silverado, Tahoe, Highlander", priced: true },
     { id: "minivan", label: "Minivan", examples: "Odyssey, Sienna, Pacifica", priced: false },
     { id: "oversized", label: "Oversized / lifted / dually", examples: "F-250 dually, lifted trucks, vans", priced: false },
     { id: "other", label: "Other / not sure", examples: "Anything unusual", priced: false },
@@ -137,65 +164,87 @@ export const business = {
 
   services: [
     {
-      id: "exterior",
-      name: "Exterior Wash & Protect",
-      tagline: "A careful hand wash with a layer of protection.",
+      id: "essential",
+      name: "Corsa Essential Detail",
+      tagline: "Interior and exterior maintenance detail.",
       description:
-        "For vehicles that are driven daily and kept in reasonable shape. Everything is done by hand at your location.",
+        "A professional interior and exterior maintenance detail designed to keep a vehicle consistently clean, protected and presentable.",
+      duration: "2–3 hours",
+      badge: null,
+      includesEverythingIn: null,
       includes: [
-        "Hand wash and hand dry",
-        "Wheel faces and tires cleaned",
-        "Tire dressing",
-        "Exterior glass",
-        "Quick spray protection",
+        "Pre-rinse and foam wash",
+        "Safe hand wash",
+        "Wheels, tires and wheel faces cleaned",
+        "Door jambs wiped",
+        "Exterior glass cleaned",
+        "Professional tire dressing",
+        "Paint sealant lasting approximately 4–8 weeks",
+        "Thorough interior vacuum",
+        "Dashboard, console and door panels cleaned",
+        "Light crevice cleaning",
+        "Interior glass cleaned",
+        "Final quality inspection",
       ],
-      prices: { sedan: 79, suv2: 89, large: 109 },
+      prices: { sedan: 120, suv2: 160, large: 200 },
     },
     {
-      id: "full",
-      name: "Full Detail",
-      tagline: "Inside and out, sealed for up to 3 months.",
+      id: "signature",
+      name: "Corsa Signature Detail",
+      tagline: "A complete reset with premium protection.",
       description:
-        "A complete inside-and-out clean finished with a protectant that lasts up to 3 months. Done by hand at your location.",
+        "A comprehensive vehicle reset combining deeper cleaning with premium exterior and interior protection. Recommended for first-time customers and vehicles needing more than routine maintenance.",
+      duration: "4–6 hours",
+      badge: "Best First Visit",
+      includesEverythingIn: "essential",
       includes: [
-        "Hand wash and hand dry",
-        "Wheel faces and tires cleaned, tire dressing",
-        "Exterior and interior glass",
-        "Interior vacuum",
-        "Dashboard, console, and surface wipe-down",
-        "3-month protectant",
+        "Bug and tar treatment",
+        "Iron-removal treatment",
+        "Clay treatment when necessary",
+        "Deeper wheel and tire cleaning",
+        "Premium ceramic paint sealant providing up to 4–6 months of protection",
+        "Exterior trim protection",
+        "Detailed interior brushing and compressed-air cleaning",
+        "Carpet and upholstery spot treatment",
+        "Light extraction where necessary",
+        "Leather cleaned and protected",
+        "Interior UV protection",
+        "Premium tire dressing",
+        "Complimentary Corsa-branded air freshener",
       ],
-      prices: { sedan: 140, suv2: 160, large: 200 },
+      prices: { sedan: 275, suv2: 325, large: 375 },
     },
   ] satisfies ServiceDefinition[],
 
-  /** Owner-approved fixed-price add-ons. None approved yet. */
+  /** Owner-approved fixed-price add-ons that the online estimate may add. None approved yet. */
   addOns: [] as FixedAddOn[],
 
-  /** Work these packages do not include. Anything here needs a separate review and quote. */
-  exclusions: [
-    "Heavy pet hair",
-    "Embedded sand",
-    "Extensive mud",
-    "Stain extraction",
-    "Odor remediation",
-    "Machine polishing or paint correction",
-    "Engine-bay work",
-    "Child-seat disassembly or cleaning",
-  ],
+  /** Priced as ranges; shown on the site and confirmed at inspection. Not added to online estimates. */
+  additionalServices: [
+    { id: "pet-hair", name: "Excessive pet-hair removal", priceMin: 35, priceMax: 75 },
+    { id: "sand-mud", name: "Heavy sand or mud removal", priceMin: 30, priceMax: 75 },
+    { id: "extraction", name: "Full carpet and seat extraction", priceMin: 50, priceMax: 100 },
+    { id: "engine-bay", name: "Engine-bay detail", priceMin: 50, priceMax: 50 },
+    { id: "headlights", name: "Headlight restoration", priceMin: 100, priceMax: 150 },
+    { id: "paint-enhancement", name: "One-step paint enhancement", priceMin: 175, priceMax: 300 },
+  ] satisfies AdditionalService[],
 
   /** Requires a custom quote regardless of package. */
   customQuoteConditions: [
     "Minivans, oversized trucks, and unusual vehicles",
-    "Heavily soiled vehicles",
-    "Anything listed under exclusions",
+    "Heavily soiled or neglected vehicles",
   ],
 
   /** Services people ask about that are NOT offered at launch. Interest capture only. */
-  futureServices: ["Paint protection film (PPF)", "Window tinting", "Ceramic coatings", "Paint correction"],
+  futureServices: [
+    "Paint protection film (PPF)",
+    "Window tinting",
+    "Professional ceramic coatings",
+    "Multi-step paint correction",
+  ],
 
   serviceAreas: {
-    region: "Clay County, Florida",
+    region: "Jacksonville & Clay County, Florida",
     communities: [
       {
         slug: "middleburg",
@@ -228,6 +277,19 @@ export const business = {
         coverage: "confirm",
         blurb: "Selected locations. Travel eligibility is confirmed when we review your request.",
         zips: ["32065", "32073"],
+      },
+      {
+        slug: "jacksonville",
+        name: "Jacksonville",
+        county: "Duval",
+        coverage: "confirm",
+        blurb: "Jacksonville mobile detailing at your home or workplace. Travel is confirmed for your exact location when we review your request.",
+        // Duval County / City of Jacksonville ZIPs. Verify before launch (OWNER_DECISIONS.md).
+        zips: [
+          "32099", "32202", "32204", "32205", "32206", "32207", "32208", "32209", "32210", "32211", "32212",
+          "32216", "32217", "32218", "32219", "32220", "32221", "32222", "32223", "32224", "32225", "32226",
+          "32227", "32228", "32233", "32244", "32246", "32250", "32254", "32256", "32257", "32258", "32277",
+        ],
       },
     ] satisfies ServiceAreaCommunity[],
     /**
@@ -286,6 +348,10 @@ export const business = {
     marketingTextVersion: "2026-09-v1",
     marketingText:
       "Email me occasional launch news, availability updates, and offers from Corsa Auto Detailing. I can unsubscribe any time.",
+    /** Required on booking requests; stored with a timestamp on the lead's consent record. */
+    priceAcknowledgmentTextVersion: "2026-09-v1",
+    priceAcknowledgmentText:
+      "I understand that the displayed price is an estimate and that final pricing will be confirmed after Corsa Auto Detailing inspects my vehicle.",
     smsMarketingEnabled: false,
   },
 } as const;

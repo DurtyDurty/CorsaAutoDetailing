@@ -24,7 +24,7 @@ test.describe("public site", () => {
 
   test("primary CTAs and navigation reach their destinations", async ({ page, isMobile }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Thoughtful car care");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Driven by Detail");
     await expect(page.getByText("Preparing to launch").first()).toBeVisible();
 
     await page.getByRole("link", { name: "Explore services" }).first().click();
@@ -57,12 +57,32 @@ test.describe("public site", () => {
     await expect(button).toHaveAttribute("aria-expanded", "false");
   });
 
-  test("services page shows every planned base price", async ({ page }) => {
+  test("services page shows every starting price, add-on range and disclosure", async ({ page }) => {
     await page.goto("/services");
     const text = (await page.textContent("main")) ?? "";
-    for (const price of ["$79", "$89", "$109", "$140", "$160", "$200"]) expect(text).toContain(price);
+    for (const price of ["$120", "$160", "$200", "$275", "$325", "$375"]) expect(text).toContain(price);
+    for (const range of ["$35–$75", "$30–$75", "$50–$100", "$50", "$100–$150", "$175–$300"]) expect(text).toContain(range);
     expect(text).toMatch(/Planned starting prices/);
+    expect(text).toMatch(/Best First Visit/);
+    expect(text).toMatch(/not a professionally installed ceramic coating/);
+    expect(text).toMatch(/Final pricing is subject to an in-person vehicle inspection/);
     expect(text).toMatch(/Any applicable tax will be disclosed/);
+  });
+
+  test("package Book buttons carry the service and vehicle size into the form", async ({ page }) => {
+    await page.goto("/services");
+    await page.getByText("Small crossover or two-row SUV").first().click();
+    await page.getByRole("link", { name: "Book Signature" }).click();
+    await expect(page).toHaveURL(/\/request\?service=signature&vehicle=suv2$/);
+    const form = page.getByRole("form", { name: "Service request" });
+    await expect(form.getByRole("radio", { name: /Corsa Signature Detail/ })).toBeChecked();
+    await expect(form.getByRole("radio", { name: /Small crossover or two-row SUV/ })).toBeChecked();
+    await expect(form.locator('[data-step="0"]').getByText("$325")).toBeVisible();
+
+    await page.goto("/");
+    await page.getByRole("link", { name: "Book Essential" }).click();
+    await expect(page).toHaveURL(/\/request\?service=essential$/);
+    await expect(page.getByRole("form", { name: "Service request" }).getByRole("radio", { name: /Corsa Essential Detail/ })).toBeChecked();
   });
 
   test("admin, export and photos are locked without a session", async ({ request, page }) => {

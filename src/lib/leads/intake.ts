@@ -56,6 +56,7 @@ export function baseLead(
     zip: null,
     zipEligibility: null,
     city: null,
+    serviceAddress: null,
     locationType: null,
     timeWindows: [],
     preferredDate: null,

@@ -28,16 +28,19 @@ export default function TermsPage() {
         <h2>Requests and quotes</h2>
         <ul>
           <li>Submitting a request on this site is not a booking. Every request is reviewed by the owner.</li>
-          <li>Prices shown online are {business.priceLabel[business.mode].toLowerCase()} for vehicles in routine condition. Your quote is confirmed after we review your vehicle and location.</li>
+          <li>Prices shown online are {business.priceLabel[business.mode].toLowerCase()} for vehicles in average condition.</li>
+          <li>{business.disclosures.inspection}</li>
           <li>{business.taxNotice}</li>
           <li>Minivans, oversized trucks, heavily soiled and unusual vehicles are quoted individually.</li>
+          <li>No payment is collected until availability and final pricing are confirmed.</li>
         </ul>
 
         <h2>Scope and extra work</h2>
         <ul>
-          <li>Each package includes exactly what is listed on the services page. The packages do not include: {business.exclusions.map((e) => e.toLowerCase()).join("; ")}.</li>
-          <li>If we find the vehicle needs work beyond the package, we&rsquo;ll explain it and quote it. Nothing extra is performed or charged without your approval.</li>
-          <li>There are no automatic condition or travel surcharges.</li>
+          <li>Each package includes exactly what is listed on the services page.</li>
+          <li>{business.disclosures.pricing}</li>
+          <li>Additional services (such as excessive pet-hair removal, extraction or headlight restoration) are priced as ranges on the services page and confirmed at inspection. Nothing extra is performed or charged without your approval.</li>
+          <li>{business.disclosures.protection}</li>
         </ul>
 
         <h2>Scheduling</h2>

@@ -11,9 +11,13 @@ describe("lookupZip", () => {
     expect(lookupZip("32073")).toMatchObject({ eligibility: "confirm", community: "Orange Park" });
     expect(lookupZip("32656")).toMatchObject({ eligibility: "confirm", community: null });
   });
+  it("serves Jacksonville with travel confirmed on review", () => {
+    expect(lookupZip("32202")).toMatchObject({ eligibility: "confirm", community: "Jacksonville" });
+    expect(lookupZip("32256")).toMatchObject({ eligibility: "confirm", community: "Jacksonville" });
+  });
   it("marks everything else outside without blocking", () => {
-    expect(lookupZip("32202").eligibility).toBe("outside");
-    expect(lookupZip("32202").message).toMatch(/welcome to send/i);
+    expect(lookupZip("33101").eligibility).toBe("outside");
+    expect(lookupZip("33101").message).toMatch(/welcome to send/i);
   });
   it("validates format", () => {
     expect(isValidZip("32068")).toBe(true);

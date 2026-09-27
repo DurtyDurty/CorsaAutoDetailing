@@ -26,16 +26,15 @@ test.describe("lead forms (demo store)", () => {
     await expect(page.getByText(/Reference [A-Z0-9]{6}/)).toBeVisible();
   });
 
-  test("quote request: multi-step, estimate shown, phone required for text contact, saves", async ({ page }) => {
-    await page.goto("/request?service=full");
+  test("quote request: multi-step, estimate shown, phone and price acknowledgment required, saves", async ({ page }) => {
+    await page.goto("/request?service=signature");
     const form = page.getByRole("form", { name: "Service request" });
     await expect(page.getByText(/aren't confirming appointments yet/)).toBeVisible();
 
     // Step 1
-    await expect(form.getByRole("radio", { name: /Full Detail/ })).toBeChecked();
-    await form.getByRole("radio", { name: /Mid-size SUV/ }).check();
-    await expect(form.locator('[data-step="0"]').getByText("$160")).toBeVisible();
-    // Optional fields are labelled "Year (optional)" etc., so anchor on the leading word.
+    await expect(form.getByRole("radio", { name: /Corsa Signature Detail/ })).toBeChecked();
+    await form.getByRole("radio", { name: /Small crossover or two-row SUV/ }).check();
+    await expect(form.locator('[data-step="0"]').getByText("$325")).toBeVisible();
     await form.getByLabel(/^Year\b/).fill("2012");
     await form.getByLabel(/^Make\b/).fill("Toyota");
     await form.getByLabel(/^Model\b/).fill("FJ Cruiser");
@@ -45,11 +44,12 @@ test.describe("lead forms (demo store)", () => {
     await expect(form.getByRole("heading", { name: "Condition" })).toBeVisible();
     await form.getByRole("radio", { name: /Needs deeper cleaning/ }).check();
     await form.getByRole("checkbox", { name: "Pet hair" }).check();
-    await form.getByRole("checkbox", { name: "Sand" }).check();
+    await form.getByRole("checkbox", { name: "Heavy sand" }).check();
     await form.getByRole("button", { name: "Continue" }).click();
 
     // Step 3
     await expect(form.getByRole("heading", { name: "Location & timing" })).toBeVisible();
+    await form.getByLabel("Service address").fill("123 Main St");
     await form.getByLabel("ZIP code").fill("32073");
     await expect(form.getByText(/Orange Park is served at selected locations/)).toBeVisible();
     await form.getByRole("radio", { name: "Home" }).check();
@@ -59,7 +59,8 @@ test.describe("lead forms (demo store)", () => {
 
     // Step 4
     await expect(form.getByRole("heading", { name: "Contact & review" })).toBeVisible();
-    await expect(form.locator('[data-step="3"]').getByText("$160")).toBeVisible(); // still $160 despite flags
+    await expect(form.locator('[data-step="3"]').getByText("$325")).toBeVisible(); // still $325 despite flags
+    await expect(form.getByText(/Final pricing is subject to an in-person vehicle inspection/)).toBeVisible();
     await form.getByLabel("First name").fill("Herson");
     await form.getByLabel("Email", { exact: true }).fill(`${unique()}@example.com`);
     await form.getByLabel("How should we reach you?").selectOption("text");
@@ -69,11 +70,15 @@ test.describe("lead forms (demo store)", () => {
     // Native required on phone blocks submit; fill and retry.
     await expect(page).not.toHaveURL(/thanks/);
     await form.getByLabel(/Phone/).fill("904-555-0100");
+    // The unchecked price acknowledgment still blocks submit.
+    await form.getByRole("button", { name: "Send my request" }).click();
+    await expect(page).not.toHaveURL(/thanks/);
+    await form.getByLabel(/displayed price is an estimate/).check();
     await form.getByRole("button", { name: "Send my request" }).click();
 
     await expect(page).toHaveURL(/\/thanks\/request\?ref=/);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Request saved");
-    await expect(page.getByText("$160")).toBeVisible();
+    await expect(page.getByText("$325")).toBeVisible();
     await expect(page.getByText(/not confirming appointments/i)).toBeVisible();
   });
 
@@ -84,18 +89,24 @@ test.describe("lead forms (demo store)", () => {
 
   test("owner can sign in (demo), see the lead, export CSV, and PRELAUNCH blocks appointment confirmation", async ({ page }) => {
     // Create a lead of our own so this test does not depend on the others.
-    await page.goto("/request?service=exterior&vehicle=sedan");
+    await page.goto("/request?service=essential&vehicle=sedan");
     const form = page.getByRole("form", { name: "Service request" });
+    await form.getByLabel(/^Year\b/).fill("2019");
+    await form.getByLabel(/^Make\b/).fill("Lexus");
+    await form.getByLabel(/^Model\b/).fill("IS F");
     await form.getByRole("button", { name: "Continue" }).click();
     await form.getByRole("radio", { name: /Normal maintenance/ }).check();
     await form.getByRole("button", { name: "Continue" }).click();
+    await form.getByLabel("Service address").fill("45 Oak Ln");
     await form.getByLabel("ZIP code").fill("32068");
     await form.getByRole("radio", { name: "Home" }).check();
     await form.getByRole("button", { name: "Continue" }).click();
     const name = `Admin ${unique()}`;
     await form.getByLabel("First name").fill(name);
     await form.getByLabel("Email", { exact: true }).fill(`${unique()}@example.com`);
+    await form.getByLabel(/Phone/).fill("904-555-0101");
     await form.getByLabel(/I understand Corsa Auto Detailing will use/).check();
+    await form.getByLabel(/displayed price is an estimate/).check();
     await form.getByRole("button", { name: "Send my request" }).click();
     await expect(page).toHaveURL(/\/thanks\/request\?ref=/);
 
@@ -108,6 +119,10 @@ test.describe("lead forms (demo store)", () => {
     await page.getByRole("table").getByRole("link", { name }).first().click();
     await expect(page).toHaveURL(/\/admin\/leads\//);
     await expect(page.getByText(/can.t be confirmed while the site is in PRELAUNCH/)).toBeVisible();
+    // Address and the timestamped price acknowledgment are stored with the booking.
+    await expect(page.getByText("45 Oak Ln")).toBeVisible();
+    await expect(page.getByText("Price estimate ack.")).toBeVisible();
+    await expect(page.getByText(/2026-09-v1 · /).last()).toBeVisible();
 
     // Fetch from inside the page so the Secure session cookie is sent exactly as the browser sends it.
     const csv = await page.evaluate(async () => {

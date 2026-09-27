@@ -18,6 +18,7 @@ export function matchesFilter(lead: LeadRecord, filter: LeadFilter): boolean {
       lead.vehicleModel,
       lead.zip,
       lead.city,
+      lead.serviceAddress,
     ]
       .filter(Boolean)
       .join(" ")

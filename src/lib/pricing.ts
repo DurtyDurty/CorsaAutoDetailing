@@ -33,9 +33,9 @@ export interface EstimateInput {
 
 const CONDITION_FLAG_LABELS: Record<string, string> = {
   pet_hair: "Pet hair",
-  sand: "Sand",
   stains: "Stains",
-  odor: "Odor",
+  odor: "Odors",
+  sand: "Heavy sand",
   mud: "Heavy mud",
   other: "Other concern",
 };
@@ -77,7 +77,7 @@ export function computeEstimate(input: EstimateInput): EstimateSnapshot | null {
   const flags = (input.conditionFlags ?? []).filter((f) => f in CONDITION_FLAG_LABELS);
   if (flags.length > 0) {
     reviewNotes.push(
-      `Noted: ${flags.map(conditionFlagLabel).join(", ").toLowerCase()}. Some of this may fall outside the standard package and would be quoted separately, only with your approval.`,
+      `Noted: ${flags.map(conditionFlagLabel).join(", ").toLowerCase()}. We'll check this at inspection; any additional labor is explained and priced before we start, and only done with your approval.`,
     );
   }
 
@@ -110,7 +110,12 @@ export function formatUsd(amount: number): string {
   }).format(amount);
 }
 
-/** Lowest priced base for a service, for "from $79" style copy. */
+/** "$35–$75", or "$50" when the range is a single price. */
+export function formatUsdRange(min: number, max: number): string {
+  return min === max ? formatUsd(min) : `${formatUsd(min)}–${formatUsd(max)}`;
+}
+
+/** Lowest priced base for a service, for "from $120" style copy. */
 export function startingPrice(serviceId: string): number | null {
   const service = getService(serviceId);
   if (!service) return null;

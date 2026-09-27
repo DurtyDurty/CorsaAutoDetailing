@@ -34,6 +34,7 @@ function ownerBody(lead: LeadRecord) {
     `Email: ${lead.email}`,
     lead.phone ? `Phone: ${lead.phone}` : null,
     lead.preferredContact ? `Preferred contact: ${lead.preferredContact}` : null,
+    lead.serviceAddress ? `Service address: ${lead.serviceAddress}` : null,
     lead.zip ? `ZIP: ${lead.zip} (${lead.zipEligibility ?? "unclassified"})${lead.city ? ` — ${lead.city}` : ""}` : null,
   ];
   if (lead.serviceId || lead.vehicleCategory) {
@@ -62,6 +63,9 @@ function ownerBody(lead: LeadRecord) {
   }
   if (lead.notes) lines.push("", `Customer notes:`, lead.notes);
   if (lead.message) lines.push("", `Message:`, lead.message);
+  if (lead.consent.priceAcknowledgedAt) {
+    lines.push(`Price-estimate acknowledgment: ${formatEastern(lead.consent.priceAcknowledgedAt)} ET (${lead.consent.priceAcknowledgmentTextVersion})`);
+  }
   lines.push("", `Marketing email opt-in: ${lead.consent.marketingEmail ? "yes" : "no"}`);
   lines.push("", `Open in dashboard: ${business.brand.canonicalDomain}/admin/leads/${lead.id}`);
   return lines.filter((l) => l !== null).join("\n");

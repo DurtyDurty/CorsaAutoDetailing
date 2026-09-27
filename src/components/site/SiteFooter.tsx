@@ -19,7 +19,7 @@ export function SiteFooter() {
         <div>
           <Wordmark onDark />
           <p className="mt-4 text-chalk/75 max-w-sm leading-relaxed">
-            Mobile exterior washing and interior maintenance for daily drivers in {business.serviceAreas.region}.
+            Interior and exterior car detailing at your home or workplace. {business.brand.tagline}
           </p>
           <VeteranBadge size="sm" className="mt-5" />
         </div>

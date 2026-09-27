@@ -51,6 +51,7 @@ function leadFromRow(r: Row): LeadRecord {
     zip: (r.zip as string | null) ?? null,
     zipEligibility: (r.zip_eligibility as string | null) ?? null,
     city: (r.city as string | null) ?? null,
+    serviceAddress: (r.service_address as string | null) ?? null,
     locationType: (r.location_type as LeadRecord["locationType"]) ?? null,
     timeWindows: (r.time_windows as string[] | null) ?? [],
     preferredDate: (r.preferred_date as string | null) ?? null,
@@ -91,6 +92,7 @@ function leadToRow(l: NewLead): Row {
     zip: l.zip,
     zip_eligibility: l.zipEligibility,
     city: l.city,
+    service_address: l.serviceAddress,
     location_type: l.locationType,
     time_windows: l.timeWindows,
     preferred_date: l.preferredDate,
@@ -199,7 +201,7 @@ export class SupabaseLeadStore implements LeadStore {
       const s = filter.search.replace(/[%,()]/g, " ").trim();
       if (s) {
         q = q.or(
-          ["first_name", "last_name", "email", "phone", "vehicle_make", "vehicle_model", "zip", "city"]
+          ["first_name", "last_name", "email", "phone", "vehicle_make", "vehicle_model", "zip", "city", "service_address"]
             .map((c) => `${c}.ilike.%${s}%`)
             .join(","),
         );

@@ -7,7 +7,7 @@ import { VeteranBadge } from "@/components/site/VeteranBadge";
 
 export const metadata: Metadata = {
   title: "About",
-  description: `${business.brand.name} is a ${business.owner.veteranOwned ? "veteran-owned " : ""}mobile detailing startup in Clay County, Florida.`,
+  description: `${business.brand.name} is a ${business.owner.veteranOwned ? "veteran-owned " : ""}mobile auto detailing business serving Clay County and Jacksonville, Florida.`,
   alternates: { canonical: "/about" },
 };
 
@@ -40,7 +40,7 @@ export default function AboutPage() {
             },
             {
               t: "Deliberate growth",
-              b: "We're starting with two packages and four communities. Studio services like film and tint are ideas for later, not promises for now.",
+              b: "Two packages, clear starting prices, and a service area we can reach well: Clay County and Jacksonville. Film, tint and professional coatings are ideas for later, not promises for now.",
             },
           ].map((item) => (
             <div key={item.t} className="border-t border-asphalt pt-5">

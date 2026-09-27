@@ -4,22 +4,25 @@ import Link from "next/link";
 import { business, isPrelaunch, primaryCta } from "@/config/business";
 import { Arrow, ButtonLink } from "@/components/ui/Button";
 import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/Section";
-import { PricingTable } from "@/components/site/PricingTable";
+import { PackageCards } from "@/components/site/PackageCards";
+import { AdditionalServices } from "@/components/site/AdditionalServices";
+import { PricingDisclosures } from "@/components/site/Disclosures";
+import { CareJourney } from "@/components/site/CareJourney";
 import { ProcessSteps } from "@/components/site/ProcessSteps";
 import { HeroVideo } from "@/components/site/HeroVideo";
 import { Faq } from "@/components/site/Faq";
-import { OrganizationJsonLd } from "@/components/site/JsonLd";
+import { BusinessJsonLd } from "@/components/site/JsonLd";
 import { LaunchListForm } from "@/components/forms/LaunchListForm";
 import { HOME_FAQ } from "@/content/faq";
 
 export const metadata: Metadata = {
-  title: { absolute: `${business.brand.name} — Mobile detailing in Clay County, FL` },
+  title: { absolute: `${business.brand.name} — Mobile auto detailing in Clay County & Jacksonville, FL` },
   description:
-    "Hand washing and interior maintenance at your driveway or workplace in Middleburg, Fleming Island, Green Cove Springs and Orange Park. Join the launch list.",
+    "Interior and exterior car detailing at your home or workplace. Mobile auto detailing in Clay County and Jacksonville, FL: Corsa Essential and Signature Detail packages, starting at $120.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: `${business.brand.name} — Thoughtful car care, right at your driveway`,
-    description: "Mobile exterior washing and interior maintenance for daily drivers in Clay County, Florida.",
+    title: `${business.brand.name} — Driven by Detail`,
+    description: "Mobile auto detailing in Clay County and Jacksonville, Florida. Interior and exterior car detailing at your home or workplace.",
     url: "/",
   },
 };
@@ -29,18 +32,19 @@ export default function HomePage() {
   const core = business.serviceAreas.communities.filter((c) => c.coverage === "core");
   const confirm = business.serviceAreas.communities.filter((c) => c.coverage === "confirm");
   const startingAt = Math.min(...business.services.flatMap((s) => Object.values(s.prices)));
-  // "Thoughtful car care. Right at your driveway." → one sentence per line.
+  // Multi-sentence taglines break one sentence per line.
   const [taglineLead, ...taglineRest] = business.brand.tagline.split(/(?<=\.)\s+/);
   const ticker = [
     ...business.services.map((s) => s.name),
-    "Done by hand",
-    "At your driveway or workplace",
+    "Interior & exterior",
+    "At your home or workplace",
     ...core.map((c) => c.name),
+    "Jacksonville",
   ];
 
   return (
     <>
-      <OrganizationJsonLd />
+      <BusinessJsonLd />
 
       {/* Hero */}
       <section className="relative overflow-hidden bg-asphalt text-chalk on-dark">
@@ -68,8 +72,8 @@ export default function HomePage() {
                 <span className="kerb h-1.5 w-24" />
               </div>
               <p className="mt-6 text-lg sm:text-xl text-chalk/80 max-w-xl leading-relaxed">
-                Mobile exterior washing and interior maintenance for daily-driven cars and SUVs — done by hand, at your
-                home or workplace, without the wait at a car wash.
+                Interior and exterior car detailing, brought to your home or workplace. Mobile auto detailing in Clay
+                County and Jacksonville — done by hand and finished with real protection.
               </p>
               <div className="mt-9 flex flex-col sm:flex-row gap-3">
                 <ButtonLink href={cta.href} variant="apex" size="lg">
@@ -99,7 +103,7 @@ export default function HomePage() {
               <dd className="mt-2 text-chalk text-sm leading-relaxed">
                 {core.map((c) => c.name).join(", ")}
                 {confirm.length > 0 && (
-                  <span className="text-chalk/60"> · {confirm.map((c) => c.name).join(", ")} (selected)</span>
+                  <span className="text-chalk/60"> · {confirm.map((c) => c.name).join(", ")} (travel confirmed)</span>
                 )}
               </dd>
             </div>
@@ -147,42 +151,45 @@ export default function HomePage() {
         <div className="kerb h-[3px] opacity-80" aria-hidden="true" />
       </section>
 
-      {/* Services + pricing */}
-      <Section tone="chalk">
+      {/* Packages + pricing */}
+      <Section tone="chalk" id="packages" className="scroll-mt-20">
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
           <SectionHeading
-            eyebrow="Services"
-            title="Two straightforward packages for cars that are driven every day."
-            lede="No upsell ladder. Pick the one that matches how you use your car; we'll confirm the quote after a quick review."
+            eyebrow="Detailing packages"
+            title="Two packages. Built to perform."
+            lede="Pick your vehicle size to see your starting price, then book the package that fits. All prices are starting prices, confirmed at an in-person inspection."
           />
           <Link
             href="/services"
             className="group inline-flex items-center gap-2 font-semibold uppercase tracking-[0.1em] text-sm text-apex-deep shrink-0"
           >
-            What&rsquo;s included and what isn&rsquo;t
+            Full service details
             <Arrow />
           </Link>
         </div>
         <div className="mt-12">
-          <PricingTable />
+          <PackageCards />
         </div>
+
+        <div className="mt-16">
+          <h3 className="font-display text-3xl sm:text-4xl">Additional services</h3>
+          <div className="mt-6">
+            <AdditionalServices />
+          </div>
+        </div>
+
+        <PricingDisclosures className="mt-12" />
       </Section>
 
-      {/* Process */}
-      <Section tone="dark" className="relative overflow-hidden">
-        <SectionHeading eyebrow="How it works" title="Three steps. No phone tag." onDark />
-        <div className="mt-12">
-          <ProcessSteps />
-        </div>
-      </Section>
+      <CareJourney />
 
       {/* Service area */}
       <Section tone="white">
         <div className="grid lg:grid-cols-[1fr_1.1fr] gap-12 items-start">
           <SectionHeading
             eyebrow="Service area"
-            title={`Starting in ${business.serviceAreas.region}.`}
-            lede="We're keeping the first service area small on purpose so every visit gets the time it deserves."
+            title={`${business.serviceAreas.region}.`}
+            lede="Our home base is Clay County. Jacksonville mobile detailing is available too; we confirm travel for your exact location when we review your request."
           />
           <div>
             <h3 className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-apex-deep">Core coverage</h3>
@@ -198,9 +205,9 @@ export default function HomePage() {
             </ul>
             {confirm.length > 0 && (
               <div className="mt-8">
-                <h3 className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-apex-deep">Selected locations</h3>
-                <p className="mt-2 font-display text-2xl text-ink-muted">{confirm.map((c) => c.name).join(" · ")}</p>
-                <p className="mt-2 text-sm text-ink-muted">Travel eligibility confirmed when we review your request.</p>
+                <h3 className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-apex-deep">Travel confirmed on review</h3>
+                <p className="mt-2 font-display text-3xl">{confirm.map((c) => c.name).join(" · ")}</p>
+                <p className="mt-2 text-sm text-ink-muted">We confirm travel for your exact location when we review your request.</p>
               </div>
             )}
             <Link
@@ -226,27 +233,13 @@ export default function HomePage() {
         </Section>
       )}
 
-      {/* Maintenance plan interest */}
-      {business.membership.enabled && (
-        <Section tone="chalk">
-          <div className="relative overflow-hidden border-2 border-asphalt bg-white p-8 sm:p-12">
-            <div className="kerb-slant absolute right-0 top-0 h-full w-3 sm:w-4" aria-hidden="true" />
-            <div className="grid lg:grid-cols-[1.4fr_1fr] gap-8 items-center pr-4">
-              <SectionHeading
-                eyebrow="Coming later"
-                title="A maintenance plan for people who'd rather never think about it."
-                lede="We're exploring monthly or twice-monthly visits to keep your car consistently clean. Pricing isn't set and nothing is for sale yet — tell us if you'd want it."
-              />
-              <div className="lg:justify-self-end">
-                <ButtonLink href="/maintenance-plans" size="lg">
-                  Tell us you&rsquo;re interested
-                  <Arrow />
-                </ButtonLink>
-              </div>
-            </div>
-          </div>
-        </Section>
-      )}
+      {/* Process */}
+      <Section tone="dark" className="relative overflow-hidden">
+        <SectionHeading eyebrow="How it works" title="Three steps. No phone tag." onDark />
+        <div className="mt-12">
+          <ProcessSteps />
+        </div>
+      </Section>
 
       {/* FAQ */}
       <Section tone="white">

@@ -21,15 +21,15 @@ export async function GET(req: NextRequest) {
   const headers = [
     "id", "created_at", "lead_type", "business_mode", "stage", "first_name", "last_name", "email", "phone",
     "preferred_contact", "service", "vehicle_category", "vehicle_year", "vehicle_make", "vehicle_model",
-    "condition", "condition_flags", "zip", "zip_eligibility", "city", "location_type", "time_windows",
-    "preferred_date", "estimate_total", "pricing_version", "marketing_email", "membership_cadence",
+    "condition", "condition_flags", "zip", "zip_eligibility", "city", "service_address", "location_type", "time_windows",
+    "preferred_date", "estimate_total", "pricing_version", "price_acknowledged_at", "marketing_email", "membership_cadence",
     "future_interests", "follow_up_on", "archived_at", "landing_path", "utm_source", "utm_medium", "utm_campaign",
   ];
   const rows = leads.map((l) => [
     l.id, l.createdAt, l.leadType, l.businessMode, l.stage, l.firstName, l.lastName, l.email, l.phone,
     l.preferredContact, l.serviceId, l.vehicleCategory, l.vehicleYear, l.vehicleMake, l.vehicleModel,
-    l.condition, l.conditionFlags, l.zip, l.zipEligibility, l.city, l.locationType, l.timeWindows,
-    l.preferredDate, l.estimate?.total ?? "", l.pricingVersion, l.consent.marketingEmail, l.membershipCadence,
+    l.condition, l.conditionFlags, l.zip, l.zipEligibility, l.city, l.serviceAddress, l.locationType, l.timeWindows,
+    l.preferredDate, l.estimate?.total ?? "", l.pricingVersion, l.consent.priceAcknowledgedAt ?? "", l.consent.marketingEmail, l.membershipCadence,
     l.futureInterests, l.followUpOn, l.archivedAt, l.source.landingPath, l.source.utmSource, l.source.utmMedium, l.source.utmCampaign,
   ]);
 

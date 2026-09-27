@@ -12,21 +12,30 @@ function fd(entries: Record<string, string | string[]>): FormData {
   return f;
 }
 
+function without<T extends object>(obj: T, key: keyof T): Record<string, string | string[]> {
+  const copy = { ...obj } as Record<string, string | string[]>;
+  delete copy[key as string];
+  return copy;
+}
+
 const validQuote = {
   idempotencyKey: KEY,
-  serviceId: "exterior",
+  serviceId: "essential",
   vehicleCategory: "sedan",
   vehicleYear: "2019",
   vehicleMake: "Lexus",
   vehicleModel: "IS F",
   condition: "normal",
+  serviceAddress: "123 Main St",
   zip: "32068",
   locationType: "home",
   timeWindows: ["weekday-morning", "saturday"],
   firstName: "Herson",
   email: "Owner@Example.com ",
+  phone: "(904) 555-0100",
   preferredContact: "email",
   serviceConsent: "on",
+  priceAcknowledgment: "on",
 };
 
 describe("launchListSchema", () => {
@@ -69,16 +78,32 @@ describe("quoteRequestSchema", () => {
       expect(r.data.vehicleYear).toBe(2019);
       expect(r.data.timeWindows).toEqual(["weekday-morning", "saturday"]);
       expect(r.data.email).toBe("owner@example.com");
-      expect(r.data.phone).toBeNull();
+      expect(r.data.phone).toBe("9045550100");
+      expect(r.data.serviceAddress).toBe("123 Main St");
     }
   });
-  it("requires a phone when phone or text contact is chosen", () => {
-    const r = quoteRequestSchema.safeParse(formDataToObject(fd({ ...validQuote, preferredContact: "text" })));
+  it("requires a phone number", () => {
+    const r = quoteRequestSchema.safeParse(formDataToObject(fd(without(validQuote, "phone"))));
     expect(r.success).toBe(false);
-    if (!r.success) expect(fieldErrors(r.error).phone).toMatch(/phone number is required/i);
-    const ok = quoteRequestSchema.safeParse(formDataToObject(fd({ ...validQuote, preferredContact: "text", phone: "(904) 555-0100" })));
-    expect(ok.success).toBe(true);
-    if (ok.success) expect(ok.data.phone).toBe("9045550100");
+    if (!r.success) expect(fieldErrors(r.error).phone).toMatch(/phone number/i);
+  });
+  it("requires the price-estimate acknowledgment", () => {
+    const r = quoteRequestSchema.safeParse(formDataToObject(fd(without(validQuote, "priceAcknowledgment"))));
+    expect(r.success).toBe(false);
+    if (!r.success) expect(fieldErrors(r.error).priceAcknowledgment).toMatch(/estimate/i);
+  });
+  it("requires year, make, model and a service address", () => {
+    const r = quoteRequestSchema.safeParse(
+      formDataToObject(fd({ ...validQuote, vehicleYear: "", vehicleMake: "", vehicleModel: " ", serviceAddress: "" })),
+    );
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      const errs = fieldErrors(r.error);
+      expect(errs.vehicleYear).toBeDefined();
+      expect(errs.vehicleMake).toBeDefined();
+      expect(errs.vehicleModel).toBeDefined();
+      expect(errs.serviceAddress).toBeDefined();
+    }
   });
   it("rejects past preferred dates (Eastern)", () => {
     const yesterday = addDays(todayEastern(), -1);

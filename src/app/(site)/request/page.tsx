@@ -11,7 +11,7 @@ import { UnavailableNotice } from "@/components/site/UnavailableNotice";
 export const metadata: Metadata = {
   title: isPrelaunch ? "Request a quote" : "Request an appointment",
   description:
-    "Tell us about your vehicle, its condition, and where it'll be. We reply with a firm quote. Requests are reviewed before anything is scheduled.",
+    "Book the Corsa Essential or Signature Detail: tell us about your vehicle, its condition and where it'll be. Final pricing is confirmed at inspection; nothing is charged online.",
   alternates: { canonical: "/request" },
   robots: { index: false, follow: true },
 };
@@ -28,7 +28,7 @@ export default async function RequestPage({ searchParams }: PageProps<"/request"
       <PageHero
         eyebrow={isPrelaunch ? "Request a quote" : "Request an appointment"}
         title={isPrelaunch ? "Tell us about your car. We'll quote it when we open." : "Tell us about your car."}
-        lede="Four short steps. Pricing shown here is an estimate, not a final invoice; we confirm the quote after reviewing your vehicle and location."
+        lede="Four short steps. Prices shown are starting estimates; the final price is confirmed at an in-person inspection before any work begins. No payment is collected until availability and final pricing are confirmed."
       />
       <Container className="py-12 sm:py-16">
         <div className="max-w-2xl">

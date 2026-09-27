@@ -5,8 +5,8 @@ import { computeEstimate, startingPrice } from "@/lib/pricing";
 describe("computeEstimate", () => {
   it("returns the configured base price for every priced vehicle category", () => {
     const expected: Record<string, Record<string, number>> = {
-      exterior: { sedan: 79, suv2: 89, large: 109 },
-      full: { sedan: 140, suv2: 160, large: 200 },
+      essential: { sedan: 120, suv2: 160, large: 200 },
+      signature: { sedan: 275, suv2: 325, large: 375 },
     };
     for (const service of business.services) {
       for (const [vehicle, price] of Object.entries(expected[service.id])) {
@@ -20,7 +20,7 @@ describe("computeEstimate", () => {
 
   it("requires a custom quote for unpriced categories", () => {
     for (const v of ["minivan", "oversized", "other"]) {
-      const e = computeEstimate({ serviceId: "exterior", vehicleCategoryId: v });
+      const e = computeEstimate({ serviceId: "essential", vehicleCategoryId: v });
       expect(e?.basePrice).toBeNull();
       expect(e?.total).toBeNull();
       expect(e?.requiresCustomQuote).toBe(true);
@@ -28,9 +28,9 @@ describe("computeEstimate", () => {
   });
 
   it("never changes the price for condition answers or flags", () => {
-    const base = computeEstimate({ serviceId: "full", vehicleCategoryId: "suv2" });
+    const base = computeEstimate({ serviceId: "signature", vehicleCategoryId: "suv2" });
     const worse = computeEstimate({
-      serviceId: "full",
+      serviceId: "signature",
       vehicleCategoryId: "suv2",
       condition: "deeper",
       conditionFlags: ["pet_hair", "sand", "stains", "odor", "mud"],
@@ -41,24 +41,25 @@ describe("computeEstimate", () => {
 
   it("ignores unknown add-ons and unknown flags", () => {
     const e = computeEstimate({
-      serviceId: "exterior",
+      serviceId: "essential",
       vehicleCategoryId: "sedan",
       addOnIds: ["does-not-exist"],
       conditionFlags: ["bogus"],
     });
     expect(e?.addOns).toEqual([]);
-    expect(e?.total).toBe(79);
+    expect(e?.total).toBe(120);
   });
 
   it("returns null for unknown service or vehicle", () => {
     expect(computeEstimate({ serviceId: "nope", vehicleCategoryId: "sedan" })).toBeNull();
-    expect(computeEstimate({ serviceId: "exterior", vehicleCategoryId: "nope" })).toBeNull();
+    expect(computeEstimate({ serviceId: "essential", vehicleCategoryId: "nope" })).toBeNull();
   });
 
   it("snapshots the pricing version and notices", () => {
-    const e = computeEstimate({ serviceId: "exterior", vehicleCategoryId: "sedan" });
+    const e = computeEstimate({ serviceId: "essential", vehicleCategoryId: "sedan" });
     expect(e?.pricingVersion).toBe(business.pricingVersion);
     expect(e?.taxNotice).toBe(business.taxNotice);
-    expect(startingPrice("exterior")).toBe(79);
+    expect(startingPrice("essential")).toBe(120);
+    expect(startingPrice("signature")).toBe(275);
   });
 });
