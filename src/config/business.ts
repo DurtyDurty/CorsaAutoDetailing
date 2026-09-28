@@ -95,7 +95,7 @@ const canonicalDomain = env("NEXT_PUBLIC_SITE_URL") ?? "http://localhost:3000";
 
 export const business = {
   brand: {
-    /** Provisional working name. Name/trademark/domain clearance is still pending. */
+    /** Sunbiz search clear (2026-09-28); registration and a USPTO check are tracked in OWNER_DECISIONS.md. */
     name: "Corsa Auto Detailing",
     shortName: "Corsa",
     tagline: "Driven by Detail.",

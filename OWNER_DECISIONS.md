@@ -4,7 +4,9 @@ Things the website is deliberately silent or provisional about until you decide.
 
 ## Identity
 
-- [ ] **Business name clearance.** "Corsa Auto Detailing" is a working name. Check Florida Sunbiz (fictitious name / LLC), USPTO trademark search, and domain availability before spending on signage or print. → `business.brand.name`, `.env NEXT_PUBLIC_SITE_URL`
+- [x] **Business name: Florida Sunbiz search.** Clear as of 2026-09-28 (no conflicting entity or fictitious name). Domain owned.
+- [ ] **Register the name.** A clear search doesn't reserve it. File either a **Fictitious Name (DBA)** for "Corsa Auto Detailing" on Sunbiz (about $50, plus a newspaper notice), or form **Corsa Auto Detailing LLC**. An LLC also separates your personal assets from the business.
+- [ ] **USPTO trademark search** (tmsearch.uspto.gov) for "Corsa" in car care/detailing before spending on signage, shirts or a wrap.
 - [x] **Domain.** `corsaautodetailing.com` purchased 2026-09-25. `NEXT_PUBLIC_SITE_URL` set in `.env.example`; DNS is pointed at the host in LAUNCH_CHECKLIST §6.
 - [x] **Logo.** Vector master supplied 2026-09-26: `public/brand/logo-master.svg`. That's the file to hand to sign shops, embroiderers and printers. The site uses SVG dark and light versions made from it, plus a browser-tab icon from the "C" mark.
 - [x] **"Veteran-owned" statement.** Decided 2026-09-26: show only "Veteran owned" with a U.S. flag (home hero top-right, About, footer). No rank or branch details. → `business.owner.veteranOwned`
