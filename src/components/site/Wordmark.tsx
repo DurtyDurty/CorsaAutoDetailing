@@ -25,7 +25,7 @@ export function Wordmark({
       height={326}
       priority
       unoptimized
-      className="h-8 sm:h-10 w-auto"
+      className="h-6 min-[360px]:h-7 min-[380px]:h-8 sm:h-10 w-auto"
     />
   ) : (
     <span className={cn("inline-flex items-center gap-2.5", onDark ? "text-chalk" : "text-asphalt")}>

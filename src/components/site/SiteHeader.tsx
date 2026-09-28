@@ -13,7 +13,7 @@ export function SiteHeader() {
   const cta = primaryCta();
   return (
     <header className="sticky top-0 z-40 bg-asphalt/95 backdrop-blur text-chalk on-dark">
-      <div className="relative mx-auto flex w-full max-w-[88rem] items-center justify-between gap-6 px-5 sm:px-8 h-16 sm:h-[4.5rem]">
+      <div className="relative mx-auto flex w-full max-w-[88rem] items-center justify-between gap-3 sm:gap-6 px-5 sm:px-8 h-16 sm:h-[4.5rem]">
         <Wordmark onDark className="shrink-0" />
         <nav aria-label="Primary" className="hidden xl:flex items-center gap-6">
           {NAV_LINKS.map((l) => (
@@ -26,13 +26,13 @@ export function SiteHeader() {
             </a>
           ))}
         </nav>
-        <div className="flex shrink-0 items-center gap-3 xl:gap-4">
+        <div className="flex shrink-0 items-center gap-2 min-[360px]:gap-3 xl:gap-4">
           <div className="hidden lg:block">
             <ButtonLink href={cta.href} size="sm" variant="apex">
               {cta.label}
             </ButtonLink>
           </div>
-          <VeteranBadge size="sm" flagOnlyBelowWide />
+          <VeteranBadge stacked />
           <MobileNav cta={cta} />
         </div>
       </div>

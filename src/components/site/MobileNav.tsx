@@ -42,12 +42,13 @@ export function MobileNav({ cta }: { cta: { label: string; href: string } }) {
       <button
         ref={buttonRef}
         type="button"
-        className="inline-flex items-center gap-2 min-h-11 px-3 -mr-3 text-sm font-medium"
+        className="inline-flex items-center gap-2 min-h-11 min-w-11 justify-center px-2.5 -mr-2.5 sm:px-3 sm:-mr-3 text-sm font-medium"
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
       >
-        <span>{open ? "Close" : "Menu"}</span>
+        {/* Icon-only on phones to leave room for the veteran badge; screen readers still hear the label. */}
+        <span className="sr-only sm:not-sr-only">{open ? "Close" : "Menu"}</span>
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
           {open ? <path d="M4 4l12 12M16 4L4 16" /> : <path d="M3 5h14M3 10h14M3 15h14" />}
         </svg>

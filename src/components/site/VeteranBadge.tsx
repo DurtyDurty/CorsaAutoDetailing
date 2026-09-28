@@ -26,37 +26,45 @@ function Flag({ className }: { className?: string }) {
 
 /**
  * "Veteran owned" badge with the U.S. flag. Renders nothing unless the owner has confirmed the claim.
- * `flagOnlyBelowWide` shows just the flag under 1400px (tight header), keeping the words for screen readers.
+ * `stacked` puts "Veteran" over "Owned" so the full badge fits in the tight header row on any screen.
  */
 export function VeteranBadge({
   className,
-  flagOnlyBelowWide = false,
+  stacked = false,
   size = "md",
 }: {
   className?: string;
-  flagOnlyBelowWide?: boolean;
+  stacked?: boolean;
   size?: "sm" | "md";
 }) {
   if (!business.owner.veteranOwned) return null;
   return (
     <p
       className={cn(
-        "inline-flex items-center gap-2.5 rounded-sm border border-chalk/20 bg-asphalt/60 backdrop-blur text-chalk",
-        size === "md" ? "px-3 py-2" : "px-2.5 py-1.5",
+        "inline-flex items-center rounded-sm border border-chalk/20 bg-asphalt/60 backdrop-blur text-chalk",
+        stacked ? "gap-2 px-2 py-1.5" : "gap-2.5",
+        !stacked && (size === "md" ? "px-3 py-2" : "px-2.5 py-1.5"),
         className,
       )}
     >
-      <Flag className={cn("shrink-0 rounded-[1px]", size === "md" ? "h-4 w-[30px]" : "h-3 w-[23px]")} />
+      <Flag className={cn("shrink-0 rounded-[1px]", size === "md" && !stacked ? "h-4 w-[30px]" : "h-3 w-[23px]")} />
       <span
         className={cn(
-          "font-mono uppercase tracking-[0.16em] font-medium leading-none whitespace-nowrap",
-          size === "md" ? "text-[0.72rem]" : "text-[0.65rem]",
-          flagOnlyBelowWide && "hidden min-[1400px]:inline",
+          "font-mono uppercase font-medium whitespace-nowrap",
+          stacked
+            ? "flex flex-col text-[0.6rem] leading-[1.15] tracking-[0.12em]"
+            : cn("leading-none tracking-[0.16em]", size === "md" ? "text-[0.72rem]" : "text-[0.65rem]"),
         )}
       >
-        Veteran owned
+        {stacked ? (
+          <>
+            <span>Veteran</span>
+            <span>Owned</span>
+          </>
+        ) : (
+          "Veteran owned"
+        )}
       </span>
-      {flagOnlyBelowWide && <span className="sr-only min-[1400px]:hidden">Veteran owned</span>}
     </p>
   );
 }
