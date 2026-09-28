@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { business, primaryCta } from "@/config/business";
-import { ButtonLink } from "@/components/ui/Button";
+import { Arrow, ButtonLink } from "@/components/ui/Button";
 import { Section, SectionHeading } from "@/components/ui/Section";
 import { PageHero } from "@/components/site/PageHero";
 import { ZipChecker } from "@/components/site/ZipChecker";
 
 export const metadata: Metadata = {
-  title: `Service areas in ${business.serviceAreas.region}`,
+  title: { absolute: "Service Areas: Clay County, St. Johns & Jacksonville | Corsa" },
   description:
-    "Mobile detailing in Middleburg, Fleming Island and Green Cove Springs, with selected Orange Park locations. Check whether we can reach your ZIP.",
+    "Mobile auto detailing in Middleburg, Fleming Island, Green Cove Springs, St. Johns, Orangedale, World Golf Village and Jacksonville, FL. Check your ZIP.",
   alternates: { canonical: "/service-areas" },
 };
 
@@ -21,8 +22,8 @@ export default function ServiceAreasPage() {
     <>
       <PageHero
         eyebrow="Service areas"
-        title={`Where we're starting: ${business.serviceAreas.region}.`}
-        lede="A deliberately small footprint so each visit gets the time it deserves. We'll expand once we've earned it."
+        title="Mobile detailing where you are."
+        lede={`Serving ${business.serviceAreas.region}. A deliberately focused footprint so each visit gets the time it deserves.`}
       />
 
       <Section tone="white">
@@ -32,7 +33,16 @@ export default function ServiceAreasPage() {
             <ul className="mt-8 divide-y divide-line border-y border-line">
               {core.map((c) => (
                 <li key={c.slug} className="py-5">
-                  <h3 className="font-medium text-lg">{c.name}</h3>
+                  <h3 className="font-medium text-lg">
+                    {c.page ? (
+                      <Link href={`/service-areas/${c.slug}`} className="group inline-flex items-center gap-2 hover:text-apex-deep">
+                        {c.name}
+                        <Arrow />
+                      </Link>
+                    ) : (
+                      c.name
+                    )}
+                  </h3>
                   <p className="mt-1 text-ink-muted">{c.blurb}</p>
                 </li>
               ))}
@@ -43,13 +53,22 @@ export default function ServiceAreasPage() {
             <ul className="mt-8 divide-y divide-line border-y border-line">
               {confirm.map((c) => (
                 <li key={c.slug} className="py-5">
-                  <h3 className="font-medium text-lg">{c.name}</h3>
+                  <h3 className="font-medium text-lg">
+                    {c.page ? (
+                      <Link href={`/service-areas/${c.slug}`} className="group inline-flex items-center gap-2 hover:text-apex-deep">
+                        {c.name}
+                        <Arrow />
+                      </Link>
+                    ) : (
+                      c.name
+                    )}
+                  </h3>
                   <p className="mt-1 text-ink-muted">{c.blurb}</p>
                 </li>
               ))}
             </ul>
             <p className="mt-6 text-sm text-ink-muted">
-              Other parts of Clay County and Jacksonville may be reachable depending on the day&rsquo;s route. We confirm travel for every Jacksonville address when we review the request, and we&rsquo;ll tell you plainly if we can&rsquo;t get to you yet. There are no travel surcharges. If a location doesn&rsquo;t work, we simply say so.
+              Other parts of Clay County, St. Johns County and Jacksonville may be reachable depending on the day&rsquo;s route. We confirm travel for every Jacksonville address when we review the request, and we&rsquo;ll tell you plainly if we can&rsquo;t get to you yet. There are no travel surcharges. If a location doesn&rsquo;t work, we simply say so.
             </p>
           </div>
         </div>

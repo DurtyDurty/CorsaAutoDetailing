@@ -14,7 +14,7 @@ import { ServiceViewTracker } from "@/components/site/ServiceViewTracker";
 export const metadata: Metadata = {
   title: "Detailing packages & pricing",
   description:
-    "Corsa Essential Detail from $120 and Corsa Signature Detail from $275: interior and exterior car detailing at your location. Mobile auto detailing in Clay County and Jacksonville, FL.",
+    "Corsa Essential from $120 and Signature from $275. Interior and exterior car detailing at your home or work in Clay County, St. Johns and Jacksonville.",
   alternates: { canonical: "/services" },
 };
 

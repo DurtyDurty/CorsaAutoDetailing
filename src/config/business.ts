@@ -72,6 +72,10 @@ export interface ServiceAreaCommunity {
   county: string;
   coverage: "core" | "confirm";
   blurb: string;
+  /** Opening paragraph for the community's own SEO page. Facts only; verify local details (OWNER_DECISIONS.md). */
+  intro: string;
+  /** Publish /service-areas/<slug>. */
+  page: boolean;
   /** ZIP codes the owner has associated with this community. Verify before launch. */
   zips: string[];
 }
@@ -243,7 +247,7 @@ export const business = {
   ],
 
   serviceAreas: {
-    region: "Jacksonville & Clay County, Florida",
+    region: "Clay County, St. Johns & Jacksonville, FL",
     communities: [
       {
         slug: "middleburg",
@@ -251,6 +255,9 @@ export const business = {
         county: "Clay",
         coverage: "core",
         blurb: "Home base territory. Driveways, garages, and quiet cul-de-sacs are ideal.",
+        intro:
+          "Middleburg is home base for Corsa Auto Detailing. We bring interior and exterior car detailing to driveways and garages across western Clay County, so your car gets a careful hand wash and real protection without you driving anywhere.",
+        page: true,
         zips: ["32068"],
       },
       {
@@ -259,6 +266,9 @@ export const business = {
         county: "Clay",
         coverage: "core",
         blurb: "Core coverage, including the Eagle Harbor and Pace Island areas. Some HOAs restrict washing in driveways, so check yours.",
+        intro:
+          "Fleming Island sits on the St. Johns River along US-17, between Orange Park and Green Cove Springs. We detail cars at homes and workplaces across the island, including the Eagle Harbor and Pace Island neighborhoods.",
+        page: true,
         zips: ["32003"],
       },
       {
@@ -267,7 +277,44 @@ export const business = {
         county: "Clay",
         coverage: "core",
         blurb: "Core coverage for the city and nearby Lake Asbury area.",
+        intro:
+          "Green Cove Springs is the Clay County seat, on the west bank of the St. Johns River. We cover the city and the nearby Lake Asbury area with mobile detailing at your home or workplace.",
+        page: true,
         zips: ["32043"],
+      },
+      {
+        slug: "st-johns",
+        name: "St. Johns",
+        county: "St. Johns",
+        coverage: "core",
+        blurb: "Northern St. Johns County, across the river from Clay County.",
+        intro:
+          "St. Johns, in northern St. Johns County, is just across the St. Johns River from Clay County. We bring the Corsa Essential and Signature details to homes and workplaces throughout the area.",
+        page: true,
+        zips: ["32259"],
+      },
+      {
+        slug: "orangedale",
+        name: "Orangedale",
+        county: "St. Johns",
+        coverage: "core",
+        blurb: "On the St. Johns County side of the Shands Bridge, a short drive from Green Cove Springs.",
+        intro:
+          "Orangedale sits on the St. Johns County side of the Shands Bridge, a short drive from Green Cove Springs. We detail cars at homes and workplaces around Orangedale and along the river.",
+        page: true,
+        // ZIP not set: confirm which ZIP(s) you'll serve here (OWNER_DECISIONS.md).
+        zips: [],
+      },
+      {
+        slug: "world-golf-village",
+        name: "World Golf Village",
+        county: "St. Johns",
+        coverage: "core",
+        blurb: "Off I-95 in St. Johns County.",
+        intro:
+          "World Golf Village, off I-95 in St. Johns County, is part of our St. Johns County coverage. We come to your home or workplace for interior and exterior detailing.",
+        page: true,
+        zips: ["32092"],
       },
       {
         slug: "orange-park",
@@ -275,6 +322,8 @@ export const business = {
         county: "Clay",
         coverage: "confirm",
         blurb: "Selected locations. Travel eligibility is confirmed when we review your request.",
+        intro: "",
+        page: false,
         zips: ["32065", "32073"],
       },
       {
@@ -283,6 +332,9 @@ export const business = {
         county: "Duval",
         coverage: "confirm",
         blurb: "Jacksonville mobile detailing at your home or workplace. Travel is confirmed for your exact location when we review your request.",
+        intro:
+          "Jacksonville mobile detailing at your home or workplace. Jacksonville covers a lot of ground, so we confirm travel for your exact address when we review your request, and we'll tell you plainly if we can't reach you yet.",
+        page: true,
         // Duval County / City of Jacksonville ZIPs. Verify before launch (OWNER_DECISIONS.md).
         zips: [
           "32099", "32202", "32204", "32205", "32206", "32207", "32208", "32209", "32210", "32211", "32212",

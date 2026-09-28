@@ -14,15 +14,11 @@ import { LaunchListForm } from "@/components/forms/LaunchListForm";
 import { HOME_FAQ } from "@/content/faq";
 
 export const metadata: Metadata = {
-  title: { absolute: `${business.brand.name} | Mobile auto detailing in Clay County & Jacksonville, FL` },
+  title: { absolute: "Mobile Auto Detailing in Clay County & Jacksonville | Corsa" },
   description:
-    "Interior and exterior car detailing at your home or workplace. Mobile auto detailing in Clay County and Jacksonville, FL: the Corsa Essential and Corsa Signature Detail packages.",
+    "Mobile auto detailing in Clay County, St. Johns and Jacksonville, FL. Interior and exterior car detailing, done by hand at your home or workplace.",
   alternates: { canonical: "/" },
-  openGraph: {
-    title: `${business.brand.name} | Driven by Detail`,
-    description: "Mobile auto detailing in Clay County and Jacksonville, Florida. Interior and exterior car detailing at your home or workplace.",
-    url: "/",
-  },
+  // No openGraph override here: it would drop the site-wide share image (app/opengraph-image.png).
 };
 
 export default function HomePage() {
@@ -60,10 +56,16 @@ export default function HomePage() {
 
           <Container className="relative z-10 mt-auto pt-32 pb-10 sm:pb-14">
             <div className="max-w-3xl [text-shadow:0_2px_24px_rgb(12_13_16/0.6)]">
-              <Eyebrow onDark>Mobile auto detailing · {business.serviceAreas.region}</Eyebrow>
-              <h1 className="font-display italic font-extrabold text-[3.5rem] leading-[0.9] sm:text-8xl lg:text-[7rem] mt-6 text-balance">
-                {taglineLead}
-                {taglineRest.length > 0 && <span className="block">{taglineRest.join(" ")}</span>}
+              {/* The keyword line is part of the H1 so search engines read "Mobile auto detailing in …" as the page topic. */}
+              <h1>
+                <span className="inline-flex items-center gap-2.5 font-mono not-italic text-[0.72rem] font-medium uppercase tracking-[0.16em] text-apex">
+                  <span aria-hidden="true" className="h-[3px] w-5 bg-current" />
+                  Mobile auto detailing in {business.serviceAreas.region}
+                </span>
+                <span className="mt-6 block font-display italic font-extrabold text-[3.5rem] leading-[0.9] sm:text-8xl lg:text-[7rem] text-balance">
+                  {taglineLead}
+                  {taglineRest.length > 0 && <span className="block">{taglineRest.join(" ")}</span>}
+                </span>
               </h1>
               <div className="mt-6 flex items-center gap-4" aria-hidden="true">
                 <span className="kerb h-1.5 w-24" />

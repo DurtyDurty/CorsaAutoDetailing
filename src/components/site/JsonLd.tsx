@@ -15,6 +15,7 @@ export function BusinessJsonLd({ withOffers = true }: { withOffers?: boolean }) 
   const areaServed = [
     { "@type": "City", name: "Jacksonville, FL" },
     { "@type": "AdministrativeArea", name: "Clay County, FL" },
+    { "@type": "AdministrativeArea", name: "St. Johns County, FL" },
     ...business.serviceAreas.communities
       .filter((c) => c.name !== "Jacksonville")
       .map((c) => ({ "@type": "Place", name: `${c.name}, FL` })),
@@ -62,7 +63,7 @@ export function BusinessJsonLd({ withOffers = true }: { withOffers?: boolean }) 
     logo: absoluteUrl("/brand/logo-master.svg"),
     image: absoluteUrl("/icon-512.png"),
     description:
-      "Mobile auto detailing in Clay County and Jacksonville, Florida: interior and exterior car detailing at your home or workplace.",
+      "Mobile auto detailing in Clay County, St. Johns County and Jacksonville, Florida: interior and exterior car detailing at your home or workplace.",
     areaServed,
     ...(withOffers
       ? {

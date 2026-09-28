@@ -69,6 +69,20 @@ test.describe("public site", () => {
     expect(text).toMatch(/Any applicable tax will be disclosed/);
   });
 
+  test("town pages render, link to each other, and skip Orange Park", async ({ page, request }) => {
+    const towns = ["middleburg", "fleming-island", "green-cove-springs", "st-johns", "orangedale", "world-golf-village", "jacksonville"];
+    for (const slug of towns) {
+      const res = await page.goto(`/service-areas/${slug}`);
+      expect(res?.status(), slug).toBe(200);
+      await expect(page.getByRole("heading", { level: 1 })).toContainText(/Mobile auto detailing in .+, FL/i);
+      await expectNoHorizontalOverflow(page);
+    }
+    expect((await request.get("/service-areas/orange-park")).status()).toBe(404);
+    await page.goto("/service-areas");
+    await page.getByRole("link", { name: "Fleming Island" }).first().click();
+    await expect(page).toHaveURL(/\/service-areas\/fleming-island$/);
+  });
+
   test("home page shows packages but no prices", async ({ page }) => {
     await page.goto("/");
     const text = (await page.textContent("main")) ?? "";
@@ -114,6 +128,8 @@ test.describe("public site", () => {
     expect(robots).toMatch(/Disallow: \/thanks/);
     const sitemap = await (await request.get("/sitemap.xml")).text();
     expect(sitemap).toContain("/services");
+    expect(sitemap).toContain("/service-areas/fleming-island");
+    expect(sitemap).not.toContain("/service-areas/orange-park");
     expect(sitemap).not.toContain("/admin");
     expect(sitemap).not.toContain("/thanks");
   });

@@ -30,6 +30,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: absoluteUrl("/"),
   },
+  twitter: { card: "summary_large_image" },
   robots: noindex ? { index: false, follow: false } : { index: true, follow: true },
   icons: {
     icon: [
