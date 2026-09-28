@@ -26,6 +26,8 @@ Things the website is deliberately silent or provisional about until you decide.
 ## Service area
 
 - [ ] **Verify ZIP → community mapping.** Current mapping is a best guess: Middleburg 32068, Fleming Island 32003, Green Cove Springs 32043, Orange Park 32065/32073, plus 32079/32656/32234 as "travel confirmation". Fix any errors. → `business.serviceAreas`
+- [ ] **St. Johns County towns (added 2026-09-28).** St. Johns (32259), World Golf Village (32092) and Orangedale (no ZIP set yet: tell me which ZIP(s) to use) are marked core coverage, each with its own page. Check the one-line intro on each town page (`business.serviceAreas.communities[].intro`), e.g. "Orangedale sits on the St. Johns County side of the Shands Bridge", and correct anything that's off.
+- [ ] **Orange Park.** No town page, per your call. It's still listed as "travel confirmed on review" and its ZIPs still get that answer. Remove it entirely if you don't want Orange Park jobs.
 - [ ] **Jacksonville coverage.** Added 2026-09-26 as "travel confirmed on review" with 33 Duval County ZIPs (32099, 322xx). Remove any you won't drive to (e.g. the Beaches), or move nearby ones to core coverage. → `business.serviceAreas.communities[jacksonville]`
 - [ ] **Decide which Orange Park locations count as "selected".** The site says travel eligibility is confirmed on review. → `business.serviceAreas.communities[orange-park].blurb`
 - [ ] **Travel radius / cutoff policy** (currently: no surcharges, we just say yes or no).
