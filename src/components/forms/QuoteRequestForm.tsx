@@ -189,7 +189,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
           error={errors.serviceId}
           options={business.services.map((s) => ({
             value: s.id,
-            label: s.badge ? `${s.name} — ${s.badge}` : s.name,
+            label: s.badge ? `${s.name} (${s.badge})` : s.name,
             description: `${s.tagline} Est. ${s.duration}.`,
           }))}
         />
@@ -205,7 +205,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
           options={business.vehicleCategories.map((v) => ({
             value: v.id,
             label: v.label,
-            description: v.priced ? v.examples : `${v.examples} — custom quote`,
+            description: v.priced ? v.examples : `${v.examples} (custom quote)`,
           }))}
         />
         <div className="grid gap-5 sm:grid-cols-3">
@@ -340,7 +340,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
           name="timeWindows"
           type="checkbox"
           columns={2}
-          hint="Preferences only — not a reservation. We'll confirm a time with you."
+          hint="Preferences only, not a reservation. We'll confirm a time with you."
           error={errors.timeWindows}
           options={business.scheduling.timeWindows.map((w) => ({ value: w.id, label: w.label }))}
         />
@@ -363,7 +363,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
           name="notes"
           label="Notes about the space"
           optional
-          hint="Is there room to work around the vehicle? Is water or an outdoor outlet nearby? This just helps us plan — it isn't a requirement."
+          hint="Is there room to work around the vehicle? Is water or an outdoor outlet nearby? This just helps us plan. It isn't a requirement."
           error={errors.notes}
         >
           {(p) => <Textarea name="notes" maxLength={1500} {...p} />}

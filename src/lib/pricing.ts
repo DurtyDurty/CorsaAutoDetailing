@@ -72,7 +72,7 @@ export function computeEstimate(input: EstimateInput): EstimateSnapshot | null {
   if (input.condition === "deeper") {
     reviewNotes.push("You indicated the vehicle needs deeper cleaning. We'll review scope with you before quoting.");
   } else if (input.condition === "unsure") {
-    reviewNotes.push("Not sure about condition? No problem — we'll confirm together before quoting.");
+    reviewNotes.push("Not sure about condition? No problem, we'll confirm together before quoting.");
   }
   const flags = (input.conditionFlags ?? []).filter((f) => f in CONDITION_FLAG_LABELS);
   if (flags.length > 0) {
@@ -110,9 +110,9 @@ export function formatUsd(amount: number): string {
   }).format(amount);
 }
 
-/** "$35–$75", or "$50" when the range is a single price. */
+/** "$35-$75", or "$50" when the range is a single price. */
 export function formatUsdRange(min: number, max: number): string {
-  return min === max ? formatUsd(min) : `${formatUsd(min)}–${formatUsd(max)}`;
+  return min === max ? formatUsd(min) : `${formatUsd(min)}-${formatUsd(max)}`;
 }
 
 /** Lowest priced base for a service, for "from $120" style copy. */

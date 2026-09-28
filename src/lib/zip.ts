@@ -43,6 +43,6 @@ export function lookupZip(zipRaw: string): ZipLookup {
     eligibility: "outside",
     community: null,
     message:
-      "That ZIP is outside our initial service area. You're welcome to send the request — we'll let you know honestly if we can't reach you yet.",
+      "That ZIP is outside our initial service area. You're welcome to send the request, and we'll let you know honestly if we can't reach you yet.",
   };
 }

@@ -57,13 +57,13 @@ export function LeadTable({ leads, showType = true }: { leads: LeadRecord[]; sho
                 <span className="block text-ink-muted text-xs">{l.email}</span>
               </td>
               {showType && <td className="px-4 py-3 whitespace-nowrap">{TYPE_LABEL[l.leadType]}</td>}
-              <td className="px-4 py-3">{l.serviceId ? (getService(l.serviceId)?.name ?? l.serviceId) : l.membershipCadence ? `Plan · ${l.membershipCadence}` : "—"}</td>
+              <td className="px-4 py-3">{l.serviceId ? (getService(l.serviceId)?.name ?? l.serviceId) : l.membershipCadence ? `Plan · ${l.membershipCadence}` : "-"}</td>
               <td className="px-4 py-3">
                 {[l.vehicleYear, l.vehicleMake, l.vehicleModel].filter(Boolean).join(" ") ||
-                  (l.vehicleCategory ? getVehicleCategory(l.vehicleCategory)?.label : "—")}
+                  (l.vehicleCategory ? getVehicleCategory(l.vehicleCategory)?.label : "-")}
               </td>
               <td className="px-4 py-3 whitespace-nowrap">
-                {l.zip ?? "—"}
+                {l.zip ?? "-"}
                 {l.zipEligibility && l.zipEligibility !== "core" && (
                   <span className="block text-xs text-ink-muted">{l.zipEligibility}</span>
                 )}

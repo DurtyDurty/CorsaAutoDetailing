@@ -6,7 +6,7 @@ import { Wordmark } from "@/components/site/Wordmark";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: { default: "Owner dashboard", template: "%s — Owner dashboard" },
+  title: { default: "Owner dashboard", template: "%s | Owner dashboard" },
   robots: { index: false, follow: false },
 };
 
@@ -33,7 +33,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
     <div className="min-h-full flex flex-col bg-chalk">
       {demo && (
         <div className="bg-apex text-asphalt text-center text-sm px-4 py-2 font-medium">
-          DEMO MODE — local data only. Not connected to a production database.
+          DEMO MODE: local data only. Not connected to a production database.
         </div>
       )}
       <header className="border-b border-line bg-white">

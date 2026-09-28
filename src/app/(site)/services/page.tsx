@@ -48,9 +48,7 @@ export default function ServicesPage() {
           <ul className="mt-3 space-y-2 text-ink-muted">
             {business.customQuoteConditions.map((c) => (
               <li key={c} className="flex gap-3">
-                <span aria-hidden="true" className="text-apex-deep">
-                  —
-                </span>
+                <span aria-hidden="true" className="mt-2.5 h-1.5 w-1.5 shrink-0 -skew-x-[20deg] bg-apex-deep" />
                 {c}
               </li>
             ))}

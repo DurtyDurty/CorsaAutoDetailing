@@ -26,7 +26,7 @@ export const HOME_FAQ: FaqItem[] = [
   },
   {
     q: "Is the Signature sealant a ceramic coating?",
-    a: "No. The Signature Detail includes a ceramic paint sealant that provides up to 4–6 months of protection. It isn't a professionally installed ceramic coating, which we don't offer at launch.",
+    a: "No. The Signature Detail includes a ceramic paint sealant that provides up to 4-6 months of protection. It isn't a professionally installed ceramic coating, which we don't offer at launch.",
   },
 ];
 
@@ -41,7 +41,7 @@ export const SERVICES_FAQ: FaqItem[] = [
   },
   {
     q: "How long does the protection last?",
-    a: `${business.disclosures.protection} As a guide, the Essential Detail's paint sealant lasts approximately 4–8 weeks, and the Signature Detail's ceramic sealant up to 4–6 months.`,
+    a: `${business.disclosures.protection} As a guide, the Essential Detail's paint sealant lasts approximately 4-8 weeks, and the Signature Detail's ceramic sealant up to 4-6 months.`,
   },
   {
     q: "Are there travel or condition charges?",

@@ -169,7 +169,7 @@ export const business = {
       tagline: "Interior and exterior maintenance detail.",
       description:
         "A professional interior and exterior maintenance detail designed to keep a vehicle consistently clean, protected and presentable.",
-      duration: "2–3 hours",
+      duration: "2-3 hours",
       badge: null,
       includesEverythingIn: null,
       includes: [
@@ -179,7 +179,7 @@ export const business = {
         "Door jambs wiped",
         "Exterior glass cleaned",
         "Professional tire dressing",
-        "Paint sealant lasting approximately 4–8 weeks",
+        "Paint sealant lasting approximately 4-8 weeks",
         "Thorough interior vacuum",
         "Dashboard, console and door panels cleaned",
         "Light crevice cleaning",
@@ -194,7 +194,7 @@ export const business = {
       tagline: "A complete reset with premium protection.",
       description:
         "A comprehensive vehicle reset combining deeper cleaning with premium exterior and interior protection. Recommended for first-time customers and vehicles needing more than routine maintenance.",
-      duration: "4–6 hours",
+      duration: "4-6 hours",
       badge: "Best First Visit",
       includesEverythingIn: "essential",
       includes: [
@@ -202,7 +202,7 @@ export const business = {
         "Iron-removal treatment",
         "Clay treatment when necessary",
         "Deeper wheel and tire cleaning",
-        "Premium ceramic paint sealant providing up to 4–6 months of protection",
+        "Premium ceramic paint sealant providing up to 4-6 months of protection",
         "Exterior trim protection",
         "Detailed interior brushing and compressed-air cleaning",
         "Carpet and upholstery spot treatment",
@@ -259,7 +259,7 @@ export const business = {
         name: "Fleming Island",
         county: "Clay",
         coverage: "core",
-        blurb: "Core coverage, including the Eagle Harbor and Pace Island areas. Some HOAs restrict washing in driveways — check yours.",
+        blurb: "Core coverage, including the Eagle Harbor and Pace Island areas. Some HOAs restrict washing in driveways, so check yours.",
         zips: ["32003"],
       },
       {
@@ -328,11 +328,11 @@ export const business = {
     /** Default appointment duration used for conflict checks until validated. */
     defaultDurationMinutes: 120,
     timeWindows: [
-      { id: "weekday-morning", label: "Weekday mornings (8–11am)" },
-      { id: "weekday-midday", label: "Weekday midday (11am–2pm)" },
-      { id: "weekday-afternoon", label: "Weekday afternoons (2–6pm)" },
+      { id: "weekday-morning", label: "Weekday mornings (8-11am)" },
+      { id: "weekday-midday", label: "Weekday midday (11am-2pm)" },
+      { id: "weekday-afternoon", label: "Weekday afternoons (2-6pm)" },
       { id: "saturday", label: "Saturdays" },
-      { id: "flexible", label: "Flexible — whatever is open" },
+      { id: "flexible", label: "Flexible (whatever is open)" },
     ],
   },
 

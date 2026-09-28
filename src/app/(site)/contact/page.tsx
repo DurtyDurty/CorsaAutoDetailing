@@ -24,7 +24,7 @@ export default function ContactPage() {
       <PageHero
         eyebrow="Contact"
         title="Ask us anything."
-        lede="Every message goes straight to the owner. Requests are reviewed before anything is scheduled — sending a message doesn't create an appointment."
+        lede="Every message goes straight to the owner. Requests are reviewed before anything is scheduled. Sending a message doesn't create an appointment."
       />
       <Section tone="white">
         <div className="grid lg:grid-cols-[1fr_1.4fr] gap-12">

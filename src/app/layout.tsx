@@ -18,8 +18,8 @@ const noindex = business.brand.siteEnv === "staging";
 export const metadata: Metadata = {
   metadataBase: new URL(business.brand.canonicalDomain),
   title: {
-    default: `${business.brand.name} — Mobile auto detailing in Clay County & Jacksonville, FL`,
-    template: `%s — ${business.brand.name}`,
+    default: `${business.brand.name} | Mobile auto detailing in Clay County & Jacksonville, FL`,
+    template: `%s | ${business.brand.name}`,
   },
   description:
     "Mobile auto detailing in Clay County and Jacksonville, FL. Interior and exterior car detailing at your home or workplace. Driven by Detail.",

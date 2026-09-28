@@ -8,7 +8,7 @@ export function ProcessSteps() {
     },
     {
       title: "Get a confirmation and quote",
-      body: "We review every request personally and reply with a firm quote. No hidden condition or travel charges — anything extra is agreed before we start.",
+      body: "We review every request personally and reply with a firm quote. No hidden condition or travel charges. Anything extra is agreed before we start.",
     },
     {
       title: isPrelaunch ? "Enjoy mobile service after launch" : "We come to you",

@@ -20,7 +20,7 @@ const LEAD_TYPE_LABEL: Record<LeadRecord["leadType"], string> = {
 };
 
 function ownerSubject(lead: LeadRecord) {
-  return `[${business.brand.shortName}] ${LEAD_TYPE_LABEL[lead.leadType]} — ${lead.firstName} (${shortRef(lead.id)})`;
+  return `[${business.brand.shortName}] ${LEAD_TYPE_LABEL[lead.leadType]}: ${lead.firstName} (${shortRef(lead.id)})`;
 }
 
 /** Internal notes are intentionally excluded from every email. */
@@ -35,18 +35,18 @@ function ownerBody(lead: LeadRecord) {
     lead.phone ? `Phone: ${lead.phone}` : null,
     lead.preferredContact ? `Preferred contact: ${lead.preferredContact}` : null,
     lead.serviceAddress ? `Service address: ${lead.serviceAddress}` : null,
-    lead.zip ? `ZIP: ${lead.zip} (${lead.zipEligibility ?? "unclassified"})${lead.city ? ` — ${lead.city}` : ""}` : null,
+    lead.zip ? `ZIP: ${lead.zip} (${lead.zipEligibility ?? "unclassified"})${lead.city ? `, ${lead.city}` : ""}` : null,
   ];
   if (lead.serviceId || lead.vehicleCategory) {
     lines.push(
       "",
-      `Service: ${getService(lead.serviceId ?? "")?.name ?? lead.serviceId ?? "—"}`,
-      `Vehicle: ${[lead.vehicleYear, lead.vehicleMake, lead.vehicleModel].filter(Boolean).join(" ") || "—"} (${getVehicleCategory(lead.vehicleCategory ?? "")?.label ?? lead.vehicleCategory ?? "—"})`,
+      `Service: ${getService(lead.serviceId ?? "")?.name ?? lead.serviceId ?? "n/a"}`,
+      `Vehicle: ${[lead.vehicleYear, lead.vehicleMake, lead.vehicleModel].filter(Boolean).join(" ") || "n/a"} (${getVehicleCategory(lead.vehicleCategory ?? "")?.label ?? lead.vehicleCategory ?? "n/a"})`,
     );
   }
   if (lead.condition) {
     lines.push(
-      `Condition: ${lead.condition}${lead.conditionFlags.length ? ` — ${lead.conditionFlags.join(", ")}` : ""}`,
+      `Condition: ${lead.condition}${lead.conditionFlags.length ? `. Flags: ${lead.conditionFlags.join(", ")}` : ""}`,
     );
   }
   if (lead.concerns) lines.push(`Concerns: ${lead.concerns}`);
@@ -76,11 +76,11 @@ function customerSubject(lead: LeadRecord) {
     case "launch_list":
       return `You're on the ${business.brand.name} launch list`;
     case "quote_request":
-      return `We received your request — ${business.brand.name}`;
+      return `${business.brand.name}: we received your request`;
     case "membership_interest":
-      return `Thanks for your interest in maintenance plans — ${business.brand.name}`;
+      return `${business.brand.name}: thanks for your interest in maintenance plans`;
     default:
-      return `We received your message — ${business.brand.name}`;
+      return `${business.brand.name}: we received your message`;
   }
 }
 
@@ -90,7 +90,7 @@ function customerBody(lead: LeadRecord) {
     launch_list: `Thanks for joining the launch list. We're preparing to open in ${business.serviceAreas.region}, and you'll be among the first to hear when scheduling opens.`,
     quote_request:
       lead.businessMode === "PRELAUNCH"
-        ? `Thanks for your request. We're not scheduling appointments yet — we're still preparing to launch — but we've saved your details and will reach out with a quote and timing once we open.`
+        ? `Thanks for your request. We're not scheduling appointments yet because we're still preparing to launch, but we've saved your details and will reach out with a quote and timing once we open.`
         : `Thanks for your request. This is not a confirmed appointment yet. ${business.owner.name} will review your vehicle and location details and reply with a quote and available times.`,
     membership_interest: `Thanks for your interest in a maintenance plan. Plans aren't available yet and nothing has been charged. We'll share details once pricing and terms are finalized.`,
     contact: `Thanks for getting in touch. We've received your message and will reply as soon as we can.`,
@@ -113,7 +113,7 @@ function customerBody(lead: LeadRecord) {
   if (business.contact.responseHours) {
     lines.push("", `We typically reply during ${business.contact.responseHours}.`);
   }
-  lines.push("", `— ${business.owner.name}`, business.brand.name);
+  lines.push("", business.owner.name, business.brand.name);
   return lines.join("\n");
 }
 

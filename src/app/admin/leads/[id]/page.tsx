@@ -221,7 +221,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
               {activeAppt ? (
                 <div className="text-sm flex flex-col gap-3">
                   <p>
-                    Confirmed for <strong>{formatEastern(activeAppt.startsAt)}</strong> – {formatEastern(activeAppt.endsAt, { timeStyle: "short", dateStyle: undefined })} ET
+                    Confirmed for <strong>{formatEastern(activeAppt.startsAt)}</strong> to {formatEastern(activeAppt.endsAt, { timeStyle: "short", dateStyle: undefined })} ET
                     <br />
                     Quoted {formatUsd(activeAppt.quotedPriceCents / 100)}
                     {activeAppt.notes && <span className="block text-ink-muted mt-1">{activeAppt.notes}</span>}

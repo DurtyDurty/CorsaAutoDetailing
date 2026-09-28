@@ -10,7 +10,7 @@ import { UnavailableNotice } from "@/components/site/UnavailableNotice";
 export const metadata: Metadata = {
   title: "Maintenance plans",
   description:
-    "A proposed monthly or twice-monthly maintenance visit to keep your car consistently clean. Not available yet — register interest.",
+    "A proposed monthly or twice-monthly maintenance visit to keep your car consistently clean. Not available yet. Register your interest.",
   alternates: { canonical: "/maintenance-plans" },
 };
 
@@ -32,19 +32,19 @@ export default function MaintenancePlansPage() {
             <SectionHeading eyebrow="The idea" title="What a plan would look like." />
             <ul className="mt-6 space-y-4 text-ink-muted leading-relaxed">
               <li className="flex gap-3">
-                <span aria-hidden="true" className="text-apex-deep">—</span>
-                A recurring visit on a cadence you choose — monthly or twice-monthly — built around the Corsa Essential Detail, ideally after a Corsa Signature Detail first visit.
+                <span aria-hidden="true" className="mt-2.5 h-1.5 w-1.5 shrink-0 -skew-x-[20deg] bg-apex-deep" />
+                A recurring visit on a cadence you choose (monthly or twice-monthly), built around the Corsa Essential Detail, ideally after a Corsa Signature Detail first visit.
               </li>
               <li className="flex gap-3">
-                <span aria-hidden="true" className="text-apex-deep">—</span>
+                <span aria-hidden="true" className="mt-2.5 h-1.5 w-1.5 shrink-0 -skew-x-[20deg] bg-apex-deep" />
                 Vehicles that haven&rsquo;t been detailed recently may need an initial qualifying clean first so the plan can genuinely be maintenance.
               </li>
               <li className="flex gap-3">
-                <span aria-hidden="true" className="text-apex-deep">—</span>
-                A predictable price. We&rsquo;re not promising discounts or unlimited visits — we&rsquo;d rather set terms we can keep.
+                <span aria-hidden="true" className="mt-2.5 h-1.5 w-1.5 shrink-0 -skew-x-[20deg] bg-apex-deep" />
+                A predictable price. We&rsquo;re not promising discounts or unlimited visits. We&rsquo;d rather set terms we can keep.
               </li>
               <li className="flex gap-3">
-                <span aria-hidden="true" className="text-apex-deep">—</span>
+                <span aria-hidden="true" className="mt-2.5 h-1.5 w-1.5 shrink-0 -skew-x-[20deg] bg-apex-deep" />
                 Weather, rescheduling and cancellation rules written down before anyone pays a cent.
               </li>
             </ul>

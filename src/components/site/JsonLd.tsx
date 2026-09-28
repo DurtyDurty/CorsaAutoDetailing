@@ -66,7 +66,7 @@ export function BusinessJsonLd({ withOffers = true }: { withOffers?: boolean }) 
     areaServed,
     ...(withOffers
       ? {
-          priceRange: `$${Math.min(...allPrices)}–$${Math.max(...allPrices)}`,
+          priceRange: `$${Math.min(...allPrices)}-$${Math.max(...allPrices)}`,
           hasOfferCatalog: {
             "@type": "OfferCatalog",
             name: "Detailing packages and additional services",

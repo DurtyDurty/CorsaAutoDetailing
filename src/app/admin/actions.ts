@@ -89,7 +89,7 @@ export async function confirmAppointmentAction(formData: FormData) {
   const override = formData.get("overrideConflicts") === "on";
 
   if (!isIsoDate(date) || !/^\d{2}:\d{2}$/.test(time)) return back(id, { error: "Enter a valid date and time." });
-  if (!Number.isFinite(duration) || duration < 15 || duration > 600) return back(id, { error: "Duration must be 15–600 minutes." });
+  if (!Number.isFinite(duration) || duration < 15 || duration > 600) return back(id, { error: "Duration must be 15 to 600 minutes." });
   if (!Number.isFinite(price) || price < 0) return back(id, { error: "Enter the quoted price." });
   if (!agreed) return back(id, { error: "Confirm that the customer agreed to this time and price." });
 

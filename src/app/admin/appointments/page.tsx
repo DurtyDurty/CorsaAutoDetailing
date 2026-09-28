@@ -22,7 +22,7 @@ export default async function AppointmentsPage() {
       <div>
         <h1 className="font-display text-3xl">Appointments</h1>
         <p className="text-ink-muted text-sm mt-1">
-          Work hours {business.scheduling.workHours.start}–{business.scheduling.workHours.end} ET · {business.scheduling.travelBufferMinutes} min travel
+          Work hours {business.scheduling.workHours.start} to {business.scheduling.workHours.end} ET · {business.scheduling.travelBufferMinutes} min travel
           buffer · times shown in Eastern
         </p>
       </div>
@@ -53,7 +53,7 @@ export default async function AppointmentsPage() {
                           {[lead.firstName, lead.lastName].filter(Boolean).join(" ")}
                         </Link>
                       ) : (
-                        "—"
+                        "-"
                       )}
                     </td>
                     <td className="px-4 py-3">{formatUsd(a.quotedPriceCents / 100)}</td>

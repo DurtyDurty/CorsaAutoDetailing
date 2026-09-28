@@ -14,12 +14,12 @@ import { LaunchListForm } from "@/components/forms/LaunchListForm";
 import { HOME_FAQ } from "@/content/faq";
 
 export const metadata: Metadata = {
-  title: { absolute: `${business.brand.name} — Mobile auto detailing in Clay County & Jacksonville, FL` },
+  title: { absolute: `${business.brand.name} | Mobile auto detailing in Clay County & Jacksonville, FL` },
   description:
     "Interior and exterior car detailing at your home or workplace. Mobile auto detailing in Clay County and Jacksonville, FL: the Corsa Essential and Corsa Signature Detail packages.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: `${business.brand.name} — Driven by Detail`,
+    title: `${business.brand.name} | Driven by Detail`,
     description: "Mobile auto detailing in Clay County and Jacksonville, Florida. Interior and exterior car detailing at your home or workplace.",
     url: "/",
   },
@@ -70,7 +70,7 @@ export default function HomePage() {
               </div>
               <p className="mt-6 text-lg sm:text-xl text-chalk/80 max-w-xl leading-relaxed">
                 Interior and exterior car detailing, brought to your home or workplace. Mobile auto detailing in Clay
-                County and Jacksonville — done by hand and finished with real protection.
+                County and Jacksonville, done by hand and finished with real protection.
               </p>
               <div className="mt-9 flex flex-col sm:flex-row gap-3">
                 <ButtonLink href={cta.href} variant="apex" size="lg">

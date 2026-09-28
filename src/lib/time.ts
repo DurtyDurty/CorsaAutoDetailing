@@ -144,7 +144,7 @@ export function withinWorkHours(start: Date, end: Date): { ok: boolean; reason?:
   const sameDay = s.year === e.year && s.month === e.month && s.day === e.day;
   if (!sameDay) return { ok: false, reason: "Appointments must start and end on the same day." };
   if (startMin < toMin(workHours.start) || endMin > toMin(workHours.end)) {
-    return { ok: false, reason: `Outside work hours (${workHours.start}–${workHours.end} ET).` };
+    return { ok: false, reason: `Outside work hours (${workHours.start} to ${workHours.end} ET).` };
   }
   return { ok: true };
 }

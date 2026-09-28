@@ -31,7 +31,7 @@ const KINDS = {
     cta: { label: "Back to home", href: "/" },
   },
   membership: {
-    title: "Thanks — interest noted.",
+    title: "Thanks, interest noted.",
     body: "Maintenance plans aren't available yet and nothing has been charged or enrolled. When pricing and terms are set, we'll share them with you first.",
     next: "You're welcome to request a one-time service in the meantime.",
     cta: { label: "Request a quote", href: "/request" },

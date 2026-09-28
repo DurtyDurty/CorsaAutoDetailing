@@ -61,7 +61,7 @@ test.describe("public site", () => {
     await page.goto("/services");
     const text = (await page.textContent("main")) ?? "";
     for (const price of ["$120", "$160", "$200", "$275", "$325", "$375"]) expect(text).toContain(price);
-    for (const range of ["$35–$75", "$30–$75", "$50–$100", "$50", "$100–$150", "$175–$300"]) expect(text).toContain(range);
+    for (const range of ["$35-$75", "$30-$75", "$50-$100", "$50", "$100-$150", "$175-$300"]) expect(text).toContain(range);
     expect(text).toMatch(/Planned starting prices/);
     expect(text).toMatch(/Best First Visit/);
     expect(text).toMatch(/not a professionally installed ceramic coating/);
