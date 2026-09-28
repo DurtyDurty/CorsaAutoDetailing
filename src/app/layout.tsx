@@ -31,6 +31,8 @@ export const metadata: Metadata = {
     url: absoluteUrl("/"),
   },
   twitter: { card: "summary_large_image" },
+  // Bing Webmaster Tools ownership (Google is verified by DNS TXT instead).
+  verification: { other: { "msvalidate.01": "89118DC60485CDDF4C3A26B36FE18B9B" } },
   robots: noindex ? { index: false, follow: false } : { index: true, follow: true },
   icons: {
     icon: [
