@@ -197,7 +197,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
           legend="Vehicle type"
           name="vehicleCategory"
           type="radio"
-          columns={2}
+          hint="Minivan, oversized or lifted truck, or something unusual? Send us a message on the contact page for a custom quote."
           required
           defaultValue={vehicle}
           onChange={setVehicle}

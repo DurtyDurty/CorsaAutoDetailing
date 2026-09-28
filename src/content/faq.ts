@@ -37,7 +37,7 @@ export const SERVICES_FAQ: FaqItem[] = [
   },
   {
     q: "Which vehicle size am I?",
-    a: "Coupes and sedans are one size; small crossovers and two-row SUVs another; pickup trucks and three-row SUVs a third. Minivans, oversized trucks and anything unusual are quoted individually. If you're not sure, choose \"Other / not sure\" and we'll confirm.",
+    a: "Coupes and sedans are one size; small crossovers and two-row SUVs another; pickup trucks and three-row SUVs a third. Minivans, oversized or lifted trucks and anything unusual are quoted individually, so send us a message through the contact page. If you're between two sizes, pick the closer one and we'll confirm at inspection.",
   },
   {
     q: "How long does the protection last?",

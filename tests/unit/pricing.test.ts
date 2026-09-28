@@ -18,12 +18,11 @@ describe("computeEstimate", () => {
     }
   });
 
-  it("requires a custom quote for unpriced categories", () => {
+  it("offers only the three priced vehicle sizes", () => {
+    expect(business.vehicleCategories.map((v) => v.id)).toEqual(["sedan", "suv2", "large"]);
+    expect(business.vehicleCategories.every((v) => v.priced)).toBe(true);
     for (const v of ["minivan", "oversized", "other"]) {
-      const e = computeEstimate({ serviceId: "essential", vehicleCategoryId: v });
-      expect(e?.basePrice).toBeNull();
-      expect(e?.total).toBeNull();
-      expect(e?.requiresCustomQuote).toBe(true);
+      expect(computeEstimate({ serviceId: "essential", vehicleCategoryId: v })).toBeNull();
     }
   });
 

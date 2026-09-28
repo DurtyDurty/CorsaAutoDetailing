@@ -157,9 +157,8 @@ export const business = {
     { id: "sedan", label: "Coupe or sedan", examples: "Civic, Camry, Mustang, IS F", priced: true },
     { id: "suv2", label: "Small crossover or two-row SUV", examples: "RAV4, CR-V, CX-5, FJ Cruiser", priced: true },
     { id: "large", label: "Pickup truck or three-row SUV", examples: "F-150, Silverado, Tahoe, Highlander", priced: true },
-    { id: "minivan", label: "Minivan", examples: "Odyssey, Sienna, Pacifica", priced: false },
-    { id: "oversized", label: "Oversized / lifted / dually", examples: "F-250 dually, lifted trucks, vans", priced: false },
-    { id: "other", label: "Other / not sure", examples: "Anything unusual", priced: false },
+    // Minivan / oversized / other were removed from the site 2026-09-28: those vehicles
+    // are quoted through the contact page. The ids stay in VehicleCategoryId for older leads.
   ] satisfies VehicleCategory[],
 
   services: [
@@ -231,7 +230,7 @@ export const business = {
 
   /** Requires a custom quote regardless of package. */
   customQuoteConditions: [
-    "Minivans, oversized trucks, and unusual vehicles",
+    "Minivans, oversized or lifted trucks, and unusual vehicles (send us a message through the contact page)",
     "Heavily soiled or neglected vehicles",
   ],
 
