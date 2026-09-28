@@ -5,8 +5,6 @@ import { business, isPrelaunch, primaryCta } from "@/config/business";
 import { Arrow, ButtonLink } from "@/components/ui/Button";
 import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/Section";
 import { PackageCards } from "@/components/site/PackageCards";
-import { AdditionalServices } from "@/components/site/AdditionalServices";
-import { PricingDisclosures } from "@/components/site/Disclosures";
 import { CareJourney } from "@/components/site/CareJourney";
 import { ProcessSteps } from "@/components/site/ProcessSteps";
 import { HeroVideo } from "@/components/site/HeroVideo";
@@ -18,7 +16,7 @@ import { HOME_FAQ } from "@/content/faq";
 export const metadata: Metadata = {
   title: { absolute: `${business.brand.name} — Mobile auto detailing in Clay County & Jacksonville, FL` },
   description:
-    "Interior and exterior car detailing at your home or workplace. Mobile auto detailing in Clay County and Jacksonville, FL: Corsa Essential and Signature Detail packages, starting at $120.",
+    "Interior and exterior car detailing at your home or workplace. Mobile auto detailing in Clay County and Jacksonville, FL: the Corsa Essential and Corsa Signature Detail packages.",
   alternates: { canonical: "/" },
   openGraph: {
     title: `${business.brand.name} — Driven by Detail`,
@@ -31,7 +29,6 @@ export default function HomePage() {
   const cta = primaryCta();
   const core = business.serviceAreas.communities.filter((c) => c.coverage === "core");
   const confirm = business.serviceAreas.communities.filter((c) => c.coverage === "confirm");
-  const startingAt = Math.min(...business.services.flatMap((s) => Object.values(s.prices)));
   // Multi-sentence taglines break one sentence per line.
   const [taglineLead, ...taglineRest] = business.brand.tagline.split(/(?<=\.)\s+/);
   const ticker = [
@@ -44,7 +41,7 @@ export default function HomePage() {
 
   return (
     <>
-      <BusinessJsonLd />
+      <BusinessJsonLd withOffers={false} />
 
       {/* Hero */}
       <section className="relative overflow-hidden bg-asphalt text-chalk on-dark">
@@ -92,11 +89,8 @@ export default function HomePage() {
           {/* Telemetry strip */}
           <dl className="grid grid-cols-2 lg:grid-cols-4 border-t border-line-dark">
             <div className="py-5 pr-4 border-b lg:border-b-0 border-line-dark">
-              <dt className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-chalk/50">01 / Starting at</dt>
-              <dd className="mt-1.5 flex items-baseline gap-2">
-                <span className="font-display italic font-extrabold text-5xl">${startingAt}</span>
-                <span className="text-xs text-chalk/60">{business.priceLabel[business.mode].toLowerCase()}</span>
-              </dd>
+              <dt className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-chalk/50">01 / We come to you</dt>
+              <dd className="mt-1.5 font-display italic font-extrabold text-3xl leading-tight">Home or workplace</dd>
             </div>
             <div className="py-5 pl-4 lg:pr-4 border-b lg:border-b-0 border-l border-line-dark">
               <dt className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-chalk/50">02 / Where</dt>
@@ -157,28 +151,19 @@ export default function HomePage() {
           <SectionHeading
             eyebrow="Detailing packages"
             title="Two packages. Built to perform."
-            lede="Pick your vehicle size to see your starting price, then book the package that fits. All prices are starting prices, confirmed at an in-person inspection."
+            lede="Start with Signature for a full reset, then keep it sharp with Essential. Book either one, or see pricing and every detail on the services page."
           />
           <Link
             href="/services"
             className="group inline-flex items-center gap-2 font-semibold uppercase tracking-[0.1em] text-sm text-apex-deep shrink-0"
           >
-            Full service details
+            Pricing &amp; full details
             <Arrow />
           </Link>
         </div>
         <div className="mt-12">
-          <PackageCards />
+          <PackageCards showPrices={false} />
         </div>
-
-        <div className="mt-16">
-          <h3 className="font-display text-3xl sm:text-4xl">Additional services</h3>
-          <div className="mt-6">
-            <AdditionalServices />
-          </div>
-        </div>
-
-        <PricingDisclosures className="mt-12" />
       </Section>
 
       <CareJourney />

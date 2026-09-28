@@ -69,6 +69,18 @@ test.describe("public site", () => {
     expect(text).toMatch(/Any applicable tax will be disclosed/);
   });
 
+  test("home page shows packages but no prices", async ({ page }) => {
+    await page.goto("/");
+    const text = (await page.textContent("main")) ?? "";
+    expect(text).toContain("Corsa Essential Detail");
+    expect(text).toContain("Corsa Signature Detail");
+    expect(text).not.toMatch(/\$\s?\d/);
+    const jsonLd = (await page.locator('script[type="application/ld+json"]').allTextContents()).join("");
+    expect(jsonLd).not.toMatch(/"(price|minPrice|priceRange)"/);
+    await page.getByRole("link", { name: "See pricing & full details" }).first().click();
+    await expect(page).toHaveURL(/\/services#essential$/);
+  });
+
   test("package Book buttons carry the service and vehicle size into the form", async ({ page }) => {
     await page.goto("/services");
     await page.getByText("Small crossover or two-row SUV").first().click();

@@ -32,14 +32,24 @@ function Check({ className }: { className?: string }) {
  * The two detailing packages as side-by-side cards, with an optional vehicle-size
  * picker. The picker highlights the matching price on both cards and passes the
  * size (with the package) into the booking form.
+ *
+ * `showPrices={false}` (home page) hides the picker and every price, trims the
+ * checklist, and links to the services page for pricing instead.
  */
-export function PackageCards({ headingLevel = "h3" }: { headingLevel?: "h2" | "h3" }) {
+export function PackageCards({
+  headingLevel = "h3",
+  showPrices = true,
+}: {
+  headingLevel?: "h2" | "h3";
+  showPrices?: boolean;
+}) {
   const [vehicle, setVehicle] = useState<PricedVehicleId | null>(null);
   const pickerId = useId();
   const label = business.priceLabel[business.mode];
 
   return (
     <div>
+      {showPrices && (
       <fieldset className="mb-8">
         <legend className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-ink-muted mb-3">
           Show my price · vehicle size
@@ -76,10 +86,19 @@ export function PackageCards({ headingLevel = "h3" }: { headingLevel?: "h2" | "h
           })}
         </div>
       </fieldset>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
         {business.services.map((s, i) => (
-          <PackageCard key={s.id} service={s} index={i} vehicle={vehicle} priceLabel={label} headingLevel={headingLevel} />
+          <PackageCard
+            key={s.id}
+            service={s}
+            index={i}
+            vehicle={vehicle}
+            priceLabel={label}
+            headingLevel={headingLevel}
+            showPrices={showPrices}
+          />
         ))}
       </div>
     </div>
@@ -92,13 +111,18 @@ function PackageCard({
   vehicle,
   priceLabel,
   headingLevel: H,
+  showPrices,
 }: {
   service: ServiceDefinition;
   index: number;
   vehicle: PricedVehicleId | null;
   priceLabel: string;
   headingLevel: "h2" | "h3";
+  showPrices: boolean;
 }) {
+  const PREVIEW_ITEMS = 6;
+  const items = showPrices ? s.includes : s.includes.slice(0, PREVIEW_ITEMS);
+  const hiddenCount = s.includes.length - items.length;
   const featured = Boolean(s.badge);
   const base = s.includesEverythingIn ? business.services.find((x) => x.id === s.includesEverythingIn) : null;
   const headingId = `pkg-${s.id}`;
@@ -137,8 +161,10 @@ function PackageCard({
       </H>
       <p className="mt-4 text-ink-muted leading-relaxed">{s.description}</p>
 
-      {/* Prices */}
+      {/* Prices (services page only) */}
       <div className="mt-6">
+        {showPrices && (
+        <>
         <p className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-ink-muted">{priceLabel} · starting at</p>
         <dl className="mt-2 divide-y divide-line border-y border-line">
           {PRICED.map((v) => {
@@ -164,7 +190,9 @@ function PackageCard({
             );
           })}
         </dl>
-        <p className="mt-3 flex items-center gap-2 text-sm text-ink-muted">
+        </>
+        )}
+        <p className={cn("flex items-center gap-2 text-sm text-ink-muted", showPrices && "mt-3")}>
           <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
             <circle cx="8" cy="8" r="6.2" />
             <path d="M8 4.5V8l2.5 1.5" />
@@ -186,6 +214,15 @@ function PackageCard({
         Book {shortName}
         <Arrow />
       </Link>
+      {!showPrices && (
+        <Link
+          href={`/services#${s.id}`}
+          className="mt-3 inline-flex items-center justify-center gap-2 text-sm font-semibold uppercase tracking-[0.1em] text-ink hover:text-apex-deep"
+        >
+          See pricing &amp; full details
+          <Arrow />
+        </Link>
+      )}
 
       {/* Included */}
       <div className="mt-8 border-t border-line pt-6">
@@ -193,13 +230,16 @@ function PackageCard({
           {base ? `Everything in the ${base.name.replace(/^Corsa\s+/, "")}, plus:` : "What's included"}
         </p>
         <ul className="mt-4 grid gap-2.5">
-          {s.includes.map((item) => (
+          {items.map((item) => (
             <li key={item} className="flex gap-3 text-[0.95rem] leading-snug">
               <Check className={featured ? "text-apex-deep" : "text-ink"} />
               <span>{item}</span>
             </li>
           ))}
         </ul>
+        {hiddenCount > 0 && (
+          <p className="mt-3 text-sm text-ink-muted">+ {hiddenCount} more in the full package</p>
+        )}
       </div>
     </article>
   );

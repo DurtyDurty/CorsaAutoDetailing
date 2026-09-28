@@ -4,9 +4,10 @@ import { business, absoluteUrl } from "@/config/business";
  * LocalBusiness (AutomotiveBusiness) + Service + Offer structured data, limited
  * to facts we can stand behind. No street address, coordinates, opening hours
  * or ratings — this is a mobile business and those aren't verified.
- * Prices are published as starting prices (minPrice), matching the site.
+ * Prices are published as starting prices (minPrice), matching the site, and
+ * only on pages that show prices (`withOffers`), never on the home page.
  */
-export function BusinessJsonLd() {
+export function BusinessJsonLd({ withOffers = true }: { withOffers?: boolean }) {
   const id = absoluteUrl("/#business");
   const priced = business.vehicleCategories.filter((v) => v.priced);
   const allPrices = business.services.flatMap((s) => Object.values(s.prices));
@@ -62,13 +63,17 @@ export function BusinessJsonLd() {
     image: absoluteUrl("/icon-512.png"),
     description:
       "Mobile auto detailing in Clay County and Jacksonville, Florida: interior and exterior car detailing at your home or workplace.",
-    priceRange: `$${Math.min(...allPrices)}–$${Math.max(...allPrices)}`,
     areaServed,
-    hasOfferCatalog: {
-      "@type": "OfferCatalog",
-      name: "Detailing packages and additional services",
-      itemListElement: [...packageOffers, ...addOnOffers],
-    },
+    ...(withOffers
+      ? {
+          priceRange: `$${Math.min(...allPrices)}–$${Math.max(...allPrices)}`,
+          hasOfferCatalog: {
+            "@type": "OfferCatalog",
+            name: "Detailing packages and additional services",
+            itemListElement: [...packageOffers, ...addOnOffers],
+          },
+        }
+      : {}),
     ...(business.contact.email ? { email: business.contact.email } : {}),
     ...(business.contact.phone ? { telephone: business.contact.phone } : {}),
   };
