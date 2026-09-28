@@ -9,6 +9,7 @@ Things the website is deliberately silent or provisional about until you decide.
 - [ ] **USPTO trademark search** (tmsearch.uspto.gov) for "Corsa" in car care/detailing before spending on signage, shirts or a wrap.
 - [x] **Domain.** `corsaautodetailing.com` purchased 2026-09-25. `NEXT_PUBLIC_SITE_URL` set in `.env.example`; DNS is pointed at the host in LAUNCH_CHECKLIST §6.
 - [x] **Logo.** Vector master supplied 2026-09-26: `public/brand/logo-master.svg`. That's the file to hand to sign shops, embroiderers and printers. The site uses SVG dark and light versions made from it, plus a browser-tab icon from the "C" mark.
+- [ ] **LLC ownership (2026-09-28).** The LLC will be in your wife's name; she is also a veteran, so "Veteran owned" stays accurate. When the LLC is filed, tell me its exact legal name: the privacy page currently says the business is "owned by Herson Sanchez" (`business.owner.name`) and should name the LLC instead. Customer emails can stay signed by you, since you run the work.
 - [x] **"Veteran-owned" statement.** Decided 2026-09-26: show only "Veteran owned" with a U.S. flag (home hero top-right, About, footer). No rank or branch details. → `business.owner.veteranOwned`
 - [x] **Owner bio.** Decided 2026-09-26: removed from the site.
 
