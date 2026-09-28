@@ -9,7 +9,8 @@ Things the website is deliberately silent or provisional about until you decide.
 - [ ] **USPTO trademark search** (tmsearch.uspto.gov) for "Corsa" in car care/detailing before spending on signage, shirts or a wrap.
 - [x] **Domain.** `corsaautodetailing.com` purchased 2026-09-25. `NEXT_PUBLIC_SITE_URL` set in `.env.example`; DNS is pointed at the host in LAUNCH_CHECKLIST §6.
 - [x] **Logo.** Vector master supplied 2026-09-26: `public/brand/logo-master.svg`. That's the file to hand to sign shops, embroiderers and printers. The site uses SVG dark and light versions made from it, plus a browser-tab icon from the "C" mark.
-- [ ] **LLC (2026-09-28).** Being filed in your name (a veteran), so "Veteran owned" and "owned by Herson Sanchez" on the privacy page stay accurate. When it's filed, tell me the exact legal name (e.g. "Corsa Auto Detailing LLC") so the privacy and terms pages and the footer copyright can name the LLC.
+- [ ] **LLC: CORSA AUTO DETAILING LLC.** Filed and paid on Sunbiz 2026-09-28 (tracking #000482991190, effective 09/28/2026), owned by you (a veteran), so "Veteran owned" stays accurate. When the approval email arrives, tell me: the privacy and terms pages and the footer copyright will name the LLC. Then EIN → operating agreement → business bank account → insurance.
+- [ ] **Sunbiz annual report:** due every year January 1 to May 1 (first one in 2027). Missing it means a $400 late fee.
 - [x] **"Veteran-owned" statement.** Decided 2026-09-26: show only "Veteran owned" with a U.S. flag (home hero top-right, About, footer). No rank or branch details. → `business.owner.veteranOwned`
 - [x] **Owner bio.** Decided 2026-09-26: removed from the site.
 
