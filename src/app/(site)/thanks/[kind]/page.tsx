@@ -33,8 +33,8 @@ const KINDS = {
   membership: {
     title: "Thanks, interest noted.",
     body: "Maintenance plans aren't available yet and nothing has been charged or enrolled. When pricing and terms are set, we'll share them with you first.",
-    next: "You're welcome to request a one-time service in the meantime.",
-    cta: { label: "Request a quote", href: "/request" },
+    next: isPrelaunch ? "Booking opens soon. We'll email you when it does." : "You're welcome to book a one-time service in the meantime.",
+    cta: isPrelaunch ? { label: "Explore services", href: "/services" } : { label: "Request an appointment", href: "/request" },
   },
   contact: {
     title: "Message received.",

@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import Link from "next/link";
-import { business, type PricedVehicleId, type ServiceDefinition } from "@/config/business";
+import { business, isPrelaunch, type PricedVehicleId, type ServiceDefinition } from "@/config/business";
 import { formatUsd } from "@/lib/pricing";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
@@ -211,7 +211,8 @@ function PackageCard({
             : "border-asphalt bg-asphalt text-chalk hover:bg-apex-deep hover:border-apex-deep hover:text-white",
         )}
       >
-        Book {shortName}
+        {/* Before launch the same link collects an email for updates (the /request page switches forms). */}
+        {isPrelaunch ? "Get launch updates" : `Book ${shortName}`}
         <Arrow />
       </Link>
       {!showPrices && (

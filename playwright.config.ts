@@ -21,7 +21,8 @@ export default defineConfig({
     reuseExistingServer: true,
     timeout: 120_000,
     // `next start` runs with NODE_ENV=production, so the demo store must be allowed explicitly for e2e.
-    env: { DEMO_ADMIN_PASSWORD: "corsa-demo", ALLOW_DEMO_STORE: "true", NEXT_PUBLIC_ANALYTICS_PROVIDER: "none" },
+    // FORM_RATE_LIMIT: the suite submits the same form many times from one IP.
+    env: { DEMO_ADMIN_PASSWORD: "corsa-demo", ALLOW_DEMO_STORE: "true", NEXT_PUBLIC_ANALYTICS_PROVIDER: "none", FORM_RATE_LIMIT: "200" },
   },
   projects: [
     { name: "mobile-360", use: { ...devices["Pixel 5"], viewport: { width: 360, height: 780 } } },

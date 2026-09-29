@@ -10,7 +10,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "next build && playwright test",
+    "test:e2e": "next build && playwright test && playwright test -c playwright.live.config.ts",
     "check": "npm run lint && npm run typecheck && npm run test",
     "launch-check": "node scripts/launch-check.mjs"
   },

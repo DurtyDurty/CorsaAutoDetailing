@@ -95,20 +95,22 @@ test.describe("public site", () => {
     await expect(page).toHaveURL(/\/services#essential$/);
   });
 
-  test("package Book buttons carry the service and vehicle size into the form", async ({ page }) => {
+  test("before launch, package buttons ask for an email with the package and size pre-filled (no booking)", async ({ page }) => {
     await page.goto("/services");
+    await expect(page.getByRole("link", { name: /^Book / })).toHaveCount(0);
     await page.getByText("Small crossover or two-row SUV").first().click();
-    await page.getByRole("link", { name: "Book Signature" }).click();
+    // Second card is Signature.
+    await page.getByRole("link", { name: "Get launch updates" }).nth(1).click();
     await expect(page).toHaveURL(/\/request\?service=signature&vehicle=suv2$/);
-    const form = page.getByRole("form", { name: "Service request" });
-    await expect(form.getByRole("radio", { name: /Corsa Signature Detail/ })).toBeChecked();
-    await expect(form.getByRole("radio", { name: /Small crossover or two-row SUV/ })).toBeChecked();
-    await expect(form.locator('[data-step="0"]').getByText("$325")).toBeVisible();
+    await expect(page.getByRole("form", { name: "Service request" })).toHaveCount(0);
+    const form = page.getByRole("form", { name: "Launch list signup" });
+    await expect(form.getByLabel(/Service you're interested in/)).toHaveValue("signature");
+    await expect(form.getByLabel(/Vehicle type/)).toHaveValue("suv2");
 
     await page.goto("/");
-    await page.getByRole("link", { name: "Book Essential" }).click();
+    await page.getByRole("link", { name: "Get launch updates" }).first().click();
     await expect(page).toHaveURL(/\/request\?service=essential$/);
-    await expect(page.getByRole("form", { name: "Service request" }).getByRole("radio", { name: /Corsa Essential Detail/ })).toBeChecked();
+    await expect(page.getByRole("form", { name: "Launch list signup" }).getByLabel(/Service you're interested in/)).toHaveValue("essential");
   });
 
   test("admin, export and photos are locked without a session", async ({ request, page }) => {

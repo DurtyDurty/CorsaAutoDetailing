@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { business } from "@/config/business";
+import Link from "next/link";
+import { business, isPrelaunch } from "@/config/business";
 import { Section, SectionHeading } from "@/components/ui/Section";
 import { PageHero } from "@/components/site/PageHero";
 import { ContactForm } from "@/components/forms/ContactForm";
@@ -56,11 +57,23 @@ export default function ContactPage() {
             )}
             {contact.responseHours && <p className="mt-4 text-sm text-ink-muted">We reply during {contact.responseHours}.</p>}
             <p className="mt-8 text-sm text-ink-muted">
-              Looking for a quote? The{" "}
-              <a href="/request" className="underline underline-offset-4">
-                request form
-              </a>{" "}
-              collects the vehicle details we need.
+              {isPrelaunch ? (
+                <>
+                  Booking isn&rsquo;t open yet.{" "}
+                  <Link href="/#launch-list" className="underline underline-offset-4">
+                    Join the launch list
+                  </Link>{" "}
+                  and we&rsquo;ll email you when it opens.
+                </>
+              ) : (
+                <>
+                  Ready to book? The{" "}
+                  <a href="/request" className="underline underline-offset-4">
+                    request form
+                  </a>{" "}
+                  collects the vehicle details we need.
+                </>
+              )}
             </p>
           </div>
           <div className="border border-line bg-chalk rounded-md p-6 sm:p-8">

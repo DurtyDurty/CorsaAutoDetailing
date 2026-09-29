@@ -213,7 +213,6 @@ export const business = {
         "Leather cleaned and protected",
         "Interior UV protection",
         "Premium tire dressing",
-        "Complimentary Corsa-branded air freshener",
       ],
       prices: { sedan: 275, suv2: 325, large: 375 },
     },

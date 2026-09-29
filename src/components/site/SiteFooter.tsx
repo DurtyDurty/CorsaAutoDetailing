@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { business } from "@/config/business";
+import { business, isPrelaunch } from "@/config/business";
 import { Container } from "@/components/ui/Section";
 import { Wordmark } from "./Wordmark";
 import { NAV_LINKS } from "./nav";
@@ -34,8 +34,8 @@ export function SiteFooter() {
               </li>
             ))}
             <li>
-              <Link href="/request" className="text-chalk/85 hover:text-apex">
-                Request a quote
+              <Link href={isPrelaunch ? "/#launch-list" : "/request"} className="text-chalk/85 hover:text-apex">
+                {isPrelaunch ? "Get launch updates" : "Request an appointment"}
               </Link>
             </li>
           </ul>

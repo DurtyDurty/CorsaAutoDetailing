@@ -52,8 +52,14 @@ export async function clientKey(scope: string): Promise<string> {
   return `${scope}:${createHash("sha256").update(ip).digest("hex").slice(0, 24)}`;
 }
 
-/** Standard limit for public form submissions. */
+/**
+ * Standard limit for public form submissions: 6 per 10 minutes per client.
+ * FORM_RATE_LIMIT overrides the count; only the e2e test servers set it (they
+ * submit the same form many times from one IP). Never set it in production.
+ */
 export async function limitFormSubmission(scope: string): Promise<RateLimitResult> {
   const key = await clientKey(scope);
-  return checkRateLimit(key, 6, 10 * 60_000);
+  const override = Number(process.env.FORM_RATE_LIMIT);
+  const limit = Number.isInteger(override) && override > 0 ? override : 6;
+  return checkRateLimit(key, limit, 10 * 60_000);
 }

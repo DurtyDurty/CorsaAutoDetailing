@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const unique = () => `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
+// PRELAUNCH mode (the default build). Booking-request tests live in tests/e2e-live.
 test.describe("lead forms (demo store)", () => {
   test("launch list: validation errors preserve input, then saves and confirms", async ({ page }) => {
     await page.goto("/#launch-list");
@@ -26,60 +27,20 @@ test.describe("lead forms (demo store)", () => {
     await expect(page.getByText(/Reference [A-Z0-9]{6}/)).toBeVisible();
   });
 
-  test("quote request: multi-step, estimate shown, phone and price acknowledgment required, saves", async ({ page }) => {
-    await page.goto("/request?service=signature");
-    const form = page.getByRole("form", { name: "Service request" });
-    await expect(page.getByText(/aren't confirming appointments yet/)).toBeVisible();
+  test("before launch, /request takes no bookings: it collects an email with the chosen package pre-filled", async ({ page }) => {
+    await page.goto("/request?service=signature&vehicle=suv2");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(/not booking yet/i);
+    await expect(page.getByRole("form", { name: "Service request" })).toHaveCount(0);
+    const form = page.getByRole("form", { name: "Launch list signup" });
+    await expect(form.getByLabel(/Service you're interested in/)).toHaveValue("signature");
+    await expect(form.getByLabel(/Vehicle type/)).toHaveValue("suv2");
 
-    // Step 1
-    await expect(form.getByRole("radio", { name: /Corsa Signature Detail/ })).toBeChecked();
-    await form.getByRole("radio", { name: /Small crossover or two-row SUV/ }).check();
-    await expect(form.locator('[data-step="0"]').getByText("$325")).toBeVisible();
-    await form.getByLabel(/^Year\b/).fill("2012");
-    await form.getByLabel(/^Make\b/).fill("Toyota");
-    await form.getByLabel(/^Model\b/).fill("FJ Cruiser");
-    await form.getByRole("button", { name: "Continue" }).click();
-
-    // Step 2 — flags must not change the estimate
-    await expect(form.getByRole("heading", { name: "Condition" })).toBeVisible();
-    await form.getByRole("radio", { name: /Needs deeper cleaning/ }).check();
-    await form.getByRole("checkbox", { name: "Pet hair" }).check();
-    await form.getByRole("checkbox", { name: "Heavy sand" }).check();
-    await form.getByRole("button", { name: "Continue" }).click();
-
-    // Step 3
-    await expect(form.getByRole("heading", { name: "Location & timing" })).toBeVisible();
-    await form.getByLabel("Service address").fill("123 Main St");
-    await form.getByLabel("ZIP code").fill("32073");
-    await expect(form.getByText(/Orange Park is served at selected locations/)).toBeVisible();
-    await form.getByRole("radio", { name: "Home" }).check();
-    await form.getByRole("checkbox", { name: /Saturdays/ }).check();
-    await expect(form.getByText(/once an opening date is set/)).toBeVisible();
-    await form.getByRole("button", { name: "Continue" }).click();
-
-    // Step 4
-    await expect(form.getByRole("heading", { name: "Contact & review" })).toBeVisible();
-    await expect(form.locator('[data-step="3"]').getByText("$325")).toBeVisible(); // still $325 despite flags
-    await expect(form.getByText(/Final pricing is subject to an in-person vehicle inspection/)).toBeVisible();
-    await form.getByLabel("First name").fill("Herson");
+    await form.getByLabel("First name").fill("Sam");
+    await form.getByLabel("ZIP code").fill("32043");
     await form.getByLabel("Email", { exact: true }).fill(`${unique()}@example.com`);
-    await form.getByLabel("How should we reach you?").selectOption("text");
     await form.getByLabel(/I understand Corsa Auto Detailing will use/).check();
-    await form.getByRole("button", { name: "Send my request" }).click();
-
-    // Native required on phone blocks submit; fill and retry.
-    await expect(page).not.toHaveURL(/thanks/);
-    await form.getByLabel(/Phone/).fill("904-555-0100");
-    // The unchecked price acknowledgment still blocks submit.
-    await form.getByRole("button", { name: "Send my request" }).click();
-    await expect(page).not.toHaveURL(/thanks/);
-    await form.getByLabel(/displayed price is an estimate/).check();
-    await form.getByRole("button", { name: "Send my request" }).click();
-
-    await expect(page).toHaveURL(/\/thanks\/request\?ref=/);
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Request saved");
-    await expect(page.getByText("$325")).toBeVisible();
-    await expect(page.getByText(/not confirming appointments/i)).toBeVisible();
+    await form.getByRole("button", { name: "Join the launch list" }).click();
+    await expect(page).toHaveURL(/\/thanks\/launch-list\?ref=/);
   });
 
   test("confirmation page refuses to show success for an unknown reference", async ({ page }) => {
@@ -87,42 +48,27 @@ test.describe("lead forms (demo store)", () => {
     await expect(page.getByRole("heading", { level: 1 })).toContainText(/couldn.t find that submission/);
   });
 
-  test("owner can sign in (demo), see the lead, export CSV, and PRELAUNCH blocks appointment confirmation", async ({ page }) => {
+  test("owner can sign in (demo), see a launch-list lead, export CSV, and sign out", async ({ page }) => {
     // Create a lead of our own so this test does not depend on the others.
     await page.goto("/request?service=essential&vehicle=sedan");
-    const form = page.getByRole("form", { name: "Service request" });
-    await form.getByLabel(/^Year\b/).fill("2019");
-    await form.getByLabel(/^Make\b/).fill("Lexus");
-    await form.getByLabel(/^Model\b/).fill("IS F");
-    await form.getByRole("button", { name: "Continue" }).click();
-    await form.getByRole("radio", { name: /Normal maintenance/ }).check();
-    await form.getByRole("button", { name: "Continue" }).click();
-    await form.getByLabel("Service address").fill("45 Oak Ln");
-    await form.getByLabel("ZIP code").fill("32068");
-    await form.getByRole("radio", { name: "Home" }).check();
-    await form.getByRole("button", { name: "Continue" }).click();
+    const form = page.getByRole("form", { name: "Launch list signup" });
     const name = `Admin ${unique()}`;
     await form.getByLabel("First name").fill(name);
+    await form.getByLabel("ZIP code").fill("32068");
     await form.getByLabel("Email", { exact: true }).fill(`${unique()}@example.com`);
-    await form.getByLabel(/Phone/).fill("904-555-0101");
     await form.getByLabel(/I understand Corsa Auto Detailing will use/).check();
-    await form.getByLabel(/displayed price is an estimate/).check();
-    await form.getByRole("button", { name: "Send my request" }).click();
-    await expect(page).toHaveURL(/\/thanks\/request\?ref=/);
+    await form.getByRole("button", { name: "Join the launch list" }).click();
+    await expect(page).toHaveURL(/\/thanks\/launch-list\?ref=/);
 
     await page.goto("/admin/login");
     await page.getByLabel("Password").fill("corsa-demo");
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page).toHaveURL(/\/admin$/);
-    await expect(page.getByRole("heading", { name: "Leads" })).toBeVisible();
 
-    await page.getByRole("table").getByRole("link", { name }).first().click();
+    await page.goto("/admin/launch-list");
+    await page.getByRole("link", { name }).first().click();
     await expect(page).toHaveURL(/\/admin\/leads\//);
-    await expect(page.getByText(/can.t be confirmed while the site is in PRELAUNCH/)).toBeVisible();
-    // Address and the timestamped price acknowledgment are stored with the booking.
-    await expect(page.getByText("45 Oak Ln")).toBeVisible();
-    await expect(page.getByText("Price estimate ack.")).toBeVisible();
-    await expect(page.getByText(/2026-09-v1 · /).last()).toBeVisible();
+    await expect(page.getByText("Corsa Essential Detail").first()).toBeVisible();
 
     // Fetch from inside the page so the Secure session cookie is sent exactly as the browser sends it.
     const csv = await page.evaluate(async () => {

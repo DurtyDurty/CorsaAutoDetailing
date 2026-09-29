@@ -13,7 +13,16 @@ import {
   useLeadForm,
 } from "./primitives";
 
-export function LaunchListForm({ compact = false }: { compact?: boolean }) {
+export function LaunchListForm({
+  compact = false,
+  initialService,
+  initialVehicle,
+}: {
+  compact?: boolean;
+  /** Pre-selects the package / vehicle size a visitor chose before landing here. */
+  initialService?: string;
+  initialVehicle?: string;
+}) {
   const { onSubmit, pending, errors, message, onStart } = useLeadForm(submitLaunchList, {
     formName: "launch_list",
     leadType: "launch_list",
@@ -37,7 +46,7 @@ export function LaunchListForm({ compact = false }: { compact?: boolean }) {
         <div className="grid gap-5 sm:grid-cols-2">
           <Field name="vehicleCategory" label="Vehicle type" optional error={errors.vehicleCategory}>
             {(p) => (
-              <Select name="vehicleCategory" defaultValue="" {...p}>
+              <Select name="vehicleCategory" defaultValue={initialVehicle ?? ""} {...p}>
                 <option value="">Choose…</option>
                 {business.vehicleCategories.map((v) => (
                   <option key={v.id} value={v.id}>
@@ -49,7 +58,7 @@ export function LaunchListForm({ compact = false }: { compact?: boolean }) {
           </Field>
           <Field name="serviceId" label="Service you're interested in" optional error={errors.serviceId}>
             {(p) => (
-              <Select name="serviceId" defaultValue="" {...p}>
+              <Select name="serviceId" defaultValue={initialService ?? ""} {...p}>
                 <option value="">Choose…</option>
                 {business.services.map((s) => (
                   <option key={s.id} value={s.id}>
