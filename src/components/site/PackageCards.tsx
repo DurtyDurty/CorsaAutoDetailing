@@ -121,8 +121,17 @@ function PackageCard({
   showPrices: boolean;
 }) {
   const PREVIEW_ITEMS = 6;
-  const items = showPrices ? s.includes : s.includes.slice(0, PREVIEW_ITEMS);
-  const hiddenCount = s.includes.length - items.length;
+  // Full grouped list on the services page; the home/town preview keeps the
+  // first PREVIEW_ITEMS items across groups (in order) and counts the rest.
+  const total = s.includes.reduce((n, g) => n + g.items.length, 0);
+  const limit = showPrices ? total : PREVIEW_ITEMS;
+  const groups = s.includes
+    .map((g, i) => {
+      const before = s.includes.slice(0, i).reduce((n, x) => n + x.items.length, 0);
+      return { heading: g.heading, items: g.items.slice(0, Math.max(0, limit - before)) };
+    })
+    .filter((g) => g.items.length > 0);
+  const hiddenCount = total - groups.reduce((n, g) => n + g.items.length, 0);
   const featured = Boolean(s.badge);
   const base = s.includesEverythingIn ? business.services.find((x) => x.id === s.includesEverythingIn) : null;
   const headingId = `pkg-${s.id}`;
@@ -230,14 +239,22 @@ function PackageCard({
         <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-ink">
           {base ? `Everything in the ${base.name.replace(/^Corsa\s+/, "")}, plus:` : "What's included"}
         </p>
-        <ul className="mt-4 grid gap-2.5">
-          {items.map((item) => (
-            <li key={item} className="flex gap-3 text-[0.95rem] leading-snug">
-              <Check className={featured ? "text-apex-deep" : "text-ink"} />
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
+        {groups.map((g) => (
+          <div key={g.heading} className="mt-5 first:mt-4">
+            <h4 className="flex items-center gap-2 text-[0.8rem] font-semibold uppercase tracking-[0.1em] text-ink-muted">
+              <span aria-hidden="true" className={cn("h-1.5 w-1.5 -skew-x-[20deg]", featured ? "bg-apex-deep" : "bg-asphalt")} />
+              {g.heading}
+            </h4>
+            <ul className="mt-2.5 grid gap-2.5">
+              {g.items.map((item) => (
+                <li key={item} className="flex gap-3 text-[0.95rem] leading-snug">
+                  <Check className={featured ? "text-apex-deep" : "text-ink"} />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
         {hiddenCount > 0 && (
           <p className="mt-3 text-sm text-ink-muted">+ {hiddenCount} more in the full package</p>
         )}

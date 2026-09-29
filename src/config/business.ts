@@ -43,7 +43,8 @@ export interface ServiceDefinition {
   badge: string | null;
   /** When set, the card shows "Everything in <that package>, plus:" above `includes`. */
   includesEverythingIn: ServiceId | null;
-  includes: string[];
+  /** Inclusions grouped under headings (Exterior / Interior / Finish). Only claim equipment you use. */
+  includes: { heading: string; items: string[] }[];
   /** Starting prices in USD by priced vehicle category. */
   prices: Record<PricedVehicleId, number>;
 }
@@ -169,50 +170,72 @@ export const business = {
     {
       id: "essential",
       name: "Corsa Essential Detail",
-      tagline: "Interior and exterior maintenance detail.",
+      tagline: "Maintenance detail, inside and out.",
       description:
         "A professional interior and exterior maintenance detail designed to keep a vehicle consistently clean, protected and presentable.",
       duration: "2-3 hours",
       badge: null,
       includesEverythingIn: null,
       includes: [
-        "Pre-rinse and foam wash",
-        "Safe hand wash",
-        "Wheels, tires and wheel faces cleaned",
-        "Door jambs wiped",
-        "Exterior glass cleaned",
-        "Professional tire dressing",
-        "Paint sealant lasting approximately 4-8 weeks",
-        "Thorough interior vacuum",
-        "Dashboard, console and door panels cleaned",
-        "Light crevice cleaning",
-        "Interior glass cleaned",
-        "Final quality inspection",
+        {
+          heading: "Exterior",
+          items: [
+            "Pre-rinse and foam wash",
+            "Safe hand wash",
+            "Spot-free final rinse with deionized water",
+            "Wheels, tire sidewalls and wheel faces cleaned",
+            "Door jambs wiped down",
+            "Streak-free exterior glass",
+            "Paint sealant for water-beading protection (approx. 4-8 weeks)",
+            "Tire dressing",
+          ],
+        },
+        {
+          heading: "Interior",
+          items: [
+            "Full vacuum: seats, carpets, mats and trunk",
+            "Dashboard, console and door panels cleaned",
+            "Vents and crevices dusted",
+            "Streak-free interior glass",
+          ],
+        },
+        { heading: "Finish", items: ["Final walk-around quality inspection"] },
       ],
       prices: { sedan: 120, suv2: 160, large: 200 },
     },
     {
       id: "signature",
       name: "Corsa Signature Detail",
-      tagline: "A complete reset with premium protection.",
+      tagline: "Complete reset with premium protection.",
       description:
         "A comprehensive vehicle reset combining deeper cleaning with premium exterior and interior protection. Recommended for first-time customers and vehicles needing more than routine maintenance.",
       duration: "4-6 hours",
       badge: "Best First Visit",
       includesEverythingIn: "essential",
       includes: [
-        "Bug and tar treatment",
-        "Iron-removal treatment",
-        "Clay treatment",
-        "Deeper wheel and tire cleaning",
-        "Premium ceramic paint sealant providing up to 4-6 months of protection",
-        "Exterior trim protection",
-        "Detailed interior brushing and compressed-air cleaning",
-        "Carpet and upholstery spot treatment",
-        "Light extraction",
-        "Leather cleaned and protected",
-        "Interior UV protection",
-        "Premium tire dressing",
+        {
+          heading: "Exterior decontamination and protection",
+          items: [
+            "Bug and tar removal",
+            "Iron fallout removal",
+            "Clay bar treatment",
+            "Deep clean of wheels, tires and wheel wells",
+            "Ceramic paint sealant (up to 4-6 months)",
+            "Exterior trim UV protection",
+            "Premium tire dressing",
+          ],
+        },
+        {
+          heading: "Interior deep clean",
+          items: [
+            "Detailed brushing of every interior surface",
+            "Compressed-air cleaning of vents and crevices",
+            "Carpet and upholstery spot treatment",
+            "Light extraction",
+            "Leather cleaned and conditioned",
+            "UV protectant on dash and panels, matte finish",
+          ],
+        },
       ],
       prices: { sedan: 275, suv2: 325, large: 375 },
     },
