@@ -79,7 +79,9 @@ export function useLeadForm(
   useEffect(() => {
     if (state?.status === "ok" && state.redirectTo) {
       track(opts.submittedEvent ?? "lead_form_submitted", { form: opts.formName, lead_type: opts.leadType });
-      router.push(state.redirectTo);
+      // Payment checkout lives on another origin (Stripe): full navigation, not client routing.
+      if (/^https?:\/\//.test(state.redirectTo)) window.location.assign(state.redirectTo);
+      else router.push(state.redirectTo);
     }
   }, [state, router, opts.formName, opts.leadType, opts.submittedEvent]);
 

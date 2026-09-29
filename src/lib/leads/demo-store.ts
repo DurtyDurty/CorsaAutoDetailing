@@ -12,12 +12,32 @@ import type {
   LeadType,
   NewAppointment,
   NewLead,
+  OnlineHoldInput,
   NotificationKind,
   NotificationRecord,
   NotificationStatus,
   StoreHealth,
 } from "./types";
+import { SlotTakenError } from "./types";
 import { matchesFilter, computeCounts } from "./shared";
+
+/** Mirrors the database: busy window = [starts_at, ends_at + buffer). */
+function withBusy<T extends { endsAt: string; bufferMinutes: number }>(a: T): T & { busyUntil: string } {
+  return { ...a, busyUntil: new Date(Date.parse(a.endsAt) + a.bufferMinutes * 60_000).toISOString() };
+}
+
+/** Mirrors the appointments_no_overlap exclusion constraint. */
+function overlapsActive(list: AppointmentRecord[], candidate: AppointmentRecord): boolean {
+  const s = Date.parse(candidate.startsAt);
+  const e = Date.parse(candidate.busyUntil);
+  return list.some(
+    (a) =>
+      a.id !== candidate.id &&
+      (a.status === "held" || a.status === "confirmed") &&
+      Date.parse(a.startsAt) < e &&
+      s < Date.parse(a.busyUntil),
+  );
+}
 
 /**
  * LOCAL DEMO STORE — development only.
@@ -50,7 +70,20 @@ async function load(): Promise<DemoData> {
     const parsed = JSON.parse(raw) as Partial<DemoData>;
     return {
       leads: parsed.leads ?? [],
-      appointments: parsed.appointments ?? [],
+      // Older demo files predate online booking; fill the new fields with their database defaults.
+      appointments: (parsed.appointments ?? []).map((a) =>
+        withBusy({
+          source: "owner" as const,
+          serviceId: null,
+          depositCents: null,
+          depositStatus: "none" as const,
+          checkoutSessionId: null,
+          paymentIntentId: null,
+          holdExpiresAt: null,
+          bufferMinutes: 45,
+          ...(a as Partial<AppointmentRecord>),
+        } as AppointmentRecord),
+      ),
       notifications: parsed.notifications ?? [],
     };
   } catch {
@@ -159,7 +192,10 @@ export class DemoLeadStore implements LeadStore {
     return serialized(async () => {
       const data = await load();
       const ts = now();
-      const appt: AppointmentRecord = { ...input, id: randomUUID(), createdAt: ts, updatedAt: ts };
+      const appt: AppointmentRecord = withBusy({ ...input, id: randomUUID(), createdAt: ts, updatedAt: ts });
+      if ((appt.status === "held" || appt.status === "confirmed") && overlapsActive(data.appointments, appt)) {
+        throw new SlotTakenError();
+      }
       data.appointments.push(appt);
       await save(data);
       return appt;
@@ -171,10 +207,78 @@ export class DemoLeadStore implements LeadStore {
       const data = await load();
       const appt = data.appointments.find((a) => a.id === id);
       if (!appt) return null;
-      Object.assign(appt, patch, { updatedAt: now() });
+      const next = withBusy({ ...appt, ...patch, updatedAt: now() });
+      if ((next.status === "held" || next.status === "confirmed") && overlapsActive(data.appointments, next)) {
+        throw new SlotTakenError();
+      }
+      Object.assign(appt, next);
       await save(data);
       return appt;
     });
+  }
+
+  bookOnlineSlot(input: OnlineHoldInput) {
+    return serialized(async () => {
+      const data = await load();
+      const ts = now();
+      // Same order as book_online_slot(): release stale holds and this lead's earlier hold.
+      for (const a of data.appointments) {
+        const stale = a.status === "held" && a.holdExpiresAt !== null && a.holdExpiresAt < ts;
+        if (stale || (a.status === "held" && a.leadId === input.leadId)) {
+          Object.assign(a, { status: "cancelled", depositStatus: "released", updatedAt: ts });
+        }
+      }
+      const appt: AppointmentRecord = withBusy({
+        id: randomUUID(),
+        leadId: input.leadId,
+        createdAt: ts,
+        updatedAt: ts,
+        startsAt: input.startsAt,
+        endsAt: input.endsAt,
+        status: "held" as const,
+        quotedPriceCents: input.quotedPriceCents,
+        customerAgreed: true,
+        completedRevenueCents: null,
+        notes: null,
+        source: "online" as const,
+        serviceId: input.serviceId,
+        depositCents: input.depositCents,
+        depositStatus: "pending" as const,
+        checkoutSessionId: null,
+        paymentIntentId: null,
+        holdExpiresAt: new Date(Date.now() + input.holdMinutes * 60_000).toISOString(),
+        bufferMinutes: input.bufferMinutes,
+      });
+      if (overlapsActive(data.appointments, appt)) {
+        await save(data);
+        throw new SlotTakenError();
+      }
+      data.appointments.push(appt);
+      await save(data);
+      return appt;
+    });
+  }
+
+  markHeldAppointmentPaid(id: string, paymentIntentId: string | null) {
+    return serialized(async () => {
+      const data = await load();
+      const appt = data.appointments.find((a) => a.id === id && a.status === "held");
+      if (!appt) return null;
+      Object.assign(appt, {
+        status: "confirmed",
+        depositStatus: "paid",
+        paymentIntentId,
+        holdExpiresAt: null,
+        updatedAt: now(),
+      });
+      await save(data);
+      return appt;
+    });
+  }
+
+  async findAppointmentByCheckoutSession(sessionId: string) {
+    const data = await load();
+    return data.appointments.find((a) => a.checkoutSessionId === sessionId) ?? null;
   }
 
   createNotification(leadId: string, kind: NotificationKind) {

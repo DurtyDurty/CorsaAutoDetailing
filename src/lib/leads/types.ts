@@ -37,6 +37,9 @@ export interface ConsentRecord {
   /** Booking requests only: customer acknowledged the online price is an estimate pending inspection. */
   priceAcknowledgmentTextVersion?: string | null;
   priceAcknowledgedAt?: string | null;
+  /** Online bookings only: customer agreed to the deposit / cancellation / weather policy. */
+  bookingPolicyTextVersion?: string | null;
+  bookingPolicyAcceptedAt?: string | null;
 }
 
 export interface LeadSource {
@@ -104,7 +107,9 @@ export type LeadPatch = Partial<
   Pick<LeadRecord, "stage" | "followUpOn" | "internalNotes" | "archivedAt" | "photoRefs">
 >;
 
-export type AppointmentStatus = "confirmed" | "completed" | "cancelled";
+/** `held` = online slot reserved while the customer pays the deposit. */
+export type AppointmentStatus = "held" | "confirmed" | "completed" | "cancelled";
+export type DepositStatus = "none" | "pending" | "paid" | "refunded" | "forfeited" | "released";
 
 export interface AppointmentRecord {
   id: string;
@@ -118,9 +123,39 @@ export interface AppointmentRecord {
   customerAgreed: boolean;
   completedRevenueCents: number | null;
   notes: string | null;
+  /** `owner` = confirmed from the dashboard; `online` = customer booked with a deposit. */
+  source: "owner" | "online";
+  serviceId: string | null;
+  depositCents: number | null;
+  depositStatus: DepositStatus;
+  checkoutSessionId: string | null;
+  paymentIntentId: string | null;
+  holdExpiresAt: string | null;
+  bufferMinutes: number;
+  /** ends_at + buffer; the window the database keeps free of other active appointments. */
+  busyUntil: string;
 }
 
-export type NewAppointment = Omit<AppointmentRecord, "id" | "createdAt" | "updatedAt">;
+export type NewAppointment = Omit<AppointmentRecord, "id" | "createdAt" | "updatedAt" | "busyUntil">;
+
+export interface OnlineHoldInput {
+  leadId: string;
+  serviceId: string;
+  startsAt: string;
+  endsAt: string;
+  quotedPriceCents: number;
+  depositCents: number;
+  holdMinutes: number;
+  bufferMinutes: number;
+}
+
+/** Thrown by `bookOnlineSlot` when the slot (plus travel buffer) overlaps an active appointment. */
+export class SlotTakenError extends Error {
+  constructor() {
+    super("SLOT_TAKEN");
+    this.name = "SlotTakenError";
+  }
+}
 
 export type NotificationKind = "owner_notify" | "customer_ack";
 export type NotificationStatus = "pending" | "sent" | "failed" | "skipped";
@@ -181,8 +216,33 @@ export interface LeadStore {
   createAppointment(input: NewAppointment): Promise<AppointmentRecord>;
   updateAppointment(
     id: string,
-    patch: Partial<Pick<AppointmentRecord, "status" | "completedRevenueCents" | "notes" | "startsAt" | "endsAt">>,
+    patch: Partial<
+      Pick<
+        AppointmentRecord,
+        | "status"
+        | "completedRevenueCents"
+        | "notes"
+        | "startsAt"
+        | "endsAt"
+        | "depositStatus"
+        | "checkoutSessionId"
+        | "paymentIntentId"
+        | "holdExpiresAt"
+      >
+    >,
   ): Promise<AppointmentRecord | null>;
+  /**
+   * Atomically release stale holds and reserve `input` as a `held` online
+   * appointment. Throws SlotTakenError if it overlaps (with buffer) an active one.
+   */
+  bookOnlineSlot(input: OnlineHoldInput): Promise<AppointmentRecord>;
+  findAppointmentByCheckoutSession(sessionId: string): Promise<AppointmentRecord | null>;
+  /**
+   * Confirm a `held` appointment after its deposit is paid. Conditional on the
+   * row still being `held`, so only one caller (webhook or return page) wins;
+   * the others get null and must not send confirmation emails.
+   */
+  markHeldAppointmentPaid(id: string, paymentIntentId: string | null): Promise<AppointmentRecord | null>;
 
   createNotification(leadId: string, kind: NotificationKind): Promise<NotificationRecord>;
   updateNotification(

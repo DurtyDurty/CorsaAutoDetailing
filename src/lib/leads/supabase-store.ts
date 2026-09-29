@@ -10,11 +10,13 @@ import type {
   LeadType,
   NewAppointment,
   NewLead,
+  OnlineHoldInput,
   NotificationKind,
   NotificationRecord,
   NotificationStatus,
   StoreHealth,
 } from "./types";
+import { SlotTakenError } from "./types";
 import { computeCounts } from "./shared";
 
 /**
@@ -120,6 +122,15 @@ function apptFromRow(r: Row): AppointmentRecord {
     customerAgreed: r.customer_agreed as boolean,
     completedRevenueCents: (r.completed_revenue_cents as number | null) ?? null,
     notes: (r.notes as string | null) ?? null,
+    source: ((r.source as string | null) ?? "owner") as AppointmentRecord["source"],
+    serviceId: (r.service_id as string | null) ?? null,
+    depositCents: (r.deposit_cents as number | null) ?? null,
+    depositStatus: ((r.deposit_status as string | null) ?? "none") as AppointmentRecord["depositStatus"],
+    checkoutSessionId: (r.checkout_session_id as string | null) ?? null,
+    paymentIntentId: (r.payment_intent_id as string | null) ?? null,
+    holdExpiresAt: (r.hold_expires_at as string | null) ?? null,
+    bufferMinutes: (r.buffer_minutes as number | null) ?? 45,
+    busyUntil: (r.busy_until as string | null) ?? (r.ends_at as string),
   };
 }
 
@@ -276,6 +287,8 @@ export class SupabaseLeadStore implements LeadStore {
       .insert(snake({ ...input }))
       .select("*")
       .single();
+    // 23P01 = exclusion_violation: overlaps an active appointment (with travel buffer).
+    if (error?.code === "23P01") throw new SlotTakenError();
     if (error) throw new Error(error.message);
     return apptFromRow(data);
   }
@@ -286,6 +299,53 @@ export class SupabaseLeadStore implements LeadStore {
       .update({ ...snake(patch), updated_at: new Date().toISOString() })
       .eq("id", id)
       .select("*")
+      .maybeSingle();
+    if (error?.code === "23P01") throw new SlotTakenError();
+    if (error) throw new Error(error.message);
+    return data ? apptFromRow(data) : null;
+  }
+
+  async bookOnlineSlot(input: OnlineHoldInput) {
+    const { data, error } = await this.client.rpc("book_online_slot", {
+      p_lead_id: input.leadId,
+      p_service_id: input.serviceId,
+      p_starts: input.startsAt,
+      p_ends: input.endsAt,
+      p_quoted_cents: input.quotedPriceCents,
+      p_deposit_cents: input.depositCents,
+      p_hold_minutes: input.holdMinutes,
+      p_buffer_minutes: input.bufferMinutes,
+    });
+    if (error) {
+      if (error.message.includes("SLOT_TAKEN")) throw new SlotTakenError();
+      throw new Error(error.message);
+    }
+    return apptFromRow(data as Row);
+  }
+
+  async markHeldAppointmentPaid(id: string, paymentIntentId: string | null) {
+    const { data, error } = await this.client
+      .from("appointments")
+      .update({
+        status: "confirmed",
+        deposit_status: "paid",
+        payment_intent_id: paymentIntentId,
+        hold_expires_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("status", "held")
+      .select("*")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data ? apptFromRow(data) : null;
+  }
+
+  async findAppointmentByCheckoutSession(sessionId: string) {
+    const { data, error } = await this.client
+      .from("appointments")
+      .select("*")
+      .eq("checkout_session_id", sessionId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     return data ? apptFromRow(data) : null;

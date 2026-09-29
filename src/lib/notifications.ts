@@ -1,7 +1,7 @@
 import "server-only";
 import { business, getService, getVehicleCategory } from "@/config/business";
 import { getEmailAdapter } from "@/lib/email";
-import type { LeadRecord, LeadStore, NotificationKind, NotificationRecord } from "@/lib/leads/types";
+import type { AppointmentRecord, LeadRecord, LeadStore, NotificationKind, NotificationRecord } from "@/lib/leads/types";
 import { formatUsd } from "@/lib/pricing";
 import { formatEastern } from "@/lib/time";
 import { shortRef } from "@/lib/utils";
@@ -19,14 +19,22 @@ const LEAD_TYPE_LABEL: Record<LeadRecord["leadType"], string> = {
   contact: "Contact message",
 };
 
-function ownerSubject(lead: LeadRecord) {
+/** "Sat, Nov 7, 2026 at 9:00 AM ET" */
+const whenLabel = (a: AppointmentRecord) => `${formatEastern(a.startsAt, { dateStyle: "full", timeStyle: "short" })} ET`;
+
+function ownerSubject(lead: LeadRecord, booking?: AppointmentRecord) {
+  if (booking) {
+    return `[${business.brand.shortName}] New booking: ${lead.firstName}, ${formatEastern(booking.startsAt, { dateStyle: "medium", timeStyle: "short" })} (${shortRef(lead.id)})`;
+  }
   return `[${business.brand.shortName}] ${LEAD_TYPE_LABEL[lead.leadType]}: ${lead.firstName} (${shortRef(lead.id)})`;
 }
 
 /** Internal notes are intentionally excluded from every email. */
-function ownerBody(lead: LeadRecord) {
+function ownerBody(lead: LeadRecord, booking?: AppointmentRecord) {
   const lines = [
-    `${LEAD_TYPE_LABEL[lead.leadType]} received ${formatEastern(lead.createdAt)} ET`,
+    booking
+      ? `Online booking for ${whenLabel(booking)}. Deposit ${formatUsd((booking.depositCents ?? 0) / 100)} paid.`
+      : `${LEAD_TYPE_LABEL[lead.leadType]} received ${formatEastern(lead.createdAt)} ET`,
     `Reference: ${shortRef(lead.id)}`,
     `Mode: ${lead.businessMode}`,
     "",
@@ -71,7 +79,10 @@ function ownerBody(lead: LeadRecord) {
   return lines.filter((l) => l !== null).join("\n");
 }
 
-function customerSubject(lead: LeadRecord) {
+function customerSubject(lead: LeadRecord, booking?: AppointmentRecord) {
+  if (booking) {
+    return `${business.brand.name}: you're booked for ${formatEastern(booking.startsAt, { dateStyle: "medium", timeStyle: "short" })}`;
+  }
   switch (lead.leadType) {
     case "launch_list":
       return `You're on the ${business.brand.name} launch list`;
@@ -82,6 +93,36 @@ function customerSubject(lead: LeadRecord) {
     default:
       return `${business.brand.name}: we received your message`;
   }
+}
+
+/** Online booking confirmation, sent only after the deposit is paid. */
+function bookingBody(lead: LeadRecord, booking: AppointmentRecord) {
+  const deposit = (booking.depositCents ?? 0) / 100;
+  const total = lead.estimate?.total ?? null;
+  const lines = [
+    `Hi ${lead.firstName},`,
+    "",
+    `You're booked. Here are the details:`,
+    "",
+    `When: ${whenLabel(booking)}`,
+    `Package: ${getService(booking.serviceId ?? "")?.name ?? booking.serviceId ?? ""}`,
+    `Vehicle: ${[lead.vehicleYear, lead.vehicleMake, lead.vehicleModel].filter(Boolean).join(" ")}`,
+    `Where: ${[lead.serviceAddress, lead.city, lead.zip].filter(Boolean).join(", ")}`,
+    `Deposit paid: ${formatUsd(deposit)} (credited toward your final price)`,
+    total !== null ? `Estimated balance: ${formatUsd(Math.max(0, total - deposit))}, due when the service is complete` : "",
+    `Reference: ${shortRef(lead.id)}`,
+    "",
+    business.disclosures.inspection,
+    "",
+    "Deposit policy:",
+    ...business.booking.policy.map((p) => `- ${p}`),
+    "",
+    `To reschedule or cancel, reply to this email${business.contact.email ? ` or write to ${business.contact.email}` : ""}.`,
+    "",
+    business.owner.name,
+    business.brand.name,
+  ];
+  return lines.filter((l, i, all) => !(l === "" && all[i - 1] === "")).join("\n");
 }
 
 /** Customer acknowledgement. Never confirms an appointment. */
@@ -135,13 +176,18 @@ async function attempt(store: LeadStore, record: NotificationRecord, lead: LeadR
     return;
   }
   try {
+    // A paid online booking gets booking-specific emails instead of the "request received" ones.
+    const booking =
+      lead.leadType === "quote_request"
+        ? (await store.listAppointments({ leadId: lead.id })).find((a) => a.source === "online" && a.depositStatus === "paid")
+        : undefined;
     const { id } = await adapter.send(
       record.kind === "owner_notify"
-        ? { to, subject: ownerSubject(lead), text: ownerBody(lead), replyTo: lead.email }
+        ? { to, subject: ownerSubject(lead, booking), text: ownerBody(lead, booking), replyTo: lead.email }
         : {
             to,
-            subject: customerSubject(lead),
-            text: customerBody(lead),
+            subject: customerSubject(lead, booking),
+            text: booking ? bookingBody(lead, booking) : customerBody(lead),
             replyTo: business.contact.email ?? undefined,
           },
     );

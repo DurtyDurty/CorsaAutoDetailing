@@ -5,6 +5,7 @@ import { PageHero } from "@/components/site/PageHero";
 import { QuoteRequestForm } from "@/components/forms/QuoteRequestForm";
 import { LaunchListForm } from "@/components/forms/LaunchListForm";
 import { earliestPreferenceDate } from "@/lib/time";
+import { bookingEnabled } from "@/lib/booking";
 import { photosEnabled } from "@/lib/photos";
 import { storeKind } from "@/lib/leads/store";
 import { UnavailableNotice } from "@/components/site/UnavailableNotice";
@@ -48,12 +49,17 @@ export default async function RequestPage({ searchParams }: PageProps<"/request"
     );
   }
 
+  const booking = bookingEnabled();
   return (
     <>
       <PageHero
-        eyebrow="Request an appointment"
-        title="Tell us about your car."
-        lede="Four short steps. Prices shown are starting estimates; the final price is confirmed at an in-person inspection before any work begins. No payment is collected until availability and final pricing are confirmed."
+        eyebrow={booking ? "Book a detail" : "Request an appointment"}
+        title={booking ? "Pick your time. Lock it in." : "Tell us about your car."}
+        lede={
+          booking
+            ? "Four short steps: your vehicle, its condition, where and when, then a small deposit to hold the time. Prices shown are starting estimates; the final price is confirmed at an in-person inspection before any work begins."
+            : "Four short steps. Prices shown are starting estimates; the final price is confirmed at an in-person inspection before any work begins. No payment is collected until availability and final pricing are confirmed."
+        }
       />
       <Container className="py-12 sm:py-16">
         <div className="max-w-2xl">
@@ -66,6 +72,7 @@ export default async function RequestPage({ searchParams }: PageProps<"/request"
               photosEnabled={photosEnabled()}
               initialService={service}
               initialVehicle={vehicle}
+              booking={booking}
             />
           )}
         </div>

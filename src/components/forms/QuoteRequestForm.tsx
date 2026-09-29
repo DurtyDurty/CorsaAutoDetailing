@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { submitQuoteRequest } from "@/app/actions/leads";
-import { business, type BusinessMode } from "@/config/business";
+import { submitBooking, submitQuoteRequest } from "@/app/actions/leads";
+import { business, type BusinessMode, type ServiceId } from "@/config/business";
 import { track } from "@/lib/analytics";
 import { CONDITION_FLAGS, computeEstimate, conditionFlagLabel, formatUsd } from "@/lib/pricing";
 import { lookupZip, isValidZip } from "@/lib/zip";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { InspectionDisclaimer } from "@/components/site/Disclosures";
+import { SlotPicker } from "./SlotPicker";
 import {
   ChoiceGroup,
   ConsentFields,
@@ -22,7 +23,8 @@ import {
   useLeadForm,
 } from "./primitives";
 
-const STEPS = ["Service & vehicle", "Condition", "Location & timing", "Contact & review"] as const;
+const REQUEST_STEPS = ["Service & vehicle", "Condition", "Location & timing", "Contact & review"] as const;
+const BOOKING_STEPS = ["Service & vehicle", "Condition", "Location & time", "Contact & deposit"] as const;
 
 /** Which step each server-validated field lives on, so errors jump to the right place. */
 const FIELD_STEP: Record<string, number> = {
@@ -42,6 +44,7 @@ const FIELD_STEP: Record<string, number> = {
   timeWindows: 2,
   preferredDate: 2,
   notes: 2,
+  slotStart: 2,
   firstName: 3,
   lastName: 3,
   email: 3,
@@ -49,6 +52,7 @@ const FIELD_STEP: Record<string, number> = {
   preferredContact: 3,
   serviceConsent: 3,
   priceAcknowledgment: 3,
+  bookingPolicy: 3,
 };
 
 interface Props {
@@ -58,13 +62,16 @@ interface Props {
   photosEnabled: boolean;
   initialService?: string;
   initialVehicle?: string;
+  /** Online booking: pick an open time and pay the deposit (LIVE + payments configured). */
+  booking?: boolean;
 }
 
-export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialService, initialVehicle }: Props) {
-  const { onSubmit, pending, errors, message, onStart } = useLeadForm(submitQuoteRequest, {
-    formName: "quote_request",
+export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialService, initialVehicle, booking = false }: Props) {
+  const { onSubmit, pending, errors, message, onStart } = useLeadForm(booking ? submitBooking : submitQuoteRequest, {
+    formName: booking ? "booking" : "quote_request",
     leadType: "quote_request",
   });
+  const STEPS = booking ? BOOKING_STEPS : REQUEST_STEPS;
   const [step, setStep] = useState(0);
   const [serviceId, setServiceId] = useState(initialService ?? "");
   const [vehicle, setVehicle] = useState(initialVehicle ?? "");
@@ -335,16 +342,20 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
             { value: "other", label: "Somewhere else" },
           ]}
         />
-        <ChoiceGroup
-          legend="Preferred time windows"
-          name="timeWindows"
-          type="checkbox"
-          columns={2}
-          hint="Preferences only, not a reservation. We'll confirm a time with you."
-          error={errors.timeWindows}
-          options={business.scheduling.timeWindows.map((w) => ({ value: w.id, label: w.label }))}
-        />
-        {earliestDate ? (
+        {booking ? (
+          <SlotPicker serviceId={serviceId} required={step === 2} error={errors.slotStart} />
+        ) : (
+          <ChoiceGroup
+            legend="Preferred time windows"
+            name="timeWindows"
+            type="checkbox"
+            columns={2}
+            hint="Preferences only, not a reservation. We'll confirm a time with you."
+            error={errors.timeWindows}
+            options={business.scheduling.timeWindows.map((w) => ({ value: w.id, label: w.label }))}
+          />
+        )}
+        {booking ? null : earliestDate ? (
           <Field
             name="preferredDate"
             label="Preferred date"
@@ -409,6 +420,10 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
           error={errors.serviceConsent}
         />
 
+        {booking && serviceId && (
+          <DepositPolicy serviceId={serviceId as ServiceId} required={step === 3} error={errors.bookingPolicy} />
+        )}
+
         <PriceAcknowledgment required={step === 3} error={errors.priceAcknowledgment} />
       </div>
 
@@ -425,7 +440,11 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
         </Button>
         {isLast ? (
           <SubmitButton pending={pending} className="w-full sm:w-auto">
-            {mode === "PRELAUNCH" ? "Send my request" : "Request an appointment"}
+            {booking && serviceId
+              ? `Pay ${formatUsd(business.booking.depositCents[serviceId as ServiceId] / 100)} deposit & book`
+              : mode === "PRELAUNCH"
+                ? "Send my request"
+                : "Request an appointment"}
           </SubmitButton>
         ) : (
           <Button type="button" size="lg" onClick={goNext} className="w-full sm:w-auto">
@@ -434,6 +453,46 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
         )}
       </div>
     </form>
+  );
+}
+
+/** Deposit amount, policy and the required agreement (online booking only). */
+function DepositPolicy({ serviceId, required, error }: { serviceId: ServiceId; required: boolean; error?: string }) {
+  const id = useId();
+  const deposit = business.booking.depositCents[serviceId] / 100;
+  return (
+    <div className="flex flex-col gap-3 border-t border-line pt-5">
+      <div id={`${id}-text`} className="border-l-[3px] border-asphalt bg-white px-4 py-3.5 text-sm leading-relaxed">
+        <p className="flex items-baseline justify-between gap-4">
+          <span className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-ink">Deposit due today</span>
+          <span className="font-display text-2xl">{formatUsd(deposit)}</span>
+        </p>
+        <ul className="mt-2 list-disc pl-5 space-y-1 text-ink-muted">
+          {business.booking.policy.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+        <p className="mt-2 text-ink-muted">You&rsquo;ll pay securely on Stripe&rsquo;s checkout page. We never see or store your card details.</p>
+      </div>
+      <label className="flex gap-3 items-start text-sm leading-relaxed font-medium">
+        <input
+          type="checkbox"
+          name="bookingPolicy"
+          className="checkbox"
+          required={required}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={[`${id}-text`, error ? `${id}-err` : null].filter(Boolean).join(" ")}
+        />
+        <span>
+          {business.booking.policyAgreementText} <span className="text-error" aria-hidden="true">*</span>
+        </span>
+      </label>
+      {error && (
+        <p id={`${id}-err`} className="text-sm text-error -mt-1 ml-8" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }
 

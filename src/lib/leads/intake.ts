@@ -108,6 +108,8 @@ export async function intake<S extends z.ZodTypeAny>(opts: {
   formData: FormData;
   build: (input: z.output<S>) => NewLead | Promise<NewLead>;
   afterSave?: (lead: LeadRecord, formData: FormData) => Promise<void>;
+  /** false = skip the owner/customer emails (online bookings email once the deposit is paid). */
+  notify?: boolean;
 }): Promise<IntakeResult> {
   const store = await getLeadStore();
   if (!store) return { status: "unavailable", message: UNAVAILABLE_MESSAGE };
@@ -156,7 +158,7 @@ export async function intake<S extends z.ZodTypeAny>(opts: {
       }
     }
     // Lead is durable; notification failure is recorded, never surfaced as a form error.
-    await notifyForLead(store, saved.lead);
+    if (opts.notify !== false) await notifyForLead(store, saved.lead);
   }
 
   return { status: "ok", leadId: saved.lead.id, created: saved.created };

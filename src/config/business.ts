@@ -409,6 +409,34 @@ export const business = {
     ],
   },
 
+  /**
+   * Online booking with deposits. Active only in LIVE mode with a payment
+   * provider configured (STRIPE_SECRET_KEY, or the demo provider in tests).
+   * Deposit amounts are server-trusted: the browser never sends a price.
+   */
+  booking: {
+    depositCents: { essential: 2500, signature: 5000 } as Record<ServiceId, number>,
+    /** Calendar block per job (upper end of the published estimate). */
+    durationMinutes: { essential: 180, signature: 360 } as Record<ServiceId, number>,
+    slotIntervalMinutes: 30,
+    /** Earliest bookable day = today + minDaysAhead (Eastern). */
+    minDaysAhead: 1,
+    maxDaysAhead: 30,
+    /** How long a slot is held while the customer pays. Stripe Checkout expires at 30 min; this is longer so a late payment still finds its hold. */
+    holdMinutes: 40,
+    checkoutMinutes: 30,
+    cancellationHours: 48,
+    policyTextVersion: "2026-09-v1",
+    policy: [
+      "A deposit of $25 (Essential) or $50 (Signature) holds your appointment and is credited toward your final price.",
+      "Cancel or reschedule at least 48 hours before your appointment for a full refund, or to move your deposit to a new date.",
+      "Cancellations within 48 hours of the appointment, and no-shows, forfeit the deposit.",
+      "If weather prevents the service, we reschedule at no charge and your deposit carries over.",
+      "The remaining balance is due when the service is complete.",
+    ],
+    policyAgreementText: "I agree to the deposit, cancellation and weather policy above.",
+  },
+
   analytics: {
     provider: (env("NEXT_PUBLIC_ANALYTICS_PROVIDER") ?? "none") as "none" | "plausible" | "console",
     plausibleDomain: env("NEXT_PUBLIC_PLAUSIBLE_DOMAIN"),
@@ -436,7 +464,7 @@ export const isPrelaunch = business.mode === "PRELAUNCH";
 export function primaryCta(): { label: string; href: string } {
   return isPrelaunch
     ? { label: "Join the launch list", href: "/#launch-list" }
-    : { label: "Request an appointment", href: "/request" };
+    : { label: "Book a detail", href: "/request" };
 }
 
 export function getService(id: string): ServiceDefinition | undefined {

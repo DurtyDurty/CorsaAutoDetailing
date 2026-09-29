@@ -45,9 +45,16 @@ export default function TermsPage() {
 
         <h2>Scheduling</h2>
         <ul>
-          <li>An appointment is confirmed only when we&rsquo;ve agreed on a time with you directly. Time preferences in the request form are preferences, not reservations.</li>
-          <li>Times are in Eastern time.</li>
-          <li>Weather, rescheduling and cancellation policies have not been finalized (owner decision pending) and will be published here before we open.</li>
+          <li>Online bookings are confirmed when the deposit is paid; you&rsquo;ll receive a confirmation by email. Appointments arranged directly with us are confirmed when we agree on a time.</li>
+          <li>Times are in Eastern time and are arrival times.</li>
+        </ul>
+
+        <h2>Deposits, cancellations and weather</h2>
+        <ul>
+          {business.booking.policy.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+          <li>Deposits are paid through Stripe&rsquo;s secure checkout. We never see or store your card details.</li>
         </ul>
 
         <h2>At your location</h2>
@@ -58,7 +65,7 @@ export default function TermsPage() {
 
         <h2>Payment</h2>
         <p>
-          We do not collect payment through this website. Accepted payment methods will be listed here before we open (owner decision pending).
+          The only payment taken through this website is the booking deposit described above. The remaining balance is paid when the service is complete; accepted payment methods will be listed here before we open (owner decision pending).
         </p>
 
         <h2>Maintenance plans</h2>

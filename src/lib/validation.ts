@@ -105,7 +105,7 @@ function arrayField<T extends z.ZodTypeAny>(schema: T) {
 
 const currentYear = new Date().getFullYear();
 
-export const quoteRequestSchema = z
+const quoteRequestFields = z
   .object({
     ...meta,
     ...consentFields,
@@ -173,17 +173,29 @@ export const quoteRequestSchema = z
     priceAcknowledgment: z.literal("on", {
       message: "Please confirm you understand the price is an estimate until we inspect the vehicle.",
     }),
-  })
-  .superRefine((data, ctx) => {
-    if (!data.phone) {
-      ctx.addIssue({ code: "custom", path: ["phone"], message: "Enter your phone number." });
-    }
   });
+
+function requirePhone(data: { phone: string | null }, ctx: z.RefinementCtx) {
+  if (!data.phone) {
+    ctx.addIssue({ code: "custom", path: ["phone"], message: "Enter your phone number." });
+  }
+}
+
+export const quoteRequestSchema = quoteRequestFields.superRefine(requirePhone);
+
+/** Online booking = the request fields + a chosen slot + agreeing to the deposit policy. */
+export const bookingRequestSchema = quoteRequestFields
+  .extend({
+    slotStart: z.string({ message: "Choose a date and time." }).datetime({ message: "Choose a date and time." }),
+    bookingPolicy: z.literal("on", { message: "Please agree to the deposit, cancellation and weather policy." }),
+  })
+  .superRefine(requirePhone);
 
 export type LaunchListInput = z.infer<typeof launchListSchema>;
 export type ContactInput = z.infer<typeof contactSchema>;
 export type MembershipInterestInput = z.infer<typeof membershipInterestSchema>;
 export type QuoteRequestInput = z.infer<typeof quoteRequestSchema>;
+export type BookingRequestInput = z.infer<typeof bookingRequestSchema>;
 
 export type FieldErrors = Record<string, string>;
 

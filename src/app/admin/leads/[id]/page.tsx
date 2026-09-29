@@ -42,6 +42,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
     store.listNotifications({ leadId: id }),
   ]);
   const activeAppt = appointments.find((a) => a.status === "confirmed");
+  const heldAppt = appointments.find((a) => a.status === "held");
   const failedNotifs = notifications.filter((n) => n.status === "failed").length;
 
   return (
@@ -224,6 +225,11 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
                     Confirmed for <strong>{formatEastern(activeAppt.startsAt)}</strong> to {formatEastern(activeAppt.endsAt, { timeStyle: "short", dateStyle: undefined })} ET
                     <br />
                     Quoted {formatUsd(activeAppt.quotedPriceCents / 100)}
+                    {activeAppt.source === "online" && (
+                      <span className="block mt-1">
+                        Booked online · deposit {formatUsd((activeAppt.depositCents ?? 0) / 100)} <strong>{activeAppt.depositStatus}</strong>
+                      </span>
+                    )}
                     {activeAppt.notes && <span className="block text-ink-muted mt-1">{activeAppt.notes}</span>}
                   </p>
                   <form action={completeAppointmentAction} className="flex flex-col gap-3 border-t border-line pt-3">
@@ -237,14 +243,36 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
                       Mark completed & record revenue
                     </Button>
                   </form>
-                  <form action={cancelAppointmentAction}>
-                    <input type="hidden" name="leadId" value={lead.id} />
-                    <input type="hidden" name="appointmentId" value={activeAppt.id} />
-                    <Button type="submit" variant="ghost" size="sm">
-                      Cancel appointment
-                    </Button>
-                  </form>
+                  {activeAppt.depositStatus === "paid" ? (
+                    <div className="flex flex-col gap-2 border-t border-line pt-3">
+                      <p className="text-ink-muted">
+                        Policy: full refund with {business.booking.cancellationHours}+ hours&rsquo; notice or for weather; deposit kept for later cancellations and no-shows.
+                      </p>
+                      <form action={cancelAppointmentAction} className="flex flex-wrap gap-2">
+                        <input type="hidden" name="leadId" value={lead.id} />
+                        <input type="hidden" name="appointmentId" value={activeAppt.id} />
+                        <Button type="submit" name="deposit" value="refund" variant="secondary" size="sm">
+                          Cancel &amp; refund deposit
+                        </Button>
+                        <Button type="submit" name="deposit" value="keep" variant="ghost" size="sm">
+                          Cancel &amp; keep deposit
+                        </Button>
+                      </form>
+                    </div>
+                  ) : (
+                    <form action={cancelAppointmentAction}>
+                      <input type="hidden" name="leadId" value={lead.id} />
+                      <input type="hidden" name="appointmentId" value={activeAppt.id} />
+                      <Button type="submit" variant="ghost" size="sm">
+                        Cancel appointment
+                      </Button>
+                    </form>
+                  )}
                 </div>
+              ) : heldAppt ? (
+                <p className="text-sm text-ink-muted">
+                  Online booking in progress: {formatEastern(heldAppt.startsAt)} ET is held until {heldAppt.holdExpiresAt ? formatEastern(heldAppt.holdExpiresAt) : "payment"} while the customer pays the deposit.
+                </p>
               ) : business.mode !== "LIVE" ? (
                 <p className="text-sm text-ink-muted">
                   Appointments can&rsquo;t be confirmed while the site is in PRELAUNCH mode. Set NEXT_PUBLIC_BUSINESS_MODE=LIVE when you open.

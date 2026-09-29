@@ -5,8 +5,9 @@ import { revalidatePath } from "next/cache";
 import { business } from "@/config/business";
 import { requireOwner } from "@/lib/auth/owner";
 import { getLeadStore } from "@/lib/leads/store";
-import { LEAD_STAGES, type LeadStage } from "@/lib/leads/types";
+import { LEAD_STAGES, SlotTakenError, type LeadStage } from "@/lib/leads/types";
 import { retryFailedNotifications } from "@/lib/notifications";
+import { getPaymentAdapter } from "@/lib/payments";
 import { deleteLeadPhotos } from "@/lib/photos";
 import { easternToUtc, isIsoDate, overlapsWithBuffer, withinWorkHours } from "@/lib/time";
 import { cleanText } from "@/lib/utils";
@@ -120,16 +121,33 @@ export async function confirmAppointmentAction(formData: FormData) {
     });
   }
 
-  await s.createAppointment({
-    leadId: id,
-    startsAt: start.toISOString(),
-    endsAt: end.toISOString(),
-    status: "confirmed",
-    quotedPriceCents: Math.round(price * 100),
-    customerAgreed: true,
-    completedRevenueCents: null,
-    notes,
-  });
+  try {
+    await s.createAppointment({
+      leadId: id,
+      startsAt: start.toISOString(),
+      endsAt: end.toISOString(),
+      status: "confirmed",
+      quotedPriceCents: Math.round(price * 100),
+      customerAgreed: true,
+      completedRevenueCents: null,
+      notes,
+      source: "owner",
+      serviceId: (await s.getLead(id))?.serviceId ?? null,
+      depositCents: null,
+      depositStatus: "none",
+      checkoutSessionId: null,
+      paymentIntentId: null,
+      holdExpiresAt: null,
+      bufferMinutes: business.scheduling.travelBufferMinutes,
+    });
+  } catch (err) {
+    if (err instanceof SlotTakenError) {
+      return back(id, {
+        error: `That time overlaps another booked or held appointment (including the ${business.scheduling.travelBufferMinutes} min travel buffer). The calendar can't double-book.`,
+      });
+    }
+    throw err;
+  }
   await s.updateLead(id, { stage: "scheduled" });
   revalidatePath("/admin/appointments");
   return back(id, { ok: "Appointment confirmed." });
@@ -152,7 +170,31 @@ export async function cancelAppointmentAction(formData: FormData) {
   await requireOwner();
   const id = String(formData.get("leadId") ?? "");
   const apptId = String(formData.get("appointmentId") ?? "");
+  const deposit = String(formData.get("deposit") ?? "");
   const s = await store();
+  const appt = (await s.listAppointments({ leadId: id })).find((a) => a.id === apptId);
+  if (!appt) return back(id, { error: "Appointment not found." });
+
+  if (appt.depositStatus === "paid") {
+    if (deposit === "refund") {
+      if (!appt.paymentIntentId || !appt.depositCents) return back(id, { error: "No payment on record to refund." });
+      try {
+        await getPaymentAdapter().refund(appt.paymentIntentId, appt.depositCents);
+      } catch (err) {
+        return back(id, { error: `Refund failed, appointment not cancelled: ${err instanceof Error ? err.message : "unknown error"}` });
+      }
+      await s.updateAppointment(apptId, { status: "cancelled", depositStatus: "refunded" });
+      revalidatePath("/admin/appointments");
+      return back(id, { ok: "Appointment cancelled and deposit refunded." });
+    }
+    if (deposit === "keep") {
+      await s.updateAppointment(apptId, { status: "cancelled", depositStatus: "forfeited" });
+      revalidatePath("/admin/appointments");
+      return back(id, { ok: "Appointment cancelled. Deposit kept per the cancellation policy." });
+    }
+    return back(id, { error: "Choose whether to refund or keep the deposit." });
+  }
+
   await s.updateAppointment(apptId, { status: "cancelled" });
   revalidatePath("/admin/appointments");
   return back(id, { ok: "Appointment cancelled." });

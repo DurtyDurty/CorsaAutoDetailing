@@ -13,7 +13,8 @@ export default async function AppointmentsPage() {
   await requireOwner();
   const store = await getLeadStore();
   if (!store) return <p>Lead store unavailable.</p>;
-  const appts = await store.listAppointments({ from: thirtyDaysAgoIso() });
+  // Abandoned online checkouts (hold released, nothing paid) are noise here.
+  const appts = (await store.listAppointments({ from: thirtyDaysAgoIso() })).filter((a) => a.depositStatus !== "released");
   const leads = new Map(
     (await Promise.all(appts.map((a) => store.getLead(a.leadId)))).filter(Boolean).map((l) => [l!.id, l!]),
   );
@@ -37,6 +38,7 @@ export default async function AppointmentsPage() {
                 <th className="px-4 py-3 font-medium">End</th>
                 <th className="px-4 py-3 font-medium">Customer</th>
                 <th className="px-4 py-3 font-medium">Quoted</th>
+                <th className="px-4 py-3 font-medium">Deposit</th>
                 <th className="px-4 py-3 font-medium">Status</th>
               </tr>
             </thead>
@@ -57,6 +59,9 @@ export default async function AppointmentsPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">{formatUsd(a.quotedPriceCents / 100)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {a.depositCents ? `${formatUsd(a.depositCents / 100)} ${a.depositStatus}` : "-"}
+                    </td>
                     <td className="px-4 py-3 capitalize">
                       {a.status}
                       {a.status === "completed" && a.completedRevenueCents !== null && (
