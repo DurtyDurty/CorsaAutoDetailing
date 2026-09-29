@@ -1,12 +1,15 @@
 import "server-only";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { storeKind } from "@/lib/leads/store";
 
 export interface EmailMessage {
   to: string;
   subject: string;
   text: string;
   replyTo?: string;
+  /** Resend drops a repeat send with the same key (24h window). */
+  idempotencyKey?: string;
 }
 
 export interface EmailAdapter {
@@ -16,7 +19,8 @@ export interface EmailAdapter {
 
 export function emailKind(): EmailAdapter["kind"] {
   if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) return "resend";
-  if (process.env.NODE_ENV !== "production") return "demo";
+  // The demo outbox pairs with the demo store (local dev, e2e builds); never with real data.
+  if (process.env.NODE_ENV !== "production" || storeKind() === "demo") return "demo";
   return "disabled";
 }
 
@@ -31,7 +35,11 @@ class ResendAdapter implements EmailAdapter {
   async send(message: EmailMessage) {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json",
+        ...(message.idempotencyKey ? { "Idempotency-Key": message.idempotencyKey } : {}),
+      },
       body: JSON.stringify({
         from: this.from,
         to: [message.to],

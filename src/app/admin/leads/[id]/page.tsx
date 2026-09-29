@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { business, getService, getVehicleCategory } from "@/config/business";
@@ -9,6 +10,8 @@ import { formatUsd } from "@/lib/pricing";
 import { formatPhone, shortRef } from "@/lib/utils";
 import { StageBadge } from "@/components/admin/LeadTable";
 import { Button } from "@/components/ui/Button";
+import { ComposeEmail } from "@/components/admin/ComposeEmail";
+import { defaultEmailSubject, ownerSignature } from "@/lib/owner-email";
 import {
   archiveLeadAction,
   cancelAppointmentAction,
@@ -37,9 +40,10 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
   if (!store) return <p>Lead store unavailable.</p>;
   const lead = await store.getLead(id);
   if (!lead) notFound();
-  const [appointments, notifications] = await Promise.all([
+  const [appointments, notifications, sentEmails] = await Promise.all([
     store.listAppointments({ leadId: id }),
     store.listNotifications({ leadId: id }),
+    store.listOutboundEmails(id),
   ]);
   const activeAppt = appointments.find((a) => a.status === "confirmed");
   const heldAppt = appointments.find((a) => a.status === "held");
@@ -92,6 +96,27 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
               />
             </dl>
           </section>
+
+          {sentEmails.length > 0 && (
+            <section className="border border-line bg-white rounded-md p-5">
+              <h2 className="font-medium">Emails you sent</h2>
+              <ul className="mt-3 text-sm divide-y divide-line">
+                {sentEmails.map((e) => (
+                  <li key={e.id} className="py-2">
+                    <details>
+                      <summary className="cursor-pointer">
+                        <span className="font-medium">{e.subject}</span>
+                        <span className="text-ink-muted"> · {formatEastern(e.createdAt)} ET</span>
+                        {e.status === "failed" && <span className="text-error"> · not sent</span>}
+                      </summary>
+                      <p className="mt-2 whitespace-pre-wrap break-words text-ink-muted">{e.body}</p>
+                      {e.error && <p className="mt-1 text-error">{e.error}</p>}
+                    </details>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           {(lead.serviceId || lead.vehicleCategory || lead.condition) && (
             <section className="border border-line bg-white rounded-md p-5">
@@ -186,6 +211,15 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
         </div>
 
         <div className="flex flex-col gap-6">
+          <ComposeEmail
+            leadId={lead.id}
+            firstName={lead.firstName}
+            to={lead.email}
+            from={business.contact.email ?? "the business address"}
+            defaultSubject={defaultEmailSubject(lead)}
+            signature={ownerSignature()}
+            initialSendKey={randomUUID()}
+          />
           <form action={updateLeadAction} className="border border-line bg-white rounded-md p-5 flex flex-col gap-4">
             <input type="hidden" name="leadId" value={lead.id} />
             <h2 className="font-medium">Follow-up</h2>

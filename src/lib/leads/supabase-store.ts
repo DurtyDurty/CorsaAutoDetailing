@@ -10,7 +10,9 @@ import type {
   LeadType,
   NewAppointment,
   NewLead,
+  NewOutboundEmail,
   OnlineHoldInput,
+  OutboundEmailRecord,
   NotificationKind,
   NotificationRecord,
   NotificationStatus,
@@ -131,6 +133,21 @@ function apptFromRow(r: Row): AppointmentRecord {
     holdExpiresAt: (r.hold_expires_at as string | null) ?? null,
     bufferMinutes: (r.buffer_minutes as number | null) ?? 45,
     busyUntil: (r.busy_until as string | null) ?? (r.ends_at as string),
+  };
+}
+
+function outboundFromRow(r: Row): OutboundEmailRecord {
+  return {
+    id: r.id as string,
+    leadId: r.lead_id as string,
+    sendKey: r.send_key as string,
+    toEmail: r.to_email as string,
+    subject: r.subject as string,
+    body: r.body as string,
+    status: r.status as OutboundEmailRecord["status"],
+    providerMessageId: (r.provider_message_id as string | null) ?? null,
+    error: (r.error as string | null) ?? null,
+    createdAt: r.created_at as string,
   };
 }
 
@@ -374,6 +391,30 @@ export class SupabaseLeadStore implements LeadStore {
   async removeTimeOff(day: string) {
     const { error } = await this.client.from("time_off").delete().eq("day", day);
     if (error) throw new Error(error.message);
+  }
+
+  async listOutboundEmails(leadId: string) {
+    const { data, error } = await this.client
+      .from("outbound_emails")
+      .select("*")
+      .eq("lead_id", leadId)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(outboundFromRow);
+  }
+
+  async findOutboundEmailBySendKey(sendKey: string) {
+    const { data, error } = await this.client.from("outbound_emails").select("*").eq("send_key", sendKey).maybeSingle();
+    if (error) throw new Error(error.message);
+    return data ? outboundFromRow(data) : null;
+  }
+
+  async recordOutboundEmail(input: NewOutboundEmail) {
+    const { data, error } = await this.client.from("outbound_emails").insert(snake({ ...input })).select("*").single();
+    // 23505 = unique violation on send_key: this message was already recorded.
+    if (error?.code === "23505") return null;
+    if (error) throw new Error(error.message);
+    return outboundFromRow(data);
   }
 
   async createNotification(leadId: string, kind: NotificationKind) {

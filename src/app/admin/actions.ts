@@ -1,12 +1,15 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { business } from "@/config/business";
 import { requireOwner } from "@/lib/auth/owner";
 import { getLeadStore } from "@/lib/leads/store";
 import { LEAD_STAGES, SlotTakenError, type LeadStage } from "@/lib/leads/types";
+import { getEmailAdapter } from "@/lib/email";
 import { retryFailedNotifications } from "@/lib/notifications";
+import { composeOwnerEmail } from "@/lib/owner-email";
 import { getPaymentAdapter } from "@/lib/payments";
 import { deleteLeadPhotos } from "@/lib/photos";
 import { addDays, easternToUtc, isIsoDate, overlapsWithBuffer, todayEastern, withinWorkHours } from "@/lib/time";
@@ -243,4 +246,57 @@ export async function removeTimeOffAction(formData: FormData) {
   const s = await store();
   await s.removeTimeOff(day);
   return backToTimeOff({ ok: "Day reopened for booking." });
+}
+export interface SendEmailState {
+  status: "idle" | "sent" | "error";
+  message: string | null;
+  /** Key for the next send; a fresh one after every attempt. */
+  sendKey: string;
+}
+
+/**
+ * Email a lead from the dashboard through Resend, from the business address.
+ * Replies go to the contact inbox. Returns state (rather than redirecting) so
+ * a failed send keeps the draft on screen.
+ */
+export async function sendLeadEmailAction(_prev: SendEmailState, formData: FormData): Promise<SendEmailState> {
+  await requireOwner();
+  const next = (status: SendEmailState["status"], message: string): SendEmailState => ({ status, message, sendKey: randomUUID() });
+  const leadId = String(formData.get("leadId") ?? "");
+  const sendKey = String(formData.get("sendKey") ?? "");
+  const subject = cleanText(formData.get("subject"), 200).replace(/\s+/g, " ");
+  const message = cleanText(formData.get("message"), 8000);
+  if (!/^[0-9a-f-]{36}$/.test(sendKey)) return next("error", "Please reload the page and try again.");
+  if (!subject) return next("error", "Add a subject.");
+  if (!message) return next("error", "Write a message first.");
+
+  const s = await store();
+  const lead = await s.getLead(leadId);
+  if (!lead) return next("error", "Lead not found.");
+  if (await s.findOutboundEmailBySendKey(sendKey)) return next("sent", "Already sent.");
+
+  const email = getEmailAdapter();
+  if (email.kind === "disabled") return next("error", "Email isn't configured on the server (Resend).");
+
+  const body = composeOwnerEmail(message);
+  const base = { leadId, sendKey, toEmail: lead.email, subject, body, providerMessageId: null, error: null };
+  try {
+    const { id } = await email.send({
+      to: lead.email,
+      subject,
+      text: body,
+      replyTo: business.contact.email ?? undefined,
+      idempotencyKey: `owner-email-${sendKey}`,
+    });
+    await s.recordOutboundEmail({ ...base, status: "sent", providerMessageId: id });
+  } catch (err) {
+    const reason = err instanceof Error ? err.message.slice(0, 500) : "Unknown error";
+    await s.recordOutboundEmail({ ...base, status: "failed", error: reason }).catch(() => null);
+    revalidatePath(`/admin/leads/${leadId}`);
+    return next("error", `Not sent: ${reason}`);
+  }
+  if (lead.stage === "new") await s.updateLead(leadId, { stage: "contacted" });
+  revalidatePath(`/admin/leads/${leadId}`);
+  revalidatePath("/admin");
+  return next("sent", `Sent to ${lead.email}.`);
 }

@@ -70,6 +70,18 @@ test.describe("lead forms (demo store)", () => {
     await expect(page).toHaveURL(/\/admin\/leads\//);
     await expect(page.getByText("Corsa Essential Detail").first()).toBeVisible();
 
+    // Write back from the dashboard (demo outbox stands in for Resend).
+    await expect(page.getByRole("heading", { name: `Email ${name}` })).toBeVisible();
+    await expect(page.getByLabel("Message")).toHaveValue(`Hi ${name},\n\n`);
+    await page.getByLabel("Subject").fill("Welcome to the list");
+    await page.getByLabel("Message").fill(`Hi ${name},\n\nThanks for signing up. We open soon.`);
+    await page.getByRole("button", { name: "Send email" }).click();
+    await expect(page.getByRole("status").filter({ hasText: /^Sent to / })).toBeVisible();
+    await expect(page.getByLabel("Subject")).not.toHaveValue("Welcome to the list");
+    await expect(page.getByRole("heading", { name: "Emails you sent" })).toBeVisible();
+    await expect(page.getByText("Welcome to the list")).toBeVisible();
+    await expect(page.getByText("Contacted").first()).toBeVisible();
+
     // Fetch from inside the page so the Secure session cookie is sent exactly as the browser sends it.
     const csv = await page.evaluate(async () => {
       const r = await fetch("/admin/export");

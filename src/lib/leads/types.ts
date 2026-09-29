@@ -157,6 +157,23 @@ export interface TimeOffRecord {
   createdAt: string;
 }
 
+/** An email the owner wrote to a lead from the dashboard. */
+export interface OutboundEmailRecord {
+  id: string;
+  leadId: string;
+  /** Generated when the compose form renders; one send per key. */
+  sendKey: string;
+  toEmail: string;
+  subject: string;
+  body: string;
+  status: "sent" | "failed";
+  providerMessageId: string | null;
+  error: string | null;
+  createdAt: string;
+}
+
+export type NewOutboundEmail = Omit<OutboundEmailRecord, "id" | "createdAt">;
+
 /** Thrown by `bookOnlineSlot` when the slot (plus travel buffer) overlaps an active appointment. */
 export class SlotTakenError extends Error {
   constructor() {
@@ -257,6 +274,12 @@ export interface LeadStore {
   /** Adds the days; days already off are left as they are. */
   addTimeOff(days: string[], note: string | null): Promise<void>;
   removeTimeOff(day: string): Promise<void>;
+
+  /** Newest first. */
+  listOutboundEmails(leadId: string): Promise<OutboundEmailRecord[]>;
+  findOutboundEmailBySendKey(sendKey: string): Promise<OutboundEmailRecord | null>;
+  /** Returns null if an email with the same sendKey was already recorded. */
+  recordOutboundEmail(input: NewOutboundEmail): Promise<OutboundEmailRecord | null>;
 
   createNotification(leadId: string, kind: NotificationKind): Promise<NotificationRecord>;
   updateNotification(

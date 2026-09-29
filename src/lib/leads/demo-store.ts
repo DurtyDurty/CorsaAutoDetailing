@@ -12,7 +12,9 @@ import type {
   LeadType,
   NewAppointment,
   NewLead,
+  NewOutboundEmail,
   OnlineHoldInput,
+  OutboundEmailRecord,
   NotificationKind,
   NotificationRecord,
   NotificationStatus,
@@ -56,6 +58,7 @@ interface DemoData {
   appointments: AppointmentRecord[];
   notifications: NotificationRecord[];
   timeOff: TimeOffRecord[];
+  outboundEmails: OutboundEmailRecord[];
 }
 
 // Resolved per call so the working directory can be swapped in tests.
@@ -91,9 +94,10 @@ async function load(): Promise<DemoData> {
       ),
       notifications: parsed.notifications ?? [],
       timeOff: parsed.timeOff ?? [],
+      outboundEmails: parsed.outboundEmails ?? [],
     };
   } catch {
-    return { leads: [], appointments: [], notifications: [], timeOff: [] };
+    return { leads: [], appointments: [], notifications: [], timeOff: [], outboundEmails: [] };
   }
 }
 
@@ -166,6 +170,7 @@ export class DemoLeadStore implements LeadStore {
       data.leads = data.leads.filter((l) => l.id !== id);
       data.appointments = data.appointments.filter((a) => a.leadId !== id);
       data.notifications = data.notifications.filter((n) => n.leadId !== id);
+      data.outboundEmails = data.outboundEmails.filter((e) => e.leadId !== id);
       await save(data);
     });
   }
@@ -310,6 +315,27 @@ export class DemoLeadStore implements LeadStore {
       const data = await load();
       data.timeOff = data.timeOff.filter((t) => t.day !== day);
       await save(data);
+    });
+  }
+
+  async listOutboundEmails(leadId: string) {
+    const data = await load();
+    return data.outboundEmails.filter((e) => e.leadId === leadId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async findOutboundEmailBySendKey(sendKey: string) {
+    const data = await load();
+    return data.outboundEmails.find((e) => e.sendKey === sendKey) ?? null;
+  }
+
+  recordOutboundEmail(input: NewOutboundEmail) {
+    return serialized(async () => {
+      const data = await load();
+      if (data.outboundEmails.some((e) => e.sendKey === input.sendKey)) return null;
+      const rec: OutboundEmailRecord = { ...input, id: randomUUID(), createdAt: now() };
+      data.outboundEmails.push(rec);
+      await save(data);
+      return rec;
     });
   }
 
