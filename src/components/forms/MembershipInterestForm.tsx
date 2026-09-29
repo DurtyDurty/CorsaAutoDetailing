@@ -55,15 +55,6 @@ export function MembershipInterestForm() {
         options={business.membership.cadences.map((c) => ({ value: c.id, label: c.label }))}
         error={errors.cadence}
       />
-      <ChoiceGroup
-        legend="Future services you'd like to hear about"
-        name="futureInterests"
-        type="checkbox"
-        columns={2}
-        hint="Not offered at launch. This only tells us what to explore."
-        options={business.futureServices.map((s) => ({ value: s, label: s }))}
-        error={errors.futureInterests}
-      />
       <Field name="notes" label="Anything else?" optional error={errors.notes}>
         {(p) => <Textarea name="notes" maxLength={1000} {...p} />}
       </Field>

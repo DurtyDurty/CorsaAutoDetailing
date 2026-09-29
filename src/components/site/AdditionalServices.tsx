@@ -20,8 +20,7 @@ export function AdditionalServices() {
         ))}
       </ul>
       <p className="mt-3 text-sm text-ink-muted">
-        Priced after we see the vehicle, and only added with your approval. Not offered yet:{" "}
-        {business.futureServices.join(", ")}.
+        Priced after we see the vehicle, and only added with your approval.
       </p>
     </div>
   );

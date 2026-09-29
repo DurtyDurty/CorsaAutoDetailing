@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { business } from "@/config/business";
-import { Container, Section, SectionHeading } from "@/components/ui/Section";
+import { Section, SectionHeading } from "@/components/ui/Section";
 import { PageHero } from "@/components/site/PageHero";
 import { MembershipInterestForm } from "@/components/forms/MembershipInterestForm";
 import { storeKind } from "@/lib/leads/store";
@@ -58,12 +58,6 @@ export default function MaintenancePlansPage() {
           </div>
         </div>
       </Section>
-
-      <Container className="pb-16 text-sm text-ink-muted">
-        <p>
-          Future studio services ({business.futureServices.join(", ")}) are ideas, not offerings. We&rsquo;ll only announce them if and when they&rsquo;re real.
-        </p>
-      </Container>
     </>
   );
 }
