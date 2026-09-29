@@ -25,6 +25,8 @@ export interface AvailableDay {
 export interface AvailabilityInput {
   serviceId: ServiceId;
   busy: BusyWindow[];
+  /** YYYY-MM-DD days the owner is off; these are left out entirely. */
+  daysOff?: string[];
   now?: Date;
 }
 
@@ -50,18 +52,19 @@ export function lastBookableDate(now: Date = new Date()): string {
   return addDays(todayEastern(now), business.booking.maxDaysAhead);
 }
 
-export function computeAvailability({ serviceId, busy, now = new Date() }: AvailabilityInput): AvailableDay[] {
+export function computeAvailability({ serviceId, busy, daysOff = [], now = new Date() }: AvailabilityInput): AvailableDay[] {
   const { workHours, workDays, travelBufferMinutes } = business.scheduling;
   const { slotIntervalMinutes } = business.booking;
   const duration = business.booking.durationMinutes[serviceId];
   const dayStart = toMin(workHours.start);
   const dayEnd = toMin(workHours.end);
+  const off = new Set(daysOff);
   const windows = busy.map((b) => ({ s: Date.parse(b.start), e: Date.parse(b.busyUntil) }));
 
   const days: AvailableDay[] = [];
   const last = lastBookableDate(now);
   for (let date = firstBookableDate(now); date <= last; date = addDays(date, 1)) {
-    if (!(workDays as readonly number[]).includes(weekdayOf(date))) continue;
+    if (!(workDays as readonly number[]).includes(weekdayOf(date)) || off.has(date)) continue;
     const slots: string[] = [];
     for (let t = dayStart; t + duration <= dayEnd; t += slotIntervalMinutes) {
       const start = easternToUtc(date, hhmm(t)).getTime();

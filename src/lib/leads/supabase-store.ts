@@ -351,6 +351,31 @@ export class SupabaseLeadStore implements LeadStore {
     return data ? apptFromRow(data) : null;
   }
 
+  async listTimeOff(opts: { from?: string } = {}) {
+    let q = this.client.from("time_off").select("*").order("day", { ascending: true });
+    if (opts.from) q = q.gte("day", opts.from);
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((r) => ({
+      day: r.day as string,
+      note: (r.note as string | null) ?? null,
+      createdAt: r.created_at as string,
+    }));
+  }
+
+  async addTimeOff(days: string[], note: string | null) {
+    if (days.length === 0) return;
+    const { error } = await this.client
+      .from("time_off")
+      .upsert(days.map((day) => ({ day, note })), { onConflict: "day", ignoreDuplicates: true });
+    if (error) throw new Error(error.message);
+  }
+
+  async removeTimeOff(day: string) {
+    const { error } = await this.client.from("time_off").delete().eq("day", day);
+    if (error) throw new Error(error.message);
+  }
+
   async createNotification(leadId: string, kind: NotificationKind) {
     const { data, error } = await this.client
       .from("notification_log")

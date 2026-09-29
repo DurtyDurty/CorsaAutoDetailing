@@ -17,9 +17,13 @@ import type {
   NotificationRecord,
   NotificationStatus,
   StoreHealth,
+  TimeOffRecord,
 } from "./types";
 import { SlotTakenError } from "./types";
 import { matchesFilter, computeCounts } from "./shared";
+import { todayEastern } from "@/lib/time";
+
+const easternDate = (iso: string) => todayEastern(new Date(iso));
 
 /** Mirrors the database: busy window = [starts_at, ends_at + buffer). */
 function withBusy<T extends { endsAt: string; bufferMinutes: number }>(a: T): T & { busyUntil: string } {
@@ -51,6 +55,7 @@ interface DemoData {
   leads: LeadRecord[];
   appointments: AppointmentRecord[];
   notifications: NotificationRecord[];
+  timeOff: TimeOffRecord[];
 }
 
 // Resolved per call so the working directory can be swapped in tests.
@@ -85,9 +90,10 @@ async function load(): Promise<DemoData> {
         } as AppointmentRecord),
       ),
       notifications: parsed.notifications ?? [],
+      timeOff: parsed.timeOff ?? [],
     };
   } catch {
-    return { leads: [], appointments: [], notifications: [] };
+    return { leads: [], appointments: [], notifications: [], timeOff: [] };
   }
 }
 
@@ -221,6 +227,8 @@ export class DemoLeadStore implements LeadStore {
     return serialized(async () => {
       const data = await load();
       const ts = now();
+      // Mirrors the day-off check in book_online_slot().
+      if (data.timeOff.some((t) => t.day === easternDate(input.startsAt))) throw new SlotTakenError();
       // Same order as book_online_slot(): release stale holds and this lead's earlier hold.
       for (const a of data.appointments) {
         const stale = a.status === "held" && a.holdExpiresAt !== null && a.holdExpiresAt < ts;
@@ -279,6 +287,30 @@ export class DemoLeadStore implements LeadStore {
   async findAppointmentByCheckoutSession(sessionId: string) {
     const data = await load();
     return data.appointments.find((a) => a.checkoutSessionId === sessionId) ?? null;
+  }
+
+  async listTimeOff(opts: { from?: string } = {}) {
+    const data = await load();
+    return data.timeOff.filter((t) => !opts.from || t.day >= opts.from).sort((a, b) => a.day.localeCompare(b.day));
+  }
+
+  addTimeOff(days: string[], note: string | null) {
+    return serialized(async () => {
+      const data = await load();
+      const ts = now();
+      for (const day of days) {
+        if (!data.timeOff.some((t) => t.day === day)) data.timeOff.push({ day, note, createdAt: ts });
+      }
+      await save(data);
+    });
+  }
+
+  removeTimeOff(day: string) {
+    return serialized(async () => {
+      const data = await load();
+      data.timeOff = data.timeOff.filter((t) => t.day !== day);
+      await save(data);
+    });
   }
 
   createNotification(leadId: string, kind: NotificationKind) {

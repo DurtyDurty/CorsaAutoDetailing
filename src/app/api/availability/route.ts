@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getService, type ServiceId } from "@/config/business";
 import { computeAvailability } from "@/lib/availability";
-import { bookingEnabled, busyWindows } from "@/lib/booking";
+import { bookingEnabled, calendarState } from "@/lib/booking";
 import { getLeadStore } from "@/lib/leads/store";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +14,6 @@ export async function GET(req: NextRequest) {
   const store = await getLeadStore();
   if (!store) return NextResponse.json({ error: "Unavailable." }, { status: 503 });
 
-  const days = computeAvailability({ serviceId: serviceId as ServiceId, busy: await busyWindows(store) });
+  const days = computeAvailability({ serviceId: serviceId as ServiceId, ...(await calendarState(store)) });
   return NextResponse.json({ days }, { headers: { "Cache-Control": "no-store" } });
 }

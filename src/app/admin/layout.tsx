@@ -18,6 +18,7 @@ const NAV = [
   { href: "/admin/launch-list", label: "Launch list" },
   { href: "/admin/membership", label: "Plan interest" },
   { href: "/admin/appointments", label: "Appointments" },
+  { href: "/admin/time-off", label: "Days off" },
 ];
 
 async function signOutAction() {

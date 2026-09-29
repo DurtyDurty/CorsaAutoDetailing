@@ -43,6 +43,14 @@ describe("computeAvailability", () => {
     expect(day.slots).toEqual([]);
   });
 
+  it("leaves the owner's days off out of the calendar entirely", () => {
+    const days = computeAvailability({ serviceId: "essential", busy: [], daysOff: ["2026-10-23"], now: NOW });
+    expect(days.map((d) => d.date)).not.toContain("2026-10-23");
+    expect(days.map((d) => d.date)).toContain("2026-10-22");
+    const startIso = at("2026-10-23", "09:00");
+    expect(isSlotAvailable({ serviceId: "essential", busy: [], daysOff: ["2026-10-23"], now: NOW, startIso })).toBe(false);
+  });
+
   it("handles the Nov 1 daylight-saving change", () => {
     const days = computeAvailability({ serviceId: "essential", busy: [], now: NOW });
     const sat = days.find((d) => d.date === "2026-10-31")!;

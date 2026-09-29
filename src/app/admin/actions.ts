@@ -9,7 +9,7 @@ import { LEAD_STAGES, SlotTakenError, type LeadStage } from "@/lib/leads/types";
 import { retryFailedNotifications } from "@/lib/notifications";
 import { getPaymentAdapter } from "@/lib/payments";
 import { deleteLeadPhotos } from "@/lib/photos";
-import { easternToUtc, isIsoDate, overlapsWithBuffer, withinWorkHours } from "@/lib/time";
+import { addDays, easternToUtc, isIsoDate, overlapsWithBuffer, todayEastern, withinWorkHours } from "@/lib/time";
 import { cleanText } from "@/lib/utils";
 
 /**
@@ -102,6 +102,10 @@ export async function confirmAppointmentAction(formData: FormData) {
   if (!hours.ok && !override) return back(id, { error: `${hours.reason} Tick “override” to schedule anyway.` });
 
   const s = await store();
+  const dayOff = (await s.listTimeOff({ from: date })).find((t) => t.day === date);
+  if (dayOff && !override) {
+    return back(id, { error: "That date is marked as a day off. Remove it under Days off, or tick “override” to schedule anyway." });
+  }
   const existing = await s.listAppointments({
     from: new Date(start.getTime() - 24 * 3600_000).toISOString(),
     to: new Date(end.getTime() + 24 * 3600_000).toISOString(),
@@ -198,4 +202,45 @@ export async function cancelAppointmentAction(formData: FormData) {
   await s.updateAppointment(apptId, { status: "cancelled" });
   revalidatePath("/admin/appointments");
   return back(id, { ok: "Appointment cancelled." });
+}
+
+function backToTimeOff(msg: { ok?: string; error?: string }) {
+  const q = new URLSearchParams(msg.ok ? { ok: msg.ok } : { error: msg.error ?? "" });
+  revalidatePath("/admin/time-off");
+  redirect(`/admin/time-off?${q}`);
+}
+
+const MAX_TIME_OFF_DAYS = 120;
+
+/** Block one day, or every working day in a from-to range. */
+export async function addTimeOffAction(formData: FormData) {
+  await requireOwner();
+  const from = String(formData.get("from") ?? "");
+  const to = String(formData.get("to") ?? "").trim() || from;
+  const note = cleanText(formData.get("note"), 200) || null;
+  if (!isIsoDate(from) || !isIsoDate(to)) return backToTimeOff({ error: "Pick a valid date." });
+  if (from < todayEastern()) return backToTimeOff({ error: "That date has already passed." });
+  if (to < from) return backToTimeOff({ error: "The end date is before the start date." });
+
+  const days: string[] = [];
+  for (let d = from; d <= to; d = addDays(d, 1)) {
+    if (days.length >= MAX_TIME_OFF_DAYS) return backToTimeOff({ error: `Block at most ${MAX_TIME_OFF_DAYS} days at a time.` });
+    const [y, m, dd] = d.split("-").map(Number);
+    // Only working days need blocking; the calendar is already closed the rest.
+    if ((business.scheduling.workDays as readonly number[]).includes(new Date(Date.UTC(y, m - 1, dd)).getUTCDay())) days.push(d);
+  }
+  if (days.length === 0) return backToTimeOff({ error: "You don't work that day anyway, so there's nothing to block." });
+
+  const s = await store();
+  await s.addTimeOff(days, note);
+  return backToTimeOff({ ok: days.length === 1 ? "Day off added." : `${days.length} days off added.` });
+}
+
+export async function removeTimeOffAction(formData: FormData) {
+  await requireOwner();
+  const day = String(formData.get("day") ?? "");
+  if (!isIsoDate(day)) return backToTimeOff({ error: "Invalid date." });
+  const s = await store();
+  await s.removeTimeOff(day);
+  return backToTimeOff({ ok: "Day reopened for booking." });
 }

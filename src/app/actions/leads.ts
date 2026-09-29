@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { business, getService, type ServiceId } from "@/config/business";
 import { isSlotAvailable } from "@/lib/availability";
-import { bookingEnabled, busyWindows, releaseToken } from "@/lib/booking";
+import { bookingEnabled, calendarState, releaseToken } from "@/lib/booking";
 import { SlotTakenError, type LeadRecord, type NewLead } from "@/lib/leads/types";
 import { getPaymentAdapter } from "@/lib/payments";
 import { intake, baseLead, type IntakeResult } from "@/lib/leads/intake";
@@ -171,7 +171,7 @@ export async function submitBooking(_prev: FormResult | null, formData: FormData
   if (getService(requestedService) && requestedSlot) {
     const free = isSlotAvailable({
       serviceId: requestedService as ServiceId,
-      busy: await busyWindows(store),
+      ...(await calendarState(store)),
       startIso: requestedSlot,
     });
     if (!free) return SLOT_TAKEN;

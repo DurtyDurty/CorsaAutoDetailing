@@ -6,6 +6,7 @@ import { getLeadStore, storeKind } from "@/lib/leads/store";
 import { SlotTakenError, type AppointmentRecord, type LeadRecord, type LeadStore } from "@/lib/leads/types";
 import { notifyForLead } from "@/lib/notifications";
 import { getPaymentAdapter } from "@/lib/payments";
+import { todayEastern } from "@/lib/time";
 
 /** Online booking runs only after launch, with a payment provider and a durable store. */
 export function bookingEnabled(): boolean {
@@ -20,6 +21,17 @@ export async function busyWindows(store: LeadStore, now: Date = new Date()): Pro
   return appts
     .filter((a) => a.status === "confirmed" || (a.status === "held" && (!a.holdExpiresAt || a.holdExpiresAt > nowIso)))
     .map((a) => ({ start: a.startsAt, busyUntil: a.busyUntil }));
+}
+
+/** Days off that fall inside the booking window. */
+export async function daysOff(store: LeadStore, now: Date = new Date()): Promise<string[]> {
+  return (await store.listTimeOff({ from: todayEastern(now) })).map((t) => t.day);
+}
+
+/** Everything computeAvailability needs from the store. */
+export async function calendarState(store: LeadStore, now: Date = new Date()) {
+  const [busy, off] = await Promise.all([busyWindows(store, now), daysOff(store, now)]);
+  return { busy, daysOff: off };
 }
 
 /**

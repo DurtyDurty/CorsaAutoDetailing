@@ -113,6 +113,32 @@ test.describe("online booking after launch (LIVE mode, demo payments)", () => {
     expect(await openSlots(page, "essential")).toContain(slot);
   });
 
+  test("owner blocks a day off: it leaves the calendar until reopened", async ({ page }) => {
+    const days = async () => {
+      const res = await page.request.get("/api/availability?service=essential");
+      return ((await res.json()) as { days: { date: string }[] }).days.map((d) => d.date);
+    };
+    // The last bookable day, so the other tests' "first open time" is unaffected.
+    const day = (await days()).at(-1)!;
+
+    await page.goto("/admin/login");
+    await page.getByLabel("Password").fill("corsa-demo");
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByRole("link", { name: "Days off" }).click();
+    await expect(page.getByRole("heading", { name: "Days off", level: 1 })).toBeVisible();
+    await page.getByLabel(/Day off/).fill(day);
+    const note = `Vacation ${unique()}`;
+    await page.getByLabel(/Note/).fill(note);
+    await page.getByRole("button", { name: "Block these days" }).click();
+    await expect(page.getByText("Day off added.")).toBeVisible();
+    await expect(page.getByText(note)).toBeVisible();
+    expect(await days()).not.toContain(day);
+
+    await page.getByRole("listitem").filter({ hasText: note }).getByRole("button", { name: /^Reopen / }).click();
+    await expect(page.getByText("Day reopened for booking.")).toBeVisible();
+    expect(await days()).toContain(day);
+  });
+
   test("two customers racing for the same time: the second is told it was taken", async ({ page, browser }) => {
     // Customer B loads the calendar first, so the time still shows as open for them.
     const other = await browser.newContext();

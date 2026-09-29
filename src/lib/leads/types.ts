@@ -149,6 +149,14 @@ export interface OnlineHoldInput {
   bufferMinutes: number;
 }
 
+/** A calendar day (Eastern) the owner isn't working; online booking skips it. */
+export interface TimeOffRecord {
+  /** YYYY-MM-DD */
+  day: string;
+  note: string | null;
+  createdAt: string;
+}
+
 /** Thrown by `bookOnlineSlot` when the slot (plus travel buffer) overlaps an active appointment. */
 export class SlotTakenError extends Error {
   constructor() {
@@ -243,6 +251,12 @@ export interface LeadStore {
    * the others get null and must not send confirmation emails.
    */
   markHeldAppointmentPaid(id: string, paymentIntentId: string | null): Promise<AppointmentRecord | null>;
+
+  /** Days off on or after `from` (YYYY-MM-DD), earliest first. */
+  listTimeOff(opts?: { from?: string }): Promise<TimeOffRecord[]>;
+  /** Adds the days; days already off are left as they are. */
+  addTimeOff(days: string[], note: string | null): Promise<void>;
+  removeTimeOff(day: string): Promise<void>;
 
   createNotification(leadId: string, kind: NotificationKind): Promise<NotificationRecord>;
   updateNotification(
