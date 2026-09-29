@@ -11,7 +11,6 @@ import { Arrow } from "@/components/ui/Button";
 const PRICED = business.vehicleCategories.filter((v) => v.priced) as {
   id: PricedVehicleId;
   label: string;
-  examples: string;
 }[];
 
 function bookHref(serviceId: string, vehicle: PricedVehicleId | null) {
@@ -63,7 +62,7 @@ export function PackageCards({
                 key={v.id}
                 htmlFor={id}
                 className={cn(
-                  "flex cursor-pointer flex-col gap-0.5 border px-4 py-3 transition-colors",
+                  "flex cursor-pointer flex-col border px-4 py-3 transition-colors",
                   checked ? "border-asphalt bg-asphalt text-chalk" : "border-line bg-white hover:border-ink-muted",
                 )}
               >
@@ -80,7 +79,6 @@ export function PackageCards({
                   className="sr-only"
                 />
                 <span className="text-sm font-semibold">{v.label}</span>
-                <span className={cn("text-xs", checked ? "text-chalk/70" : "text-ink-muted")}>{v.examples}</span>
               </label>
             );
           })}

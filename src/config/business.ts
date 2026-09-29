@@ -26,7 +26,6 @@ export type PricedVehicleId = Extract<VehicleCategoryId, "sedan" | "suv2" | "lar
 export interface VehicleCategory {
   id: VehicleCategoryId;
   label: string;
-  examples: string;
   /** Categories without a fixed base price require a custom quote. */
   priced: boolean;
 }
@@ -159,9 +158,9 @@ export const business = {
   },
 
   vehicleCategories: [
-    { id: "sedan", label: "Coupe or sedan", examples: "Civic, Camry, Mustang, IS F", priced: true },
-    { id: "suv2", label: "Small crossover or two-row SUV", examples: "RAV4, CR-V, CX-5, FJ Cruiser", priced: true },
-    { id: "large", label: "Pickup truck or three-row SUV", examples: "F-150, Silverado, Tahoe, Highlander", priced: true },
+    { id: "sedan", label: "Coupe or sedan", priced: true },
+    { id: "suv2", label: "Small crossover or two-row SUV", priced: true },
+    { id: "large", label: "Pickup truck or three-row SUV", priced: true },
     // Minivan / oversized / other were removed from the site 2026-09-28: those vehicles
     // are quoted through the contact page. The ids stay in VehicleCategoryId for older leads.
   ] satisfies VehicleCategory[],

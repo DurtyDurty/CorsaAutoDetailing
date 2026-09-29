@@ -212,7 +212,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
           options={business.vehicleCategories.map((v) => ({
             value: v.id,
             label: v.label,
-            description: v.priced ? v.examples : `${v.examples} (custom quote)`,
+            description: v.priced ? undefined : "Custom quote",
           }))}
         />
         <div className="grid gap-5 sm:grid-cols-3">
