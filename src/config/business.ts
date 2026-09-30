@@ -169,36 +169,21 @@ export const business = {
     {
       id: "essential",
       name: "Corsa Essential Detail",
-      tagline: "Maintenance detail, inside and out.",
+      tagline: "The basics, done right.",
       description:
-        "A professional interior and exterior maintenance detail designed to keep a vehicle consistently clean, protected and presentable.",
+        "A straightforward interior and exterior clean that keeps a well-kept vehicle looking fresh between deeper details.",
       duration: "2-3 hours",
       badge: null,
       includesEverythingIn: null,
       includes: [
         {
           heading: "Exterior",
-          items: [
-            "Pre-rinse and foam wash",
-            "Safe hand wash",
-            "Spot-free final rinse with deionized water",
-            "Wheels, tire sidewalls and wheel faces cleaned",
-            "Door jambs wiped down",
-            "Streak-free exterior glass",
-            "Paint sealant for water-beading protection (approx. 4-8 weeks)",
-            "Tire dressing",
-          ],
+          items: ["Hand wash", "Spot-free rinse", "Wheels and tires cleaned", "Exterior windows cleaned", "Tire shine"],
         },
         {
           heading: "Interior",
-          items: [
-            "Full vacuum: seats, carpets, mats and trunk",
-            "Dashboard, console and door panels cleaned",
-            "Vents and crevices dusted",
-            "Streak-free interior glass",
-          ],
+          items: ["Vacuum: seats, carpets and floor mats", "Dash, console and door panels wiped down", "Interior windows cleaned"],
         },
-        { heading: "Finish", items: ["Final walk-around quality inspection"] },
       ],
       prices: { sedan: 120, suv2: 160, large: 200 },
     },
@@ -215,10 +200,12 @@ export const business = {
         {
           heading: "Exterior decontamination and protection",
           items: [
+            "Foam pre-wash",
             "Bug and tar removal",
             "Iron fallout removal",
             "Clay bar treatment",
             "Deep clean of wheels, tires and wheel wells",
+            "Door jambs cleaned",
             "Ceramic paint sealant (up to 4-6 months)",
             "Exterior trim UV protection",
             "Premium tire dressing",
@@ -229,6 +216,7 @@ export const business = {
           items: [
             "Detailed brushing of every interior surface",
             "Compressed-air cleaning of vents and crevices",
+            "Trunk vacuumed",
             "Carpet and upholstery spot treatment",
             "Light extraction",
             "Leather cleaned and conditioned",

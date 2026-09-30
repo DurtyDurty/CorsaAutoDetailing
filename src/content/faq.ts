@@ -10,7 +10,7 @@ export const HOME_FAQ: FaqItem[] = [
   },
   {
     q: "Which package should I choose?",
-    a: "If it's your first visit, or the vehicle needs more than routine upkeep, start with the Corsa Signature Detail. After that, the Corsa Essential Detail every four to six weeks keeps it clean and protected.",
+    a: "If it's your first visit, or the vehicle needs more than routine upkeep, start with the Corsa Signature Detail. After that, the Corsa Essential Detail every four to six weeks keeps it clean.",
   },
   {
     q: "Are the prices final?",
@@ -41,7 +41,7 @@ export const SERVICES_FAQ: FaqItem[] = [
   },
   {
     q: "How long does the protection last?",
-    a: `${business.disclosures.protection} As a guide, the Essential Detail's paint sealant lasts approximately 4-8 weeks, and the Signature Detail's ceramic sealant up to 4-6 months.`,
+    a: `${business.disclosures.protection} As a guide, the Signature Detail's ceramic sealant lasts up to 4-6 months.`,
   },
   {
     q: "Are there travel or condition charges?",

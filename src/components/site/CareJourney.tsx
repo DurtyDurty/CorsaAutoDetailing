@@ -10,7 +10,7 @@ export function CareJourney() {
   ];
   const steps = [
     { n: "01", name: signature?.name, when: "First visit", what: "A thorough reset with premium protection." },
-    { n: "02", name: essential?.name, when: "Every 4-6 weeks", what: "Keeps the results clean, protected and presentable." },
+    { n: "02", name: essential?.name, when: "Every 4-6 weeks", what: "Keeps it clean and fresh between deeper details." },
   ];
   return (
     <section className="relative overflow-hidden bg-asphalt text-chalk on-dark" aria-labelledby="care-journey">
