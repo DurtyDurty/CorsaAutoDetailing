@@ -155,13 +155,22 @@ export default function HomePage() {
             title="Two packages. Built to perform."
             lede="Start with Signature for a full reset, then keep it sharp with Essential. Book either one, or see pricing and every detail on the services page."
           />
-          <Link
-            href="/services"
-            className="group inline-flex items-center gap-2 font-semibold uppercase tracking-[0.1em] text-sm text-apex-deep shrink-0"
-          >
-            Pricing &amp; full details
-            <Arrow />
-          </Link>
+          <div className="flex flex-col gap-3 shrink-0 lg:items-end">
+            <Link
+              href="/services#quote"
+              className="group inline-flex items-center gap-2 font-semibold uppercase tracking-[0.1em] text-sm text-apex-deep"
+            >
+              Get an instant quote
+              <Arrow />
+            </Link>
+            <Link
+              href="/services"
+              className="group inline-flex items-center gap-2 font-semibold uppercase tracking-[0.1em] text-sm text-ink hover:text-apex-deep"
+            >
+              Pricing &amp; full details
+              <Arrow />
+            </Link>
+          </div>
         </div>
         <div className="mt-12">
           <PackageCards showPrices={false} />

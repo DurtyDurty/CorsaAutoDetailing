@@ -3,6 +3,7 @@ import { business } from "@/config/business";
 import { Section, SectionHeading } from "@/components/ui/Section";
 import { PageHero } from "@/components/site/PageHero";
 import { PackageCards } from "@/components/site/PackageCards";
+import { InstantQuote } from "@/components/site/InstantQuote";
 import { AdditionalServices } from "@/components/site/AdditionalServices";
 import { PricingDisclosures } from "@/components/site/Disclosures";
 import { CareJourney } from "@/components/site/CareJourney";
@@ -29,6 +30,15 @@ export default function ServicesPage() {
         title="Two packages. Clear starting prices."
         lede="Interior and exterior car detailing, done by hand at your home or workplace. Choose your vehicle size to see your starting price; the final price is confirmed at an in-person inspection before any work begins."
       />
+
+      <Section tone="white" id="quote" className="scroll-mt-20">
+        <SectionHeading
+          eyebrow="Instant quote"
+          title="Get your price in seconds."
+          lede="Pick a package and your vehicle size. No contact details needed."
+        />
+        <InstantQuote className="mt-10 max-w-3xl" />
+      </Section>
 
       <Section tone="chalk">
         <PackageCards headingLevel="h2" />
