@@ -5,7 +5,7 @@ import { computeEstimate, startingPrice } from "@/lib/pricing";
 describe("computeEstimate", () => {
   it("returns the configured base price for every priced vehicle category", () => {
     const expected: Record<string, Record<string, number>> = {
-      essential: { sedan: 120, suv2: 160, large: 200 },
+      essential: { sedan: 140, suv2: 180, large: 220 },
       signature: { sedan: 275, suv2: 325, large: 375 },
     };
     for (const service of business.services) {
@@ -46,7 +46,7 @@ describe("computeEstimate", () => {
       conditionFlags: ["bogus"],
     });
     expect(e?.addOns).toEqual([]);
-    expect(e?.total).toBe(120);
+    expect(e?.total).toBe(140);
   });
 
   it("returns null for unknown service or vehicle", () => {
@@ -58,7 +58,7 @@ describe("computeEstimate", () => {
     const e = computeEstimate({ serviceId: "essential", vehicleCategoryId: "sedan" });
     expect(e?.pricingVersion).toBe(business.pricingVersion);
     expect(e?.taxNotice).toBe(business.taxNotice);
-    expect(startingPrice("essential")).toBe(120);
+    expect(startingPrice("essential")).toBe(140);
     expect(startingPrice("signature")).toBe(275);
   });
 });

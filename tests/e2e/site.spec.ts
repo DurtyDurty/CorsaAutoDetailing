@@ -60,7 +60,7 @@ test.describe("public site", () => {
   test("services page shows every starting price, add-on range and disclosure", async ({ page }) => {
     await page.goto("/services");
     const text = (await page.textContent("main")) ?? "";
-    for (const price of ["$120", "$160", "$200", "$275", "$325", "$375"]) expect(text).toContain(price);
+    for (const price of ["$140", "$180", "$220", "$275", "$325", "$375"]) expect(text).toContain(price);
     for (const range of ["$35-$75", "$30-$75", "$50-$100", "$50", "$100-$150", "$175-$300"]) expect(text).toContain(range);
     expect(text).toMatch(/Planned starting prices/);
     expect(text).toMatch(/Best First Visit/);

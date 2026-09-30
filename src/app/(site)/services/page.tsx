@@ -10,11 +10,12 @@ import { BusinessJsonLd } from "@/components/site/JsonLd";
 import { Faq } from "@/components/site/Faq";
 import { SERVICES_FAQ } from "@/content/faq";
 import { ServiceViewTracker } from "@/components/site/ServiceViewTracker";
+import { startingPrice } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Detailing packages & pricing",
   description:
-    "Corsa Essential from $120 and Signature from $275. Interior and exterior car detailing at your home or work in Clay County, St. Johns and Jacksonville.",
+    `Corsa Essential from $${startingPrice("essential")} and Signature from $${startingPrice("signature")}. Interior and exterior car detailing at your home or work in Clay County, St. Johns and Jacksonville.`,
   alternates: { canonical: "/services" },
 };
 

@@ -38,7 +38,7 @@ Things the website is deliberately silent or provisional about until you decide.
 
 ## Pricing & scope
 
-- [x] **Packages.** Set 2026-09-26: Corsa Essential Detail ($120/$160/$200, 2–3 hrs) and Corsa Signature Detail ($275/$325/$375, 4–6 hrs, "Best First Visit"), with your exact inclusions and disclosure wording. → `business.services`, `business.disclosures`
+- [x] **Packages.** Set 2026-09-26: Corsa Essential Detail ($140/$180/$220 as of 2026-09-29, 2–3 hrs) and Corsa Signature Detail ($275/$325/$375, 4–6 hrs, "Best First Visit"), with your exact inclusions and disclosure wording. → `business.services`, `business.disclosures`
 - [ ] **Protection claims.** The site says the Essential sealant lasts "approximately 4–8 weeks" and the Signature ceramic sealant "up to 4–6 months". Keep the products' data sheets on file to back those numbers.
 - [ ] **Validate the planned prices and durations** after practice jobs. Bump `business.pricingVersion` whenever you change them (now `2026-09-planned-v3`). → `business.services[].prices`
 - [x] **Additional services.** Six range-priced add-ons are listed and confirmed at inspection; they're never added to an online estimate automatically. → `business.additionalServices`

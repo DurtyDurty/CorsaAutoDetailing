@@ -138,7 +138,7 @@ export const business = {
    * Bump whenever a price or service scope changes. Stored with each lead's
    * estimate so old inquiries can be understood later.
    */
-  pricingVersion: "2026-09-planned-v3",
+  pricingVersion: "2026-09-planned-v4",
   /** Shown next to all prices while in PRELAUNCH mode. */
   priceLabel: {
     PRELAUNCH: "Planned starting prices",
@@ -185,7 +185,7 @@ export const business = {
           items: ["Vacuum: seats, carpets and floor mats", "Dash, console and door panels wiped down", "Interior windows cleaned"],
         },
       ],
-      prices: { sedan: 120, suv2: 160, large: 200 },
+      prices: { sedan: 140, suv2: 180, large: 220 },
     },
     {
       id: "signature",
