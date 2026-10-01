@@ -220,6 +220,8 @@ export async function handleReceivedEmail(store: LeadStore, emailId: string): Pr
     receivedAt: email.created_at,
   });
   if (!rec) return { status: "duplicate" };
+  // A new reply brings an archived conversation back to the Inbox.
+  if (lead.archivedAt) await store.updateLead(lead.id, { archivedAt: null });
   await notifyOwner(lead, rec);
   return { status: "stored", leadId: lead.id };
 }

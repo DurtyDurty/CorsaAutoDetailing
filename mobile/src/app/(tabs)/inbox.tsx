@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, TextInput, View } from "react-native";
+import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { ConversationSummary } from "@shared/api";
-import { useConversations } from "@/api/queries";
+import { useArchive, useConversations, useDeleteConversation } from "@/api/queries";
+import { confirmDelete } from "@/features/inbox/confirm-delete";
 import { Segmented } from "@/design/Segmented";
 import { Skeleton } from "@/design/Skeleton";
 import { EmptyState, ErrorState } from "@/design/States";
@@ -19,13 +21,38 @@ const KIND_LABEL: Record<ConversationSummary["kind"], string> = {
   membership_interest: "Plan interest",
 };
 
-function Row({ c }: { c: ConversationSummary }) {
+function Row({ c, archived }: { c: ConversationSummary; archived: boolean }) {
+  const archive = useArchive(c.leadId);
+  const remove = useDeleteConversation();
+
+  // Long-press: tidy the Inbox without opening the conversation.
+  const actions = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert(c.customerName, undefined, [
+      { text: archived ? "Restore to Inbox" : "Archive", onPress: () => archive.mutate(!archived) },
+      {
+        text: "Delete…",
+        style: "destructive",
+        onPress: () =>
+          confirmDelete(c.customerName, () =>
+            remove.mutate(c.leadId, { onError: (err) => Alert.alert("Not deleted", err.message) }),
+          ),
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
+
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${c.unread ? "Unread. " : ""}${c.customerName}, ${KIND_LABEL[c.kind]}, ${c.preview}${c.lastSendFailed ? ". Last email failed to send" : ""}`}
+      accessibilityLabel={`${c.unread ? "Unread. " : ""}${c.customerName}, ${KIND_LABEL[c.kind]}, ${c.preview}${c.replied ? ". Replied" : ""}${c.lastSendFailed ? ". Last email failed to send" : ""}`}
+      accessibilityHint="Long press to archive or delete"
+      accessibilityActions={[{ name: "longpress", label: archived ? "Restore or delete" : "Archive or delete" }]}
+      onAccessibilityAction={(e) => e.nativeEvent.actionName === "longpress" && actions()}
       onPress={() => router.push({ pathname: "/conversation/[leadId]", params: { leadId: c.leadId } })}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      onLongPress={actions}
+      delayLongPress={350}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed, (archive.isPending || remove.isPending) && styles.busy]}
     >
       <View style={[styles.dot, c.unread && styles.dotOn]} />
       <View style={styles.rowBody}>
@@ -37,7 +64,7 @@ function Row({ c }: { c: ConversationSummary }) {
         </View>
         <Text variant="label" style={c.unread ? styles.kindUnread : undefined}>
           {KIND_LABEL[c.kind]}
-          {c.lastSendFailed ? "  ·  ! Not sent" : ""}
+          {c.lastSendFailed ? "  ·  ! Not sent" : c.replied ? "  ·  ✓ Replied" : ""}
         </Text>
         <Text variant="caption" numberOfLines={2}>
           {c.preview}
@@ -48,7 +75,7 @@ function Row({ c }: { c: ConversationSummary }) {
 }
 
 export default function InboxScreen() {
-  const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [filter, setFilter] = useState<"all" | "unread" | "archived">("all");
   const [search, setSearch] = useState("");
   const q = useDebounced(search.trim());
   const query = useConversations(filter, q);
@@ -79,6 +106,7 @@ export default function InboxScreen() {
           options={[
             { value: "all", label: "All" },
             { value: "unread", label: "Unread" },
+            { value: "archived", label: "Archived" },
           ]}
         />
       </View>
@@ -95,7 +123,7 @@ export default function InboxScreen() {
         <FlatList
           data={items}
           keyExtractor={(c) => c.leadId}
-          renderItem={({ item }) => <Row c={item} />}
+          renderItem={({ item }) => <Row c={item} archived={filter === "archived"} />}
           contentContainerStyle={styles.list}
           ItemSeparatorComponent={() => <View style={styles.sep} />}
           onEndReachedThreshold={0.4}
@@ -106,8 +134,16 @@ export default function InboxScreen() {
           ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator color={colors.accent} style={styles.more} /> : null}
           ListEmptyComponent={
             <EmptyState
-              title={q ? "No matches" : filter === "unread" ? "All caught up" : "No conversations yet"}
-              detail={q ? "Try a different name, email or vehicle." : filter === "unread" ? "New website messages and requests appear here." : undefined}
+              title={q ? "No matches" : filter === "unread" ? "All caught up" : filter === "archived" ? "Nothing archived" : "No conversations yet"}
+              detail={
+                q
+                  ? "Try a different name, email or vehicle."
+                  : filter === "unread"
+                    ? "New website messages, requests and replies appear here."
+                    : filter === "archived"
+                      ? "Long-press a conversation in All to archive it."
+                      : undefined
+              }
             />
           }
         />
@@ -133,6 +169,7 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: space.lg, paddingBottom: space.xxl, gap: space.sm },
   row: { flexDirection: "row", gap: space.md, paddingVertical: space.md, minHeight: MIN_TOUCH },
   pressed: { opacity: 0.6 },
+  busy: { opacity: 0.4 },
   dot: { width: 8, height: 8, borderRadius: 4, marginTop: 8 },
   dotOn: { backgroundColor: colors.accent },
   rowBody: { flex: 1, gap: 2 },

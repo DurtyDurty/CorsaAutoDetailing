@@ -223,6 +223,8 @@ export interface ConversationSummary {
   preview: string;
   /** Last email you sent failed to deliver. */
   lastSendFailed: boolean;
+  /** The latest message is an email you sent (you're waiting on the customer). */
+  replied: boolean;
 }
 
 export type ConversationMessage =
@@ -245,11 +247,17 @@ export interface ConversationDetail {
   /** Appended by the server to every email; shown under the composer. */
   signature: string;
   canSend: boolean;
+  /** Hidden from the Inbox; history kept. */
+  archived: boolean;
+  /** Delete is refused while the customer has an upcoming booked appointment. */
+  canDelete: boolean;
   messages: ConversationMessage[];
 }
 
+export const archiveSchema = z.object({ archived: z.boolean() });
+
 export const listConversationsQuery = z.object({
-  filter: z.enum(["all", "unread"]).default("all"),
+  filter: z.enum(["all", "unread", "archived"]).default("all"),
   q: z.string().trim().max(100).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   cursor: z.string().max(200).optional(),

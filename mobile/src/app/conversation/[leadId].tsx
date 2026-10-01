@@ -7,7 +7,8 @@ import type { ConversationDetail, ConversationMessage } from "@shared/api";
 import { formatCents } from "@shared/money";
 import { availableTemplates, type EmailTemplate } from "@shared/templates";
 import { ApiClientError } from "@/api/client";
-import { useConversation, useMarkHandled, useMe, useSendMessage } from "@/api/queries";
+import { useArchive, useConversation, useDeleteConversation, useMarkHandled, useMe, useSendMessage } from "@/api/queries";
+import { confirmDelete } from "@/features/inbox/confirm-delete";
 import { Button } from "@/design/Button";
 import { Card } from "@/design/Card";
 import { Field } from "@/design/Field";
@@ -60,6 +61,8 @@ function Composer({ c, businessName }: { c: ConversationDetail; businessName: st
   const fresh = () => ({ subject: c.defaultSubject, message: `Hi ${c.firstName},\n\n` });
   const [draft, setDraft] = useState<Draft>(() => initialDraft(c.leadId, fresh));
   const [picking, setPicking] = useState(false);
+  // After a send the composer folds away, so it's clear the email went.
+  const [sentTo, setSentTo] = useState<string | null>(null);
   const save = useDrafts((s) => s.save);
   const send = useSendMessage(c.leadId);
 
@@ -98,7 +101,11 @@ function Composer({ c, businessName }: { c: ConversationDetail; businessName: st
         onSuccess: (res) => {
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           setDraft({ ...fresh(), sendKey: newSendKey() });
-          if (res.alreadySent) Alert.alert("Already sent", "This email had already gone out.");
+          setSentTo(c.email);
+          Alert.alert(res.alreadySent ? "Already sent" : "Sent", res.alreadySent ? "This email had already gone out." : `Your email to ${c.firstName} is on its way.`, [
+            { text: "Stay here", style: "cancel" },
+            { text: "Back to Inbox", onPress: () => router.back() },
+          ]);
         },
         onError: (err) => {
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -113,6 +120,16 @@ function Composer({ c, businessName }: { c: ConversationDetail; businessName: st
   };
 
   const empty = !draft.subject.trim() || draft.message.trim() === fresh().message.trim() || !draft.message.trim();
+  if (sentTo) {
+    return (
+      <Card style={[styles.composer, styles.sentCard]} accessibilityLiveRegion="polite">
+        <Text variant="bodyStrong" style={styles.sentText}>
+          ✓ Sent to {sentTo}
+        </Text>
+        <Button label="Write another email" variant="secondary" onPress={() => setSentTo(null)} />
+      </Card>
+    );
+  }
   return (
     <Card style={styles.composer}>
       <View style={styles.composerHead}>
@@ -157,6 +174,8 @@ export default function ConversationScreen() {
   const { data: c, error, isPending, refetch, isRefetching } = useConversation(leadId);
   const { data: me } = useMe();
   const handled = useMarkHandled(leadId);
+  const archive = useArchive(leadId);
+  const remove = useDeleteConversation();
   const scroll = useRef<ScrollView>(null);
 
   return (
@@ -194,6 +213,39 @@ export default function ConversationScreen() {
               <Message key={m.id} m={m} />
             ))}
             <Composer c={c} businessName={me?.business.name ?? "Corsa Auto Detailing"} />
+
+            <View style={styles.cleanup}>
+              <Button
+                label={c.archived ? "Restore to Inbox" : "Archive"}
+                variant="secondary"
+                loading={archive.isPending}
+                onPress={() =>
+                  archive.mutate(!c.archived, {
+                    onSuccess: () => {
+                      if (!c.archived) router.back();
+                    },
+                    onError: (err) => Alert.alert("Couldn't update", err.message),
+                  })
+                }
+                style={styles.action}
+              />
+              <Button
+                label="Delete"
+                variant="danger"
+                loading={remove.isPending}
+                disabled={!c.canDelete}
+                onPress={() =>
+                  confirmDelete(c.customerName, () =>
+                    remove.mutate(c.leadId, {
+                      onSuccess: () => router.back(),
+                      onError: (err) => Alert.alert("Not deleted", err.message),
+                    }),
+                  )
+                }
+                style={styles.action}
+              />
+            </View>
+            {!c.canDelete && <Text variant="caption">This customer has an upcoming appointment, so they can&apos;t be deleted. You can still archive.</Text>}
           </ScrollView>
         </KeyboardAvoidingView>
       )}
@@ -221,6 +273,9 @@ const styles = StyleSheet.create({
   sentFailed: { borderColor: colors.error },
   failedText: { color: colors.error },
   composer: { gap: space.md, marginTop: space.md },
+  sentCard: { borderColor: colors.success },
+  sentText: { color: colors.success },
+  cleanup: { flexDirection: "row", gap: space.sm, marginTop: space.lg },
   composerHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   sheet: { flex: 1, backgroundColor: colors.background },
   sheetHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: space.lg },

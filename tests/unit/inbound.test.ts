@@ -236,6 +236,15 @@ describe("receiving replies", () => {
     expect((await s.listLeads()).filter((l) => l.email === "new@example.com")).toHaveLength(1);
   });
 
+  it("brings an archived conversation back when the customer replies", async () => {
+    const lead = await seedLead();
+    const s = await store();
+    await s.updateLead(lead.id, { archivedAt: new Date().toISOString() });
+    received.e7 = { from: "dana@example.com", to: [`reply+${lead.id}@${DOMAIN}`], subject: "Re: hi", text: "Back again", html: null, message_id: null, created_at: new Date().toISOString() };
+    await deliver("e7");
+    expect((await s.getLead(lead.id))?.archivedAt).toBeNull();
+  });
+
   it("ignores mail from the business sending address, but files the owner's own test emails", async () => {
     process.env.EMAIL_FROM = "Corsa Auto Detailing <hello@corsaautodetailing.com>";
     received.e5 = { from: "hello@corsaautodetailing.com", to: [`hello@${DOMAIN}`], subject: "x", text: "x", html: null, message_id: null, created_at: new Date().toISOString() };

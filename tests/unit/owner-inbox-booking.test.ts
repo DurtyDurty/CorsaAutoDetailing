@@ -307,3 +307,62 @@ describe("booking from the app", () => {
     expect((await r.appointments.POST(req("/appointments", { method: "POST", token: t, body: { ...base, serviceId: "signature-full", date: "2020-01-07" } }))).status).toBe(422);
   });
 });
+
+describe("cleaning up the inbox", () => {
+  it("archives a conversation out of the Inbox, lists it under Archived, and restores it", async () => {
+    const r = await routes();
+    const t = await token();
+    const { lead } = await seedContactMessage();
+    const archiveRoute = await import("@/app/api/owner/v1/conversations/[leadId]/archive/route");
+    const archive = (archived: boolean) =>
+      archiveRoute.POST(req(`/conversations/${lead.id}/archive`, { method: "POST", token: t, body: { archived } }), params({ leadId: lead.id }));
+    const list = async (filter: string) =>
+      ((await (await r.conversations.GET(req(`/conversations?filter=${filter}`, { token: t }))).json()) as Page<ConversationSummary>).items.map((c) => c.leadId);
+
+    expect(((await (await archive(true)).json()) as ConversationDetail).archived).toBe(true);
+    expect(await list("all")).not.toContain(lead.id);
+    expect(await list("archived")).toEqual([lead.id]);
+    await archive(false);
+    expect(await list("all")).toContain(lead.id);
+    expect(await list("archived")).toEqual([]);
+  });
+
+  it("deletes only when confirmed, and never a customer with an upcoming booking", async () => {
+    const r = await routes();
+    const t = await token();
+    const detailRoute = await import("@/app/api/owner/v1/conversations/[leadId]/route");
+    const remove = (id: string, confirm = true) =>
+      detailRoute.DELETE(req(`/conversations/${id}${confirm ? "?confirm=delete" : ""}`, { method: "DELETE", token: t }), params({ leadId: id }));
+
+    const { lead, store } = await seedContactMessage();
+    expect((await remove(lead.id, false)).status).toBe(422);
+    expect(await store.getLead(lead.id)).not.toBeNull();
+
+    const booked = await r.appointments.POST(
+      req("/appointments", {
+        method: "POST",
+        token: t,
+        body: {
+          requestId: crypto.randomUUID(),
+          customer: { leadId: lead.id },
+          serviceId: "signature-full",
+          date: await nextTuesday(),
+          time: "10:00",
+          durationMinutes: 120,
+          priceCents: 17900,
+          sendConfirmation: false,
+        },
+      }),
+    );
+    expect(booked.status).toBe(201);
+    const refused = await remove(lead.id);
+    expect(refused.status).toBe(409);
+    expect(((await refused.json()) as { error: { message: string } }).error.message).toContain("upcoming appointment");
+
+    const { lead: junk } = await seedContactMessage();
+    expect((await remove(junk.id)).status).toBe(200);
+    expect(await store.getLead(junk.id)).toBeNull();
+    // Deleting again is harmless.
+    expect((await remove(junk.id)).status).toBe(200);
+  });
+});

@@ -105,7 +105,7 @@ export function useChangeStatus() {
 export const newRequestId = () => randomUUID();
 /* ---------- Inbox ---------- */
 
-export function useConversations(filter: "all" | "unread", q: string) {
+export function useConversations(filter: "all" | "unread" | "archived", q: string) {
   return useInfiniteQuery({
     queryKey: keys.conversations(filter, q),
     initialPageParam: null as string | null,
@@ -182,6 +182,27 @@ export function useCreateAppointment() {
       void qc.invalidateQueries({ queryKey: keys.summary });
       void qc.invalidateQueries({ queryKey: keys.conversationsAll });
       void qc.invalidateQueries({ queryKey: keys.conversation(data.appointment.leadId) });
+    },
+  });
+}
+export function useArchive(leadId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (archived: boolean) =>
+      apiRequest<ConversationDetail>(`/conversations/${leadId}/archive`, { method: "POST", body: { archived } }),
+    onSuccess: (data) => refreshInbox(qc, data),
+  });
+}
+
+/** Permanent. The caller must have asked the owner first. */
+export function useDeleteConversation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (leadId: string) => apiRequest<{ deleted: true }>(`/conversations/${leadId}?confirm=delete`, { method: "DELETE" }),
+    onSuccess: (_d, leadId) => {
+      qc.removeQueries({ queryKey: keys.conversation(leadId) });
+      void qc.invalidateQueries({ queryKey: keys.conversationsAll });
+      void qc.invalidateQueries({ queryKey: keys.summary });
     },
   });
 }
