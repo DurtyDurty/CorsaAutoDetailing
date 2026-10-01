@@ -41,10 +41,18 @@
     },
     "extra": {
       "apiBaseUrl": "https://corsaautodetailing.com",
-      "dashboardUrl": "https://corsaautodetailing.com/admin"
+      "dashboardUrl": "https://corsaautodetailing.com/admin",
+      "router": {},
+      "eas": {
+        "projectId": "a74d83a3-0af8-4042-babb-773d25e3ecd5"
+      }
     },
     "runtimeVersion": {
       "policy": "sdkVersion"
+    },
+    "owner": "hersoncorsa",
+    "updates": {
+      "url": "https://u.expo.dev/a74d83a3-0af8-4042-babb-773d25e3ecd5"
     }
   }
 }
