@@ -153,7 +153,7 @@ export const business = {
    * Bump whenever a price or service scope changes. Stored with each lead's
    * estimate so old inquiries can be understood later.
    */
-  pricingVersion: "2026-09-v5",
+  pricingVersion: "2026-09-v6",
   /** Shown next to all prices while in PRELAUNCH mode. */
   priceLabel: {
     PRELAUNCH: "Planned starting prices",
@@ -314,7 +314,7 @@ export const business = {
       badge: null,
       includesEverythingIn: "signature-exterior",
       includes: ["Hydrophobic protection", "9H and 10H surface hardness", "Ultimate deep gloss", "1-, 3- and 5-year options"],
-      price: 799,
+      price: 600,
       billing: "visit",
     },
   ] satisfies ServiceDefinition[],

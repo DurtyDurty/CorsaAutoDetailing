@@ -60,7 +60,7 @@ test.describe("public site", () => {
   test("services page shows every starting price, add-on range and disclosure", async ({ page }) => {
     await page.goto("/services");
     const text = (await page.textContent("main")) ?? "";
-    for (const price of ["$179", "$299", "$150/mo", "$125", "$225", "$300", "$349", "$799"]) expect(text).toContain(price);
+    for (const price of ["$179", "$299", "$150/mo", "$125", "$225", "$300", "$349", "$600"]) expect(text).toContain(price);
     for (const range of ["$35-$75", "$30-$75", "$50-$100", "$50", "$100-$150", "$175-$300"]) expect(text).toContain(range);
     expect(text).toMatch(/Planned starting price/);
     expect(text).toMatch(/Most popular/);
@@ -106,7 +106,7 @@ test.describe("public site", () => {
       ["Mold Remediation", "$300"],
       ["Essential Exterior Detail", "$125"],
       ["Wax & Buff", "$349"],
-      ["Ceramic Coating", "$799"],
+      ["Ceramic Coating", "$600"],
     ]) {
       await expect(page.locator("article", { has: page.getByRole("heading", { name, exact: true }) })).toContainText(price);
     }

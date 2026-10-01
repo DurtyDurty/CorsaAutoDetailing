@@ -13,7 +13,7 @@ describe("computeEstimate", () => {
       "mold-remediation": 300,
       "signature-exterior": 125,
       "wax-and-buff": 349,
-      "ceramic-coating": 799,
+      "ceramic-coating": 600,
     };
     expect(business.services.map((s) => s.id)).toEqual(Object.keys(expected));
     for (const service of business.services) {

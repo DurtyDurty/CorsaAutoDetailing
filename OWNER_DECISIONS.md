@@ -38,11 +38,11 @@ Things the website is deliberately silent or provisional about until you decide.
 
 ## Pricing & scope
 
-- [x] **Packages.** Replaced 2026-09-30 with nine packages, one starting price each and no vehicle sizes. Popular: Essential Full Detail $179, Signature Full Detail $299, Monthly Maintenance $150/mo. Interior: Essential Interior $125, Full Works Interior $225, Mold Remediation $300. Exterior: Essential Exterior $125, Wax & Buff $349, Ceramic Coating $799. No air freshener. → `business.services`, `business.packageGroups`
+- [x] **Packages.** Replaced 2026-09-30 with nine packages, one starting price each and no vehicle sizes. Popular: Essential Full Detail $179, Signature Full Detail $299, Monthly Maintenance $150/mo. Interior: Essential Interior $125, Full Works Interior $225, Mold Remediation $300. Exterior: Essential Exterior $125, Wax & Buff $349, Ceramic Coating $600. No air freshener. → `business.services`, `business.packageGroups`
 - [ ] **Protection claims.** Ceramic Coating claims "9H and 10H surface hardness" and 1-, 3- and 5-year options. Keep the products' data sheets on file to back those claims, and decide the price for each year option.
 - [ ] **Mold Remediation scope.** Keep the wording to cleaning and odor treatment; don't promise health outcomes.
 - [ ] **Service times per package.** Not shown on the site. Needed before online deposits can be turned on (`business.booking.durationMinutes`, along with `depositCents`).
-- [ ] **Validate the starting prices** after real jobs. Bump `business.pricingVersion` whenever you change them (now `2026-09-v5`). → `business.services[].price`
+- [ ] **Validate the starting prices** after real jobs. Bump `business.pricingVersion` whenever you change them (now `2026-09-v6`). → `business.services[].price`
 - [x] **Additional services.** Six range-priced add-ons are listed and confirmed at inspection; they're never added to an online estimate automatically. → `business.additionalServices`
 
 - [ ] **Sales tax treatment.** Site shows "Any applicable tax will be disclosed in your final quote" until you confirm with the Florida DOR / your accountant whether detailing services are taxable for you and at what rate. → `business.taxNotice`
