@@ -188,7 +188,7 @@ export const business = {
 
   // Ids are stable (URLs, saved leads); names changed 2026-09-30: signature-full = Essential Full Detail,
   // platinum-full = Signature Full Detail, signature-interior/-exterior = Essential Interior/Exterior,
-  // wax-and-buff = Signature Exterior Detail.
+  // full-works-interior = Signature Interior Detail, wax-and-buff = Signature Exterior Detail.
   services: [
     {
       id: "signature-full",
@@ -259,7 +259,7 @@ export const business = {
     },
     {
       id: "full-works-interior",
-      name: "Full Works Interior",
+      name: "Signature Interior Detail",
       group: "interior",
       tagline: "Bring It Back",
       badge: "Most popular",
@@ -307,7 +307,7 @@ export const business = {
     { id: "extraction", name: "Full carpet and seat extraction", priceMin: 50, priceMax: 100 },
     { id: "engine-bay", name: "Engine-bay detail", priceMin: 50, priceMax: 50 },
     { id: "headlights", name: "Headlight restoration", priceMin: 100, priceMax: 150 },
-    { id: "paint-enhancement", name: "One-step paint enhancement", priceMin: 175, priceMax: 300 },
+
   ] satisfies AdditionalService[],
 
   /** Requires a custom quote regardless of package. */

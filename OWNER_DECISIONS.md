@@ -38,11 +38,11 @@ Things the website is deliberately silent or provisional about until you decide.
 
 ## Pricing & scope
 
-- [x] **Packages.** Replaced 2026-09-30 with nine packages, one starting price each and no vehicle sizes. Popular: Essential Full Detail $179, Signature Full Detail $299, Monthly Maintenance $150/mo. Interior: Essential Interior $125, Full Works Interior $225. Exterior: Essential Exterior $125, Signature Exterior $200 (was Wax & Buff $349). Mold Remediation ($300) removed 2026-09-30. Every exterior wash includes sealant application. No air freshener. Ceramic Coating ($600) taken off the site 2026-09-30 until you're trained in it. → `business.services`, `business.packageGroups`
+- [x] **Packages.** Replaced 2026-09-30 with nine packages (seven after later removals), one starting price each and no vehicle sizes. Popular: Essential Full Detail $179, Signature Full Detail $299, Monthly Maintenance $150/mo. Interior: Essential Interior $125, Signature Interior $225 (was Full Works Interior). Exterior: Essential Exterior $125, Signature Exterior $200 (was Wax & Buff $349). Mold Remediation ($300) removed 2026-09-30. Every exterior wash includes sealant application. No air freshener. Ceramic Coating ($600) taken off the site 2026-09-30 until you're trained in it. → `business.services`, `business.packageGroups`
 - [ ] **Ceramic Coating, when you're ready.** Was listed at $600+ with "9H and 10H surface hardness" and 1-, 3- and 5-year options. Before bringing it back: training, product data sheets to back those claims, and a price for each year option.
 - [ ] **Service times per package.** Not shown on the site. Needed before online deposits can be turned on (`business.booking.durationMinutes`, along with `depositCents`).
 - [ ] **Validate the starting prices** after real jobs. Bump `business.pricingVersion` whenever you change them (now `2026-09-v9`). → `business.services[].price`
-- [x] **Additional services.** Six range-priced add-ons are listed and confirmed at inspection; they're never added to an online estimate automatically. → `business.additionalServices`
+- [x] **Additional services.** Five range-priced add-ons (one-step paint enhancement removed 2026-09-30; it's part of Signature Exterior) are listed and confirmed at inspection; they're never added to an online estimate automatically. → `business.additionalServices`
 
 - [ ] **Sales tax treatment.** Site shows "Any applicable tax will be disclosed in your final quote" until you confirm with the Florida DOR / your accountant whether detailing services are taxable for you and at what rate. → `business.taxNotice`
 

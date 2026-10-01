@@ -61,7 +61,7 @@ test.describe("public site", () => {
     await page.goto("/services");
     const text = (await page.textContent("main")) ?? "";
     for (const price of ["$179", "$299", "$150/mo", "$125", "$225", "$200"]) expect(text).toContain(price);
-    for (const range of ["$35-$75", "$30-$75", "$50-$100", "$50", "$100-$150", "$175-$300"]) expect(text).toContain(range);
+    for (const range of ["$35-$75", "$30-$75", "$50-$100", "$50", "$100-$150"]) expect(text).toContain(range);
     expect(text).toMatch(/Planned starting price/);
     expect(text).toMatch(/Most popular/);
     expect(text).toMatch(/Final pricing is subject to an in-person vehicle inspection/);
@@ -102,7 +102,7 @@ test.describe("public site", () => {
       ["Signature Full Detail", "$299"],
       ["Monthly Maintenance", "$150/mo"],
       ["Essential Interior Detail", "$125"],
-      ["Full Works Interior", "$225"],
+      ["Signature Interior Detail", "$225"],
 
       ["Essential Exterior Detail", "$125"],
       ["Signature Exterior Detail", "$200"],
