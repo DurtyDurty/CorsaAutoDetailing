@@ -1,6 +1,6 @@
 # Corsa owner app: audit and plan
 
-Status (2026-10-01): Phases A and B complete. Phase C built (Expo SDK 57 app in `mobile/`: design system, sign-in, Today, More); waiting on publishing to Expo so it opens in Expo Go anywhere.
+Status (2026-10-01): Phases A–D done, plus inbox (app + web dashboard, email replies via Resend inbound), booking on the go, website calendar requests, and the dashboard analytics overview. Next: Phase E remainder (customer profiles), Phase F (push notifications, settings), Phase G (hardening, TestFlight).
 
 ## Phase C delivered
 
