@@ -220,6 +220,18 @@ describe("owner API appointments", () => {
     expect(s.timeline.map((a) => a.id)).not.toContain(appt.id);
   });
 
+  it("keeps a job from earlier today on Today until it's started or closed out", async () => {
+    const r = await routes();
+    const { accessToken } = await signIn();
+    const { todayEastern } = await import("@/lib/time");
+    // Only meaningful when four hours ago is still today in Eastern time.
+    if (todayEastern(new Date(Date.now() - 4 * 3600_000)) !== todayEastern()) return;
+    // Started 4 hours ago, 3 hours long: its end has passed but nobody marked it.
+    const { appt } = await seedAppointment(-4 * 60);
+    const s = (await (await r.summary.GET(req("/summary", { token: accessToken }))).json()) as TodaySummary;
+    expect(s.focus?.id).toBe(appt.id);
+  });
+
   it("lists and pages appointments", async () => {
     const r = await routes();
     const { accessToken } = await signIn();

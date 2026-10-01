@@ -109,7 +109,7 @@ export default function CalendarScreen() {
 
         <View style={styles.weekNav}>
           <Button label="‹" variant="ghost" accessibilityLabel="Previous week" onPress={() => pick(addDays(selected, -7))} />
-          <Text variant="bodyStrong">{monthTitle.format(asUtcNoon(weekStart))}</Text>
+          <Text variant="bodyStrong">{monthTitle.format(asUtcNoon(selected))}</Text>
           <View style={styles.weekNavRight}>
             {selected !== today && <Button label="Today" variant="ghost" onPress={() => pick(today)} />}
             <Button label="›" variant="ghost" accessibilityLabel="Next week" onPress={() => pick(addDays(selected, 7))} />

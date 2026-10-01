@@ -66,9 +66,10 @@ export async function todaySummary(store: LeadStore, now: Date = new Date()): Pr
   const upcoming = items
     .filter((a) => a.status === "confirmed" && a.endsAt >= nowIso)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
-  // Jobs only get action buttons on the day: future ones wait on the calendar.
-  const nextToday = upcoming.find((a) => a.startsAt < dayEnd);
-  const focus = underway ?? nextToday ?? null;
+  // Jobs only get action buttons on the day: future ones wait on the calendar. A job from
+  // earlier today that was never started or closed out stays here until you deal with it.
+  const openToday = todays.filter((a) => a.status === "confirmed").sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  const focus = underway ?? openToday[0] ?? null;
   const nextJob = focus ? null : (upcoming.find((a) => a.startsAt >= dayEnd) ?? null);
   const toConfirm = items
     .filter((a) => a.status === "held" && a.depositStatus === "none" && a.endsAt >= nowIso)

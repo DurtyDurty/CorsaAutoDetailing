@@ -93,6 +93,51 @@ test.describe("after launch without deposits (LIVE mode, current production setu
   });
 });
 
+test.describe("owner dashboard laid out like the app (LIVE mode)", () => {
+  test("book from the dashboard, work the job through to closed out", async ({ page }, testInfo) => {
+    await page.goto("/admin/login");
+    await page.getByLabel("Password").fill("corsa-demo");
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page.getByRole("link", { name: "Today", exact: true }).first()).toBeVisible();
+
+    await page.getByRole("link", { name: "+ New appointment" }).click();
+    await expect(page).toHaveURL(/\/admin\/book/);
+    await page.getByRole("radio", { name: "New customer" }).click();
+    const name = `Dash ${unique()}`;
+    await page.getByLabel("First name").fill(name);
+    await page.getByLabel(/^Email/).fill(`${unique()}@example.com`);
+    await page.getByLabel("Service address").fill("45 Oak Ln");
+    await page.getByLabel("ZIP").fill("32068");
+    await page.getByLabel("Service", { exact: true }).selectOption("platinum-full");
+    await expect(page.getByLabel("Price ($)")).toHaveValue("299");
+    // A free Tuesday: each project and run picks its own week and hour so they never collide.
+    const d = new Date(Date.now() + (8 + 7 * Math.floor(Math.random() * 20)) * 86400_000);
+    while (d.getUTCDay() !== 2) d.setUTCDate(d.getUTCDate() + 1);
+    await page.getByLabel("Date").fill(d.toISOString().slice(0, 10));
+    await page.getByLabel("Time (Eastern)").fill(testInfo.project.name.includes("mobile") ? "08:00" : "12:30");
+    await page.getByRole("button", { name: "Book appointment" }).click();
+
+    await expect(page).toHaveURL(/\/admin\/jobs\/[0-9a-f-]{36}\?ok=/);
+    await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+    await expect(page.getByRole("status")).toContainText("Booked");
+
+    page.on("dialog", (dlg) => void dlg.accept());
+    for (const step of ["Mark en route", "Mark arrived", "Start service", "Complete service"]) {
+      await page.getByRole("button", { name: step }).click();
+      await expect(page.getByRole("status")).toContainText("Updated");
+    }
+    await expect(page.getByRole("link", { name: "Collect $299" })).toBeVisible();
+    await page.getByLabel("How").selectOption("cash");
+    await page.getByRole("button", { name: "Record" }).click();
+    await expect(page.getByRole("status")).toContainText("Payment recorded");
+    await expect(page.getByText("Closed out: completed and paid in full")).toBeVisible();
+
+    await page.getByRole("link", { name: "← Calendar" }).click();
+    await expect(page).toHaveURL(/\/admin\/calendar\?day=/);
+    await expect(page.getByRole("link", { name: new RegExp(name) })).toBeVisible();
+  });
+});
 // Needs a deposit and a duration for every package in business.booking; skipped while deposits are off.
 test.describe.skip("online booking with deposits (LIVE mode, demo payments)", () => {
 

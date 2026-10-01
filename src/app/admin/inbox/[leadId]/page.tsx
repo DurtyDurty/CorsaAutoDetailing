@@ -71,9 +71,14 @@ export default async function ConversationPage({ params, searchParams }: PagePro
                 {c.archived && <span className="ml-2 text-xs uppercase tracking-[0.14em]">Archived</span>}
               </p>
             </div>
-            <Link href={`/admin/leads/${c.leadId}`} className="text-sm underline underline-offset-4 shrink-0">
-              Full record &amp; appointments
-            </Link>
+            <div className="flex flex-wrap gap-3 shrink-0 text-sm">
+              <Link href={`/admin/book?leadId=${c.leadId}`} className="underline underline-offset-4">
+                Book appointment
+              </Link>
+              <Link href={`/admin/leads/${c.leadId}`} className="underline underline-offset-4">
+                Full record
+              </Link>
+            </div>
           </div>
           {typeof sp.error === "string" && (
             <p role="alert" className="text-sm text-error border border-error/30 bg-[#fbeeeb] rounded-sm px-4 py-2">

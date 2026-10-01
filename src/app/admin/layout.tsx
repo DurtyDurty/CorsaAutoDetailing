@@ -14,13 +14,13 @@ export const metadata: Metadata = {
 // Every admin route depends on the session cookie; never prerender.
 export const dynamic = "force-dynamic";
 
+/** Same order as the owner app's tabs, plus Analytics (a desktop job). */
 const NAV = [
-  { href: "/admin", label: "Dashboard" },
+  { href: "/admin", label: "Today" },
+  { href: "/admin/calendar", label: "Calendar" },
   { href: "/admin/inbox", label: "Inbox" },
-  { href: "/admin/launch-list", label: "Launch list" },
-  { href: "/admin/membership", label: "Plan interest" },
-  { href: "/admin/appointments", label: "Appointments" },
-  { href: "/admin/time-off", label: "Days off" },
+  { href: "/admin/analytics", label: "Analytics" },
+  { href: "/admin/more", label: "More" },
 ];
 
 async function signOutAction() {
