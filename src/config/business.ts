@@ -28,8 +28,7 @@ export type ServiceId =
   | "full-works-interior"
   | "mold-remediation"
   | "signature-exterior"
-  | "wax-and-buff"
-  | "ceramic-coating";
+  | "wax-and-buff";
 export type PackageGroupId = "popular" | "interior" | "exterior";
 
 /** Vehicle sizes are no longer asked for (2026-09-30); kept so older leads still show a label. */
@@ -153,7 +152,7 @@ export const business = {
    * Bump whenever a price or service scope changes. Stored with each lead's
    * estimate so old inquiries can be understood later.
    */
-  pricingVersion: "2026-09-v6",
+  pricingVersion: "2026-09-v7",
   /** Shown next to all prices while in PRELAUNCH mode. */
   priceLabel: {
     PRELAUNCH: "Planned starting prices",
@@ -306,17 +305,6 @@ export const business = {
       price: 349,
       billing: "visit",
     },
-    {
-      id: "ceramic-coating",
-      name: "Ceramic Coating",
-      group: "exterior",
-      tagline: "Long-Term Protection",
-      badge: null,
-      includesEverythingIn: "signature-exterior",
-      includes: ["Hydrophobic protection", "9H and 10H surface hardness", "Ultimate deep gloss", "1-, 3- and 5-year options"],
-      price: 600,
-      billing: "visit",
-    },
   ] satisfies ServiceDefinition[],
   /** Owner-approved fixed-price add-ons that the online estimate may add. None approved yet. */
   addOns: [] as FixedAddOn[],
@@ -341,6 +329,7 @@ export const business = {
   futureServices: [
     "Paint protection film (PPF)",
     "Window tinting",
+    "Professional ceramic coatings",
     "Multi-step paint correction",
   ],
 

@@ -153,7 +153,7 @@ export default function HomePage() {
           <SectionHeading
             eyebrow="Detailing packages"
             title="Popular packages. Built to perform."
-            lede="Our most-booked packages. Interior-only and exterior-only packages, ceramic coating and every price are on the services page."
+            lede="Our most-booked packages. Interior-only and exterior-only packages and every price are on the services page."
           />
           <div className="flex flex-col gap-3 shrink-0 lg:items-end">
             <Link

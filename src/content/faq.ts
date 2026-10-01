@@ -19,10 +19,7 @@ export const HOME_FAQ: FaqItem[] = [
     q: "Do I need to provide water?",
     a: "No. You don't need to provide water at your location.",
   },
-  {
-    q: "Do you offer ceramic coating?",
-    a: "Yes. The Ceramic Coating package comes in 1-, 3- and 5-year options; its starting price is on the services page. The Essential Exterior Detail's spray sealant is lighter protection and isn't a ceramic coating.",
-  },
+
 ];
 
 export const SERVICES_FAQ: FaqItem[] = [
@@ -36,7 +33,7 @@ export const SERVICES_FAQ: FaqItem[] = [
   },
   {
     q: "How long does the protection last?",
-    a: `${business.disclosures.protection} Ceramic coating comes in 1-, 3- and 5-year options.`,
+    a: business.disclosures.protection,
   },
   {
     q: "Are there travel or condition charges?",

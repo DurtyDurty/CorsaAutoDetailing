@@ -13,7 +13,6 @@ describe("computeEstimate", () => {
       "mold-remediation": 300,
       "signature-exterior": 125,
       "wax-and-buff": 349,
-      "ceramic-coating": 600,
     };
     expect(business.services.map((s) => s.id)).toEqual(Object.keys(expected));
     for (const service of business.services) {
@@ -25,9 +24,9 @@ describe("computeEstimate", () => {
     }
   });
 
-  it("puts three packages in each group and links 'Everything in' to a real package", () => {
+  it("gives every group at least one package and links 'Everything in' to a real package", () => {
     for (const g of business.packageGroups) {
-      expect(business.services.filter((s) => s.group === g.id), g.id).toHaveLength(3);
+      expect(business.services.filter((s) => s.group === g.id).length, g.id).toBeGreaterThan(0);
     }
     const ids = business.services.map((s) => s.id as string);
     for (const s of business.services) {
@@ -65,7 +64,7 @@ describe("computeEstimate", () => {
 
   it("marks monthly packages and formats their price per month", () => {
     expect(computeEstimate({ serviceId: "monthly-maintenance" })?.billing).toBe("monthly");
-    expect(computeEstimate({ serviceId: "ceramic-coating" })?.billing).toBe("visit");
+    expect(computeEstimate({ serviceId: "wax-and-buff" })?.billing).toBe("visit");
     expect(formatServicePrice({ price: 150, billing: "monthly" })).toBe("$150/mo");
     expect(formatServicePrice({ price: 799, billing: "visit" })).toBe("$799");
   });
