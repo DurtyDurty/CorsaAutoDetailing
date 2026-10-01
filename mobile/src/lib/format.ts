@@ -27,3 +27,18 @@ export function addressLine(a: { serviceAddress: string | null; city: string | n
   const s = [a.serviceAddress, a.city, a.zip].filter(Boolean).join(", ");
   return s || null;
 }
+const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: BUSINESS_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" });
+
+/** "2:30 PM" today, otherwise "Thu, Oct 1" (Eastern). */
+export function formatWhen(iso: string, now: Date = new Date()): string {
+  const d = new Date(iso);
+  return dayKey.format(d) === dayKey.format(now) ? formatTime(iso) : formatShortDay(iso);
+}
+
+/** YYYY-MM-DD and HH:MM from a picker Date, as shown on the device clock. */
+export function pickerDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+export function pickerTime(d: Date): string {
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}

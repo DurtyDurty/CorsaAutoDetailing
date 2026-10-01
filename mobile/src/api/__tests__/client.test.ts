@@ -1,4 +1,8 @@
 import type { SessionTokens } from "@shared/api";
+import { useSession } from "@/lib/session-store";
+import { ApiClientError, apiRequest } from "../client";
+
+// jest.mock calls below are hoisted above these imports.
 
 // In-memory Keychain stand-in.
 const mockKeychain = new Map<string, string>();
@@ -10,8 +14,6 @@ jest.mock("expo-secure-store", () => ({
 }));
 jest.mock("expo-constants", () => ({ expoConfig: { extra: { apiBaseUrl: "https://example.test" } } }));
 
-import { useSession } from "@/lib/session-store";
-import { ApiClientError, apiRequest } from "../client";
 
 const session = (overrides: Partial<SessionTokens> = {}): SessionTokens => ({
   accessToken: "old-access",

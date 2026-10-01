@@ -1,5 +1,4 @@
-import { APPOINTMENT_STATUSES } from "@shared/appointment-status";
-import { checkTransition } from "@shared/appointment-status";
+import { APPOINTMENT_STATUSES, checkTransition } from "@shared/appointment-status";
 import { nextStep } from "../next-step";
 
 describe("nextStep", () => {

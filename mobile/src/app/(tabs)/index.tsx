@@ -1,6 +1,8 @@
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSummary } from "@/api/queries";
+import { Button } from "@/design/Button";
 import { Skeleton } from "@/design/Skeleton";
 import { EmptyState, ErrorState } from "@/design/States";
 import { Text } from "@/design/Text";
@@ -25,6 +27,7 @@ export default function TodayScreen() {
           <Text variant="display" accessibilityRole="header">
             {greeting()}
           </Text>
+          <Button label="+ New appointment" variant="secondary" onPress={() => router.push("/appointment/new")} />
         </View>
 
         {isPending ? (
@@ -70,7 +73,7 @@ export default function TodayScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   content: { padding: space.lg, gap: space.xl, paddingBottom: space.xxl },
-  header: { gap: space.xs },
+  header: { gap: space.sm },
   section: { gap: space.md },
   stale: { color: colors.warning },
 });

@@ -340,6 +340,8 @@ export interface LeadStore {
 
   /** Newest first. */
   listOutboundEmails(leadId: string): Promise<OutboundEmailRecord[]>;
+  /** Newest first, for many leads at once (inbox list). */
+  listOutboundEmailsForLeads(leadIds: string[]): Promise<OutboundEmailRecord[]>;
   findOutboundEmailBySendKey(sendKey: string): Promise<OutboundEmailRecord | null>;
   /** Returns null if an email with the same sendKey was already recorded. */
   recordOutboundEmail(input: NewOutboundEmail): Promise<OutboundEmailRecord | null>;

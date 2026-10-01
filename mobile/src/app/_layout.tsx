@@ -13,8 +13,18 @@ import { Inter_500Medium } from "@expo-google-fonts/inter/500Medium";
 import { Inter_600SemiBold } from "@expo-google-fonts/inter/600SemiBold";
 import { JetBrainsMono_500Medium } from "@expo-google-fonts/jetbrains-mono/500Medium";
 import { queryClient, wireQueryLifecycle } from "@/api/queries";
-import { colors } from "@/design/theme";
+import { colors, fonts } from "@/design/theme";
+import { clearAllDrafts } from "@/lib/drafts";
 import { useSession } from "@/lib/session-store";
+
+/** Screens pushed over the tabs get a native header with a back button. */
+const pushed = {
+  headerShown: true,
+  headerStyle: { backgroundColor: colors.surface },
+  headerTintColor: colors.text,
+  headerTitleStyle: { fontFamily: fonts.bodySemiBold },
+  headerBackButtonDisplayMode: "minimal" as const,
+};
 
 void SplashScreen.preventAutoHideAsync();
 void SystemUI.setBackgroundColorAsync(colors.background);
@@ -37,7 +47,10 @@ export default function RootLayout() {
 
   // Signing out (or a revoked session) wipes every cached customer record.
   useEffect(() => {
-    if (status === "signedOut") queryClient.clear();
+    if (status === "signedOut") {
+      queryClient.clear();
+      clearAllDrafts();
+    }
   }, [status]);
 
   const ready = fontsLoaded && status !== "loading";
@@ -57,6 +70,8 @@ export default function RootLayout() {
           </Stack.Protected>
           <Stack.Protected guard={signedIn}>
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="conversation/[leadId]" options={{ ...pushed, title: "Conversation" }} />
+            <Stack.Screen name="appointment/new" options={{ ...pushed, title: "New appointment", presentation: "modal" }} />
           </Stack.Protected>
         </Stack>
       </QueryClientProvider>

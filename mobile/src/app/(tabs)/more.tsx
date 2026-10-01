@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { Alert, Linking, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import Constants from "expo-constants";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { signOutRemote, useMe } from "@/api/queries";
-import { DASHBOARD_URL } from "@/config";
 import { Button } from "@/design/Button";
 import { Card } from "@/design/Card";
 import { Text } from "@/design/Text";
@@ -48,12 +47,6 @@ export default function MoreScreen() {
           <Text variant="label">Signed in as</Text>
           <Text variant="bodyStrong">{email ?? me?.email ?? ""}</Text>
           {me && <Text variant="caption">{me.business.name} · {me.role === "owner" ? "Owner" : me.role}</Text>}
-        </Card>
-
-        <Card style={styles.card}>
-          <Text variant="label">Web dashboard</Text>
-          <Text variant="caption">Requests, messages and settings not yet in the app are on the dashboard.</Text>
-          <Button label="Open dashboard" variant="secondary" onPress={() => void Linking.openURL(DASHBOARD_URL)} />
         </Card>
 
         <View style={styles.signOut}>

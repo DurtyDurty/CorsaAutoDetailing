@@ -12,10 +12,10 @@ function Glyph({ char, color }: { char: string; color: ColorValue }) {
   );
 }
 
-/** Tabs appear as each area is built: Calendar, Inbox and Customers come next. */
+/** Tabs appear as each area is built: Calendar and Customers come next. */
 export default function TabsLayout() {
   const { data } = useSummary();
-  const waiting = data ? data.newRequests + data.unreadMessages + data.awaitingConfirmation : 0;
+  const unread = data ? data.newRequests + data.unreadMessages : 0;
   return (
     <Tabs
       screenOptions={{
@@ -32,9 +32,16 @@ export default function TabsLayout() {
         options={{
           title: "Today",
           tabBarIcon: ({ color }) => <Glyph char="◉" color={color} />,
-          tabBarBadge: waiting > 0 ? waiting : undefined,
+        }}
+      />
+      <Tabs.Screen
+        name="inbox"
+        options={{
+          title: "Inbox",
+          tabBarIcon: ({ color }) => <Glyph char="✉" color={color} />,
+          tabBarBadge: unread > 0 ? unread : undefined,
           tabBarBadgeStyle: { backgroundColor: colors.accent, color: colors.text },
-          tabBarAccessibilityLabel: waiting > 0 ? `Today, ${waiting} items need you` : "Today",
+          tabBarAccessibilityLabel: unread > 0 ? `Inbox, ${unread} unread` : "Inbox",
         }}
       />
       <Tabs.Screen name="more" options={{ title: "More", tabBarIcon: ({ color }) => <Glyph char="≡" color={color} /> }} />

@@ -1,6 +1,6 @@
-import { Linking, Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { router } from "expo-router";
 import type { TodaySummary } from "@shared/api";
-import { DASHBOARD_URL } from "@/config";
 import { Text } from "@/design/Text";
 import { colors, MIN_TOUCH, radius, space } from "@/design/theme";
 
@@ -18,24 +18,21 @@ function Item({ count, label }: { count: number; label: string }) {
   );
 }
 
-/**
- * What's waiting on the owner. Requests and messages are handled on the web
- * dashboard until the app's Inbox ships, so the row opens it.
- */
+/** What's waiting on the owner; opens the Inbox. */
 export function AttentionRow({ s }: { s: TodaySummary }) {
   const total = s.newRequests + s.unreadMessages + s.awaitingConfirmation;
   return (
     <Pressable
       accessibilityRole="link"
-      accessibilityLabel={`Needs you: ${s.newRequests} new requests, ${s.unreadMessages} messages, ${s.awaitingConfirmation} awaiting confirmation. Opens the web dashboard.`}
-      onPress={() => void Linking.openURL(DASHBOARD_URL)}
+      accessibilityLabel={`Needs you: ${s.newRequests} new requests, ${s.unreadMessages} messages, ${s.awaitingConfirmation} awaiting confirmation. Opens the inbox.`}
+      onPress={() => router.navigate("/inbox")}
       style={({ pressed }) => [styles.wrap, pressed && styles.pressed]}
     >
       <View style={styles.head}>
         <Text variant="label" style={total > 0 ? styles.alert : undefined}>
           {total > 0 ? "Needs you" : "All caught up"}
         </Text>
-        <Text variant="caption">Open dashboard ↗</Text>
+        <Text variant="caption">Open inbox ›</Text>
       </View>
       <View style={styles.row}>
         <Item count={s.newRequests} label="New requests" />

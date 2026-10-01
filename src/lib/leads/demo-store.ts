@@ -414,6 +414,12 @@ export class DemoLeadStore implements LeadStore {
     return data.outboundEmails.filter((e) => e.leadId === leadId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
+  async listOutboundEmailsForLeads(leadIds: string[]) {
+    const data = await load();
+    const wanted = new Set(leadIds);
+    return data.outboundEmails.filter((e) => wanted.has(e.leadId)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
   async findOutboundEmailBySendKey(sendKey: string) {
     const data = await load();
     return data.outboundEmails.find((e) => e.sendKey === sendKey) ?? null;

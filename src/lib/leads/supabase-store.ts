@@ -203,6 +203,14 @@ function notifFromRow(r: Row): NotificationRecord {
   };
 }
 
+/** Splits an id list so `.in(...)` filters keep the request URL well under PostgREST limits. */
+function batchesOf(ids: string[], size = 100): string[][] {
+  const unique = [...new Set(ids)];
+  const out: string[][] = [];
+  for (let i = 0; i < unique.length; i += size) out.push(unique.slice(i, i + size));
+  return out;
+}
+
 function snake(obj: Record<string, unknown>): Row {
   const out: Row = {};
   for (const [k, v] of Object.entries(obj)) {
@@ -256,10 +264,14 @@ export class SupabaseLeadStore implements LeadStore {
   }
 
   async getLeads(ids: string[]) {
-    if (ids.length === 0) return [];
-    const { data, error } = await this.client.from("leads").select("*").in("id", [...new Set(ids)]);
-    if (error) throw new Error(error.message);
-    return (data ?? []).map(leadFromRow);
+    const results = await Promise.all(
+      batchesOf(ids).map(async (batch) => {
+        const { data, error } = await this.client.from("leads").select("*").in("id", batch);
+        if (error) throw new Error(error.message);
+        return (data ?? []).map(leadFromRow);
+      }),
+    );
+    return results.flat();
   }
 
   async listLeads(filter: LeadFilter = {}) {
@@ -399,14 +411,17 @@ export class SupabaseLeadStore implements LeadStore {
   }
 
   async listPayments(opts: { appointmentIds?: string[]; from?: string; to?: string }) {
-    if (opts.appointmentIds && opts.appointmentIds.length === 0) return [];
-    let q = this.client.from("payments").select("*").order("created_at", { ascending: true });
-    if (opts.appointmentIds) q = q.in("appointment_id", opts.appointmentIds);
-    if (opts.from) q = q.gte("created_at", opts.from);
-    if (opts.to) q = q.lte("created_at", opts.to);
-    const { data, error } = await q;
-    if (error) throw new Error(error.message);
-    return (data ?? []).map(paymentFromRow);
+    const query = async (ids: string[] | null) => {
+      let q = this.client.from("payments").select("*");
+      if (ids) q = q.in("appointment_id", ids);
+      if (opts.from) q = q.gte("created_at", opts.from);
+      if (opts.to) q = q.lte("created_at", opts.to);
+      const { data, error } = await q;
+      if (error) throw new Error(error.message);
+      return (data ?? []).map(paymentFromRow);
+    };
+    const rows = opts.appointmentIds ? (await Promise.all(batchesOf(opts.appointmentIds).map(query))).flat() : await query(null);
+    return rows.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   }
 
   async recordPayment(input: NewPayment) {
@@ -507,6 +522,17 @@ export class SupabaseLeadStore implements LeadStore {
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return (data ?? []).map(outboundFromRow);
+  }
+
+  async listOutboundEmailsForLeads(leadIds: string[]) {
+    const results = await Promise.all(
+      batchesOf(leadIds).map(async (batch) => {
+        const { data, error } = await this.client.from("outbound_emails").select("*").in("lead_id", batch);
+        if (error) throw new Error(error.message);
+        return (data ?? []).map(outboundFromRow);
+      }),
+    );
+    return results.flat().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
   async findOutboundEmailBySendKey(sendKey: string) {

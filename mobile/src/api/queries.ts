@@ -1,8 +1,23 @@
-import { focusManager, onlineManager, QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { focusManager, onlineManager, QueryClient, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import NetInfo from "@react-native-community/netinfo";
 import { randomUUID } from "expo-crypto";
 import { AppState, Platform } from "react-native";
-import type { MeResponse, SessionTokens, SignInInput, StatusChangeResponse, TodaySummary } from "@shared/api";
+import type {
+  BookingOptions,
+  ConversationDetail,
+  ConversationSummary,
+  CreateAppointmentInput,
+  CreateAppointmentResponse,
+  CustomerOption,
+  MeResponse,
+  Page,
+  SendMessageInput,
+  SendMessageResponse,
+  SessionTokens,
+  SignInInput,
+  StatusChangeResponse,
+  TodaySummary,
+} from "@shared/api";
 import type { AppointmentStatus } from "@shared/appointment-status";
 import { ApiClientError, apiRequest } from "./client";
 
@@ -33,6 +48,11 @@ export const keys = {
   me: ["me"] as const,
   summary: ["summary"] as const,
   appointment: (id: string) => ["appointment", id] as const,
+  conversations: (filter: string, q: string) => ["conversations", filter, q] as const,
+  conversationsAll: ["conversations"] as const,
+  conversation: (leadId: string) => ["conversation", leadId] as const,
+  bookingOptions: ["booking-options"] as const,
+  customers: (q: string) => ["customers", q] as const,
 };
 
 export function useSummary() {
@@ -83,3 +103,85 @@ export function useChangeStatus() {
 }
 
 export const newRequestId = () => randomUUID();
+/* ---------- Inbox ---------- */
+
+export function useConversations(filter: "all" | "unread", q: string) {
+  return useInfiniteQuery({
+    queryKey: keys.conversations(filter, q),
+    initialPageParam: null as string | null,
+    queryFn: ({ pageParam, signal }) => {
+      const params = new URLSearchParams({ filter, limit: "40" });
+      if (q) params.set("q", q);
+      if (pageParam) params.set("cursor", pageParam);
+      return apiRequest<Page<ConversationSummary>>(`/conversations?${params}`, { signal });
+    },
+    getNextPageParam: (last) => last.nextCursor,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useConversation(leadId: string, enabled = true) {
+  return useQuery({
+    queryKey: keys.conversation(leadId),
+    queryFn: ({ signal }) => apiRequest<ConversationDetail>(`/conversations/${leadId}`, { signal }),
+    enabled: enabled && !!leadId,
+  });
+}
+
+function refreshInbox(qc: ReturnType<typeof useQueryClient>, detail: ConversationDetail) {
+  qc.setQueryData(keys.conversation(detail.leadId), detail);
+  void qc.invalidateQueries({ queryKey: keys.conversationsAll });
+  void qc.invalidateQueries({ queryKey: keys.summary });
+}
+
+export function useSendMessage(leadId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SendMessageInput) =>
+      apiRequest<SendMessageResponse>(`/conversations/${leadId}/messages`, { method: "POST", body: input }),
+    onSuccess: (data) => refreshInbox(qc, data.conversation),
+    // A failed send is recorded on the server; show it in the thread.
+    onError: () => void qc.invalidateQueries({ queryKey: keys.conversation(leadId) }),
+  });
+}
+
+export function useMarkHandled(leadId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiRequest<ConversationDetail>(`/conversations/${leadId}/handled`, { method: "POST" }),
+    onSuccess: (data) => refreshInbox(qc, data),
+  });
+}
+
+/* ---------- Booking ---------- */
+
+export function useBookingOptions() {
+  return useQuery({
+    queryKey: keys.bookingOptions,
+    queryFn: ({ signal }) => apiRequest<BookingOptions>("/booking-options", { signal }),
+    staleTime: 10 * 60_000,
+  });
+}
+
+export function useCustomerSearch(q: string) {
+  return useQuery({
+    queryKey: keys.customers(q),
+    queryFn: ({ signal }) =>
+      apiRequest<{ items: CustomerOption[] }>(`/customers${q ? `?q=${encodeURIComponent(q)}` : ""}`, { signal }),
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useCreateAppointment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateAppointmentInput) =>
+      apiRequest<CreateAppointmentResponse>("/appointments", { method: "POST", body: input }),
+    onSuccess: (data) => {
+      qc.setQueryData(keys.appointment(data.appointment.id), data.appointment);
+      void qc.invalidateQueries({ queryKey: keys.summary });
+      void qc.invalidateQueries({ queryKey: keys.conversationsAll });
+      void qc.invalidateQueries({ queryKey: keys.conversation(data.appointment.leadId) });
+    },
+  });
+}

@@ -203,3 +203,140 @@ export interface TodaySummary {
   focus: AppointmentSummary | null;
   timeline: AppointmentSummary[];
 }
+
+/* ---------- Inbox ---------- */
+
+export type ConversationKind = "contact" | "quote_request" | "launch_list" | "membership_interest";
+
+export interface ConversationSummary {
+  leadId: string;
+  customerName: string;
+  email: string;
+  kind: ConversationKind;
+  /** A website message or request nobody has handled yet. */
+  unread: boolean;
+  lastActivityAt: string;
+  preview: string;
+  /** Last email you sent failed to deliver. */
+  lastSendFailed: boolean;
+}
+
+export type ConversationMessage =
+  | { id: string; type: "website"; at: string; title: string; text: string }
+  | { id: string; type: "sent"; at: string; subject: string; body: string; status: "sent" | "failed"; error: string | null };
+
+export interface ConversationDetail {
+  leadId: string;
+  customerName: string;
+  firstName: string;
+  email: string;
+  phone: string | null;
+  kind: ConversationKind;
+  unread: boolean;
+  serviceName: string | null;
+  /** The appointment templates refer to: underway or next, else the most recent. */
+  appointment: { id: string; startsAt: string; endsAt: string; balanceDueCents: number } | null;
+  defaultSubject: string;
+  /** Appended by the server to every email; shown under the composer. */
+  signature: string;
+  canSend: boolean;
+  messages: ConversationMessage[];
+}
+
+export const listConversationsQuery = z.object({
+  filter: z.enum(["all", "unread"]).default("all"),
+  q: z.string().trim().max(100).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  cursor: z.string().max(200).optional(),
+});
+export type ListConversationsQuery = z.infer<typeof listConversationsQuery>;
+
+export const sendMessageSchema = z.object({
+  subject: z.string().trim().min(1, "Add a subject.").max(200),
+  message: z.string().trim().min(1, "Write a message first.").max(8000),
+  /** Created with the draft; the same key is sent at most once. */
+  sendKey: z.string().uuid(),
+});
+export type SendMessageInput = z.infer<typeof sendMessageSchema>;
+
+export interface SendMessageResponse {
+  conversation: ConversationDetail;
+  /** True when this key had already been sent (double tap or retry). */
+  alreadySent: boolean;
+}
+/* ---------- Booking from the app ---------- */
+
+const newCustomerSchema = z.object({
+  firstName: z.string().trim().min(1, "Enter a first name.").max(80),
+  lastName: z.string().trim().max(80).optional(),
+  email: z.string().trim().toLowerCase().email("Enter a valid email address.").max(254),
+  phone: z
+    .string()
+    .trim()
+    .max(30)
+    .optional()
+    .refine((v) => !v || v.replace(/\D/g, "").length === 10, "Enter a 10-digit phone number."),
+  serviceAddress: z.string().trim().min(5, "Enter the service address.").max(200),
+  city: z.string().trim().max(80).optional(),
+  zip: z.string().trim().regex(/^\d{5}$/, "Enter a 5-digit ZIP code."),
+  vehicleYear: z.coerce.number().int().min(1950).max(2100).optional(),
+  vehicleMake: z.string().trim().max(60).optional(),
+  vehicleModel: z.string().trim().max(60).optional(),
+});
+export type NewCustomerInput = z.infer<typeof newCustomerSchema>;
+
+export const createAppointmentSchema = z.object({
+  /** Created when the form opens; a repeated submit books once and emails once. */
+  requestId: z.string().uuid(),
+  customer: z.union([z.object({ leadId: z.string().uuid() }), z.object({ new: newCustomerSchema })]),
+  serviceId: z.string().trim().min(1, "Choose a service.").max(60),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date."),
+  time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Pick a time."),
+  durationMinutes: z.coerce.number().int().min(15, "At least 15 minutes.").max(600, "At most 10 hours."),
+  priceCents: z.coerce.number().int().min(0).max(1_000_000),
+  notes: z.string().trim().max(1000).optional(),
+  /** Book even if it's outside working hours or on a day off. Never overrides another booking. */
+  override: z.boolean().default(false),
+  sendConfirmation: z.boolean().default(true),
+});
+export type CreateAppointmentInput = z.infer<typeof createAppointmentSchema>;
+
+export interface CreateAppointmentResponse {
+  appointment: AppointmentDetail;
+  confirmation: "sent" | "skipped" | "failed";
+  /** Why the confirmation email didn't go out, when it failed. */
+  confirmationError: string | null;
+  /** True when this requestId had already booked (double tap or retry). */
+  alreadyBooked: boolean;
+}
+
+/** Returned in `error.fields.override` when a booking can go ahead if the owner confirms. */
+export const OVERRIDABLE = "overridable";
+
+/** Customers to pick from when booking: recent first. */
+export interface CustomerOption {
+  leadId: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  address: string | null;
+  vehicle: string | null;
+  serviceId: string | null;
+}
+
+export interface ServiceOption {
+  id: string;
+  name: string;
+  group: string;
+  priceCents: number;
+  billing: "visit" | "monthly";
+}
+
+export interface BookingOptions {
+  services: ServiceOption[];
+  defaultDurationMinutes: number;
+  travelBufferMinutes: number;
+  workHours: { start: string; end: string };
+  /** False before launch: the server refuses bookings in PRELAUNCH mode. */
+  bookingOpen: boolean;
+}

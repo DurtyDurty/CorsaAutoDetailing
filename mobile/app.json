@@ -34,14 +34,14 @@
           "imageWidth": 160,
           "backgroundColor": "#0c0d10"
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
       "apiBaseUrl": "https://corsaautodetailing.com",
-      "dashboardUrl": "https://corsaautodetailing.com/admin",
       "router": {},
       "eas": {
         "projectId": "a74d83a3-0af8-4042-babb-773d25e3ecd5"
