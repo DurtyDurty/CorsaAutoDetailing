@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 const NAV = [
-  { href: "/admin", label: "Leads" },
+  { href: "/admin", label: "Dashboard" },
   { href: "/admin/inbox", label: "Inbox" },
   { href: "/admin/launch-list", label: "Launch list" },
   { href: "/admin/membership", label: "Plan interest" },
