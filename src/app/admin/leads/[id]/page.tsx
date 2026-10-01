@@ -5,6 +5,7 @@ import { business, getService, getVehicleCategory } from "@/config/business";
 import { requireOwner } from "@/lib/auth/owner";
 import { getLeadStore } from "@/lib/leads/store";
 import { LEAD_STAGES, LEAD_STAGE_LABELS } from "@/lib/leads/types";
+import { APPOINTMENT_STATUS_LABELS, isBlocking } from "@shared/appointment-status";
 import { formatEastern, todayEastern } from "@/lib/time";
 import { formatUsd } from "@/lib/pricing";
 import { formatPhone, shortRef } from "@/lib/utils";
@@ -45,7 +46,8 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
     store.listNotifications({ leadId: id }),
     store.listOutboundEmails(id),
   ]);
-  const activeAppt = appointments.find((a) => a.status === "confirmed");
+  // Booked and not finished: confirmed, or already underway in the field (en route / arrived / in progress).
+  const activeAppt = appointments.find((a) => isBlocking(a.status) && a.status !== "held");
   const heldAppt = appointments.find((a) => a.status === "held");
   const failedNotifs = notifications.filter((n) => n.status === "failed").length;
 
@@ -256,7 +258,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
               {activeAppt ? (
                 <div className="text-sm flex flex-col gap-3">
                   <p>
-                    Confirmed for <strong>{formatEastern(activeAppt.startsAt)}</strong> to {formatEastern(activeAppt.endsAt, { timeStyle: "short", dateStyle: undefined })} ET
+                    {APPOINTMENT_STATUS_LABELS[activeAppt.status]} · <strong>{formatEastern(activeAppt.startsAt)}</strong> to {formatEastern(activeAppt.endsAt, { timeStyle: "short", dateStyle: undefined })} ET
                     <br />
                     Quoted {formatUsd(activeAppt.quotedPriceCents / 100)}
                     {activeAppt.source === "online" && (
@@ -351,13 +353,13 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
                   <Button type="submit">Confirm appointment</Button>
                 </form>
               )}
-              {appointments.filter((a) => a.status !== "confirmed").length > 0 && (
+              {appointments.filter((a) => a.id !== activeAppt?.id).length > 0 && (
                 <ul className="text-xs text-ink-muted border-t border-line pt-3 space-y-1">
                   {appointments
-                    .filter((a) => a.status !== "confirmed")
+                    .filter((a) => a.id !== activeAppt?.id)
                     .map((a) => (
                       <li key={a.id}>
-                        {formatEastern(a.startsAt)} · {a.status}
+                        {formatEastern(a.startsAt)} · {APPOINTMENT_STATUS_LABELS[a.status]}
                         {a.completedRevenueCents !== null && ` · ${formatUsd(a.completedRevenueCents / 100)}`}
                       </li>
                     ))}

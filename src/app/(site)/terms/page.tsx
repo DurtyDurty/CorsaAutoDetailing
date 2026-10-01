@@ -85,7 +85,7 @@ export default function TermsPage() {
           {deposits
             ? "The only payment taken through this website is the booking deposit described above. The remaining balance is paid when the service is complete."
             : "No payment is taken through this website. You pay when the service is complete."}{" "}
-          Accepted payment methods will be listed here before we open (owner decision pending).
+          We accept card, cash and digital payments.
         </p>
 
         <h2>Maintenance plans</h2>

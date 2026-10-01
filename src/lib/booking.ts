@@ -7,6 +7,7 @@ import { SlotTakenError, type AppointmentRecord, type LeadRecord, type LeadStore
 import { notifyForLead } from "@/lib/notifications";
 import { getPaymentAdapter } from "@/lib/payments";
 import { todayEastern } from "@/lib/time";
+import { isBlocking } from "@shared/appointment-status";
 
 /** Online booking runs only after launch, with a payment provider, a durable store, and a deposit and duration for every package. */
 export function bookingEnabled(): boolean {
@@ -22,7 +23,7 @@ export async function busyWindows(store: LeadStore, now: Date = new Date()): Pro
   const horizon = new Date(now.getTime() + (business.booking.maxDaysAhead + 2) * 86_400_000).toISOString();
   const appts = await store.listAppointments({ from: nowIso, to: horizon });
   return appts
-    .filter((a) => a.status === "confirmed" || (a.status === "held" && (!a.holdExpiresAt || a.holdExpiresAt > nowIso)))
+    .filter((a) => (a.status === "held" ? !a.holdExpiresAt || a.holdExpiresAt > nowIso : isBlocking(a.status)))
     .map((a) => ({ start: a.startsAt, busyUntil: a.busyUntil }));
 }
 
@@ -73,6 +74,15 @@ export async function confirmBookingFromCheckout(sessionId: string): Promise<Con
   if (appt.status === "held") {
     const won = await store.markHeldAppointmentPaid(appt.id, checkout.paymentIntentId);
     if (won) {
+      await store.addAppointmentEvent({
+        appointmentId: won.id,
+        type: "status",
+        fromStatus: "held",
+        toStatus: "confirmed",
+        note: "Deposit paid online",
+        actor: "stripe",
+        requestId: null,
+      });
       await store.updateLead(lead.id, { stage: "scheduled" });
       await notifyForLead(store, lead);
       return { state: "confirmed", appointment: won, lead };

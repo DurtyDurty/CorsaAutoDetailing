@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { isBlocking } from "@shared/appointment-status";
 import Link from "next/link";
 import { business } from "@/config/business";
 import { requireOwner } from "@/lib/auth/owner";
@@ -22,7 +23,7 @@ export default async function TimeOffPage({ searchParams }: PageProps<"/admin/ti
   // Bookings that already sit on a day off are kept; flag them so they can be moved.
   const appts = daysOff.length
     ? (await store.listAppointments({ from: new Date().toISOString() })).filter(
-        (a) => a.status === "confirmed" || a.status === "held",
+        (a) => isBlocking(a.status),
       )
     : [];
   const onDay = (day: string) => appts.filter((a) => todayEastern(new Date(a.startsAt)) === day);

@@ -3,7 +3,13 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import type {
+  AppointmentEventRecord,
+  AppointmentPatch,
   AppointmentRecord,
+  AppointmentStatus,
+  NewAppointmentEvent,
+  NewPayment,
+  PaymentRecord,
   DashboardCounts,
   LeadFilter,
   LeadPatch,
@@ -24,6 +30,7 @@ import type {
 import { SlotTakenError } from "./types";
 import { matchesFilter, computeCounts } from "./shared";
 import { todayEastern } from "@/lib/time";
+import { isBlocking } from "@shared/appointment-status";
 
 const easternDate = (iso: string) => todayEastern(new Date(iso));
 
@@ -39,7 +46,7 @@ function overlapsActive(list: AppointmentRecord[], candidate: AppointmentRecord)
   return list.some(
     (a) =>
       a.id !== candidate.id &&
-      (a.status === "held" || a.status === "confirmed") &&
+      isBlocking(a.status) &&
       Date.parse(a.startsAt) < e &&
       s < Date.parse(a.busyUntil),
   );
@@ -59,6 +66,8 @@ interface DemoData {
   notifications: NotificationRecord[];
   timeOff: TimeOffRecord[];
   outboundEmails: OutboundEmailRecord[];
+  appointmentEvents: AppointmentEventRecord[];
+  payments: PaymentRecord[];
 }
 
 // Resolved per call so the working directory can be swapped in tests.
@@ -89,15 +98,20 @@ async function load(): Promise<DemoData> {
           paymentIntentId: null,
           holdExpiresAt: null,
           bufferMinutes: 45,
+          cancelReason: null,
+          cancelledBy: null,
+          discountCents: 0,
           ...(a as Partial<AppointmentRecord>),
         } as AppointmentRecord),
       ),
       notifications: parsed.notifications ?? [],
       timeOff: parsed.timeOff ?? [],
       outboundEmails: parsed.outboundEmails ?? [],
+      appointmentEvents: parsed.appointmentEvents ?? [],
+      payments: parsed.payments ?? [],
     };
   } catch {
-    return { leads: [], appointments: [], notifications: [], timeOff: [], outboundEmails: [] };
+    return { leads: [], appointments: [], notifications: [], timeOff: [], outboundEmails: [], appointmentEvents: [], payments: [] };
   }
 }
 
@@ -145,6 +159,12 @@ export class DemoLeadStore implements LeadStore {
     return data.leads.find((l) => l.id === id) ?? null;
   }
 
+  async getLeads(ids: string[]) {
+    const data = await load();
+    const wanted = new Set(ids);
+    return data.leads.filter((l) => wanted.has(l.id));
+  }
+
   async listLeads(filter: LeadFilter = {}) {
     const data = await load();
     return data.leads
@@ -171,6 +191,9 @@ export class DemoLeadStore implements LeadStore {
       data.appointments = data.appointments.filter((a) => a.leadId !== id);
       data.notifications = data.notifications.filter((n) => n.leadId !== id);
       data.outboundEmails = data.outboundEmails.filter((e) => e.leadId !== id);
+      const remaining = new Set(data.appointments.map((a) => a.id));
+      data.appointmentEvents = data.appointmentEvents.filter((e) => remaining.has(e.appointmentId));
+      data.payments = data.payments.filter((p) => remaining.has(p.appointmentId));
       await save(data);
     });
   }
@@ -203,8 +226,16 @@ export class DemoLeadStore implements LeadStore {
     return serialized(async () => {
       const data = await load();
       const ts = now();
-      const appt: AppointmentRecord = withBusy({ ...input, id: randomUUID(), createdAt: ts, updatedAt: ts });
-      if ((appt.status === "held" || appt.status === "confirmed") && overlapsActive(data.appointments, appt)) {
+      const appt: AppointmentRecord = withBusy({
+        discountCents: 0,
+        ...input,
+        cancelReason: null,
+        cancelledBy: null,
+        id: randomUUID(),
+        createdAt: ts,
+        updatedAt: ts,
+      });
+      if (isBlocking(appt.status) && overlapsActive(data.appointments, appt)) {
         throw new SlotTakenError();
       }
       data.appointments.push(appt);
@@ -213,13 +244,70 @@ export class DemoLeadStore implements LeadStore {
     });
   }
 
-  updateAppointment(id: string, patch: Partial<AppointmentRecord>) {
+  async getAppointment(id: string) {
+    const data = await load();
+    return data.appointments.find((a) => a.id === id) ?? null;
+  }
+
+  updateAppointmentIfStatus(id: string, expected: AppointmentStatus, patch: AppointmentPatch) {
+    return this.patchAppointment(id, patch, expected);
+  }
+
+  async listAppointmentEvents(appointmentId: string) {
+    const data = await load();
+    return data.appointmentEvents
+      .filter((e) => e.appointmentId === appointmentId)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
+
+  addAppointmentEvent(input: NewAppointmentEvent) {
+    return serialized(async () => {
+      const data = await load();
+      if (input.requestId && data.appointmentEvents.some((e) => e.requestId === input.requestId)) return null;
+      const rec: AppointmentEventRecord = { ...input, id: randomUUID(), createdAt: now() };
+      data.appointmentEvents.push(rec);
+      await save(data);
+      return rec;
+    });
+  }
+
+  async findAppointmentEventByRequestId(requestId: string) {
+    const data = await load();
+    return data.appointmentEvents.find((e) => e.requestId === requestId) ?? null;
+  }
+
+  async listPayments(opts: { appointmentIds?: string[]; from?: string; to?: string }) {
+    const data = await load();
+    const ids = opts.appointmentIds ? new Set(opts.appointmentIds) : null;
+    return data.payments
+      .filter((p) => !ids || ids.has(p.appointmentId))
+      .filter((p) => !opts.from || p.createdAt >= opts.from)
+      .filter((p) => !opts.to || p.createdAt <= opts.to)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
+
+  recordPayment(input: NewPayment) {
+    return serialized(async () => {
+      const data = await load();
+      if (input.requestId && data.payments.some((p) => p.requestId === input.requestId)) return null;
+      const rec: PaymentRecord = { ...input, id: randomUUID(), createdAt: now() };
+      data.payments.push(rec);
+      await save(data);
+      return rec;
+    });
+  }
+
+  updateAppointment(id: string, patch: AppointmentPatch) {
+    return this.patchAppointment(id, patch);
+  }
+
+  private patchAppointment(id: string, patch: AppointmentPatch, expected?: AppointmentStatus) {
     return serialized(async () => {
       const data = await load();
       const appt = data.appointments.find((a) => a.id === id);
-      if (!appt) return null;
+      if (!appt || (expected && appt.status !== expected)) return null;
       const next = withBusy({ ...appt, ...patch, updatedAt: now() });
-      if ((next.status === "held" || next.status === "confirmed") && overlapsActive(data.appointments, next)) {
+      if (isBlocking(next.status) && overlapsActive(data.appointments, next)) {
         throw new SlotTakenError();
       }
       Object.assign(appt, next);
@@ -261,6 +349,9 @@ export class DemoLeadStore implements LeadStore {
         paymentIntentId: null,
         holdExpiresAt: new Date(Date.now() + input.holdMinutes * 60_000).toISOString(),
         bufferMinutes: input.bufferMinutes,
+        cancelReason: null,
+        cancelledBy: null,
+        discountCents: 0,
       });
       if (overlapsActive(data.appointments, appt)) {
         await save(data);

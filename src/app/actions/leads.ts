@@ -224,6 +224,26 @@ export async function submitBooking(_prev: FormResult | null, formData: FormData
     throw err;
   }
 
+  await store.addAppointmentEvent({
+    appointmentId: appt.id,
+    type: "created",
+    fromStatus: null,
+    toStatus: "held",
+    note: "Booked online; waiting for the deposit",
+    actor: "website",
+    requestId: null,
+  });
+
+  await store.addAppointmentEvent({
+    appointmentId: appt.id,
+    type: "created",
+    fromStatus: null,
+    toStatus: "held",
+    note: "Booked online; waiting for the deposit",
+    actor: "website",
+    requestId: null,
+  });
+
   const origin = await requestOrigin();
   const session = await getPaymentAdapter().createCheckout({
     appointmentId: appt.id,

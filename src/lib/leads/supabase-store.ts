@@ -1,7 +1,13 @@
 import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type {
+  AppointmentEventRecord,
+  AppointmentPatch,
   AppointmentRecord,
+  AppointmentStatus,
+  NewAppointmentEvent,
+  NewPayment,
+  PaymentRecord,
   DashboardCounts,
   LeadFilter,
   LeadPatch,
@@ -133,6 +139,38 @@ function apptFromRow(r: Row): AppointmentRecord {
     holdExpiresAt: (r.hold_expires_at as string | null) ?? null,
     bufferMinutes: (r.buffer_minutes as number | null) ?? 45,
     busyUntil: (r.busy_until as string | null) ?? (r.ends_at as string),
+    cancelReason: (r.cancel_reason as string | null) ?? null,
+    cancelledBy: (r.cancelled_by as AppointmentRecord["cancelledBy"]) ?? null,
+    discountCents: (r.discount_cents as number | null) ?? 0,
+  };
+}
+
+function eventFromRow(r: Row): AppointmentEventRecord {
+  return {
+    id: r.id as string,
+    appointmentId: r.appointment_id as string,
+    type: r.type as AppointmentEventRecord["type"],
+    fromStatus: (r.from_status as AppointmentStatus | null) ?? null,
+    toStatus: (r.to_status as AppointmentStatus | null) ?? null,
+    note: (r.note as string | null) ?? null,
+    actor: r.actor as string,
+    requestId: (r.request_id as string | null) ?? null,
+    createdAt: r.created_at as string,
+  };
+}
+
+function paymentFromRow(r: Row): PaymentRecord {
+  return {
+    id: r.id as string,
+    appointmentId: r.appointment_id as string,
+    kind: r.kind as PaymentRecord["kind"],
+    method: r.method as PaymentRecord["method"],
+    amountCents: r.amount_cents as number,
+    note: (r.note as string | null) ?? null,
+    providerRef: (r.provider_ref as string | null) ?? null,
+    recordedBy: r.recorded_by as string,
+    requestId: (r.request_id as string | null) ?? null,
+    createdAt: r.created_at as string,
   };
 }
 
@@ -217,6 +255,13 @@ export class SupabaseLeadStore implements LeadStore {
     return data ? leadFromRow(data) : null;
   }
 
+  async getLeads(ids: string[]) {
+    if (ids.length === 0) return [];
+    const { data, error } = await this.client.from("leads").select("*").in("id", [...new Set(ids)]);
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(leadFromRow);
+  }
+
   async listLeads(filter: LeadFilter = {}) {
     let q = this.client.from("leads").select("*").order("created_at", { ascending: false });
     if (!filter.includeArchived) q = q.is("archived_at", null);
@@ -298,6 +343,12 @@ export class SupabaseLeadStore implements LeadStore {
     return (data ?? []).map(apptFromRow);
   }
 
+  async getAppointment(id: string) {
+    const { data, error } = await this.client.from("appointments").select("*").eq("id", id).maybeSingle();
+    if (error) throw new Error(error.message);
+    return data ? apptFromRow(data) : null;
+  }
+
   async createAppointment(input: NewAppointment) {
     const { data, error } = await this.client
       .from("appointments")
@@ -310,7 +361,62 @@ export class SupabaseLeadStore implements LeadStore {
     return apptFromRow(data);
   }
 
-  async updateAppointment(id: string, patch: Partial<AppointmentRecord>) {
+  async updateAppointmentIfStatus(id: string, expected: AppointmentStatus, patch: AppointmentPatch) {
+    const { data, error } = await this.client
+      .from("appointments")
+      .update({ ...snake(patch), updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("status", expected)
+      .select("*")
+      .maybeSingle();
+    if (error?.code === "23P01") throw new SlotTakenError();
+    if (error) throw new Error(error.message);
+    return data ? apptFromRow(data) : null;
+  }
+
+  async listAppointmentEvents(appointmentId: string) {
+    const { data, error } = await this.client
+      .from("appointment_events")
+      .select("*")
+      .eq("appointment_id", appointmentId)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(eventFromRow);
+  }
+
+  async addAppointmentEvent(input: NewAppointmentEvent) {
+    const { data, error } = await this.client.from("appointment_events").insert(snake({ ...input })).select("*").single();
+    // 23505 = unique violation on request_id: already recorded.
+    if (error?.code === "23505") return null;
+    if (error) throw new Error(error.message);
+    return eventFromRow(data);
+  }
+
+  async findAppointmentEventByRequestId(requestId: string) {
+    const { data, error } = await this.client.from("appointment_events").select("*").eq("request_id", requestId).maybeSingle();
+    if (error) throw new Error(error.message);
+    return data ? eventFromRow(data) : null;
+  }
+
+  async listPayments(opts: { appointmentIds?: string[]; from?: string; to?: string }) {
+    if (opts.appointmentIds && opts.appointmentIds.length === 0) return [];
+    let q = this.client.from("payments").select("*").order("created_at", { ascending: true });
+    if (opts.appointmentIds) q = q.in("appointment_id", opts.appointmentIds);
+    if (opts.from) q = q.gte("created_at", opts.from);
+    if (opts.to) q = q.lte("created_at", opts.to);
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(paymentFromRow);
+  }
+
+  async recordPayment(input: NewPayment) {
+    const { data, error } = await this.client.from("payments").insert(snake({ ...input })).select("*").single();
+    if (error?.code === "23505") return null;
+    if (error) throw new Error(error.message);
+    return paymentFromRow(data);
+  }
+
+  async updateAppointment(id: string, patch: AppointmentPatch) {
     const { data, error } = await this.client
       .from("appointments")
       .update({ ...snake(patch), updated_at: new Date().toISOString() })

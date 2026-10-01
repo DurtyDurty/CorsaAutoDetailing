@@ -46,7 +46,7 @@ Things the website is deliberately silent or provisional about until you decide.
 
 - [ ] **Sales tax treatment.** Site shows "Any applicable tax will be disclosed in your final quote" until you confirm with the Florida DOR / your accountant whether detailing services are taxable for you and at what rate. → `business.taxNotice`
 
-- [ ] **Accepted payment methods** (cash, card, Zelle…) — terms page says "will be listed before we open".
+- [x] **Accepted payment methods.** Card (on a reader), cash and digital payments (decided 2026-10-01); shown on /terms.
 
 ## Policies (Terms & Privacy are drafts)
 

@@ -1,5 +1,10 @@
 import type { BusinessMode } from "@/config/business";
 import type { EstimateSnapshot } from "@/lib/pricing";
+import type { AppointmentStatus, CancelledBy } from "@shared/appointment-status";
+import type { AppointmentEventType } from "@shared/api";
+import type { PaymentKind, PaymentMethod } from "@shared/money";
+
+export type { AppointmentStatus } from "@shared/appointment-status";
 
 export type LeadType = "launch_list" | "quote_request" | "membership_interest" | "contact";
 
@@ -107,8 +112,7 @@ export type LeadPatch = Partial<
   Pick<LeadRecord, "stage" | "followUpOn" | "internalNotes" | "archivedAt" | "photoRefs">
 >;
 
-/** `held` = online slot reserved while the customer pays the deposit. */
-export type AppointmentStatus = "held" | "confirmed" | "completed" | "cancelled";
+
 export type DepositStatus = "none" | "pending" | "paid" | "refunded" | "forfeited" | "released";
 
 export interface AppointmentRecord {
@@ -134,9 +138,65 @@ export interface AppointmentRecord {
   bufferMinutes: number;
   /** ends_at + buffer; the window the database keeps free of other active appointments. */
   busyUntil: string;
+  cancelReason: string | null;
+  cancelledBy: CancelledBy | null;
+  discountCents: number;
 }
 
-export type NewAppointment = Omit<AppointmentRecord, "id" | "createdAt" | "updatedAt" | "busyUntil">;
+export type NewAppointment = Omit<
+  AppointmentRecord,
+  "id" | "createdAt" | "updatedAt" | "busyUntil" | "cancelReason" | "cancelledBy" | "discountCents"
+> &
+  Partial<Pick<AppointmentRecord, "discountCents">>;
+
+export type AppointmentPatch = Partial<
+  Pick<
+    AppointmentRecord,
+    | "status"
+    | "completedRevenueCents"
+    | "notes"
+    | "startsAt"
+    | "endsAt"
+    | "depositStatus"
+    | "checkoutSessionId"
+    | "paymentIntentId"
+    | "holdExpiresAt"
+    | "cancelReason"
+    | "cancelledBy"
+    | "discountCents"
+  >
+>;
+
+/** Audit history for an appointment. */
+export interface AppointmentEventRecord {
+  id: string;
+  appointmentId: string;
+  type: AppointmentEventType;
+  fromStatus: AppointmentStatus | null;
+  toStatus: AppointmentStatus | null;
+  note: string | null;
+  actor: string;
+  /** Set when the change came from an app request; a retry with the same id isn't recorded twice. */
+  requestId: string | null;
+  createdAt: string;
+}
+
+export type NewAppointmentEvent = Omit<AppointmentEventRecord, "id" | "createdAt">;
+
+export interface PaymentRecord {
+  id: string;
+  appointmentId: string;
+  kind: PaymentKind;
+  method: PaymentMethod;
+  amountCents: number;
+  note: string | null;
+  providerRef: string | null;
+  recordedBy: string;
+  requestId: string | null;
+  createdAt: string;
+}
+
+export type NewPayment = Omit<PaymentRecord, "id" | "createdAt">;
 
 export interface OnlineHoldInput {
   leadId: string;
@@ -229,6 +289,8 @@ export interface LeadStore {
   /** Idempotent on `idempotencyKey`. Returns the existing lead when replayed. */
   createLead(input: NewLead): Promise<{ lead: LeadRecord; created: boolean }>;
   getLead(id: string): Promise<LeadRecord | null>;
+  /** Leads by id, in no particular order; unknown ids are skipped. */
+  getLeads(ids: string[]): Promise<LeadRecord[]>;
   listLeads(filter?: LeadFilter): Promise<LeadRecord[]>;
   updateLead(id: string, patch: LeadPatch): Promise<LeadRecord | null>;
   deleteLead(id: string): Promise<void>;
@@ -238,24 +300,25 @@ export interface LeadStore {
   findRecentByEmail(email: string, leadType: LeadType, withinMinutes: number): Promise<LeadRecord | null>;
 
   listAppointments(opts?: { from?: string; to?: string; leadId?: string }): Promise<AppointmentRecord[]>;
+  getAppointment(id: string): Promise<AppointmentRecord | null>;
   createAppointment(input: NewAppointment): Promise<AppointmentRecord>;
-  updateAppointment(
-    id: string,
-    patch: Partial<
-      Pick<
-        AppointmentRecord,
-        | "status"
-        | "completedRevenueCents"
-        | "notes"
-        | "startsAt"
-        | "endsAt"
-        | "depositStatus"
-        | "checkoutSessionId"
-        | "paymentIntentId"
-        | "holdExpiresAt"
-      >
-    >,
-  ): Promise<AppointmentRecord | null>;
+  updateAppointment(id: string, patch: AppointmentPatch): Promise<AppointmentRecord | null>;
+  /**
+   * Change status only if it is still `expected`, so two devices (or a retry)
+   * can't both apply a transition. Returns null when the status had changed.
+   */
+  updateAppointmentIfStatus(id: string, expected: AppointmentStatus, patch: AppointmentPatch): Promise<AppointmentRecord | null>;
+
+  /** Oldest first. */
+  listAppointmentEvents(appointmentId: string): Promise<AppointmentEventRecord[]>;
+  /** Returns null if an event with the same requestId was already recorded. */
+  addAppointmentEvent(input: NewAppointmentEvent): Promise<AppointmentEventRecord | null>;
+  findAppointmentEventByRequestId(requestId: string): Promise<AppointmentEventRecord | null>;
+
+  /** Oldest first. */
+  listPayments(opts: { appointmentIds?: string[]; from?: string; to?: string }): Promise<PaymentRecord[]>;
+  /** Returns null if a payment with the same requestId was already recorded. */
+  recordPayment(input: NewPayment): Promise<PaymentRecord | null>;
   /**
    * Atomically release stale holds and reserve `input` as a `held` online
    * appointment. Throws SlotTakenError if it overlaps (with buffer) an active one.

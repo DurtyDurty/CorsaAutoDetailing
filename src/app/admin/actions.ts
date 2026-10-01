@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache";
 import { business } from "@/config/business";
 import { requireOwner } from "@/lib/auth/owner";
 import { getLeadStore } from "@/lib/leads/store";
+import { logAppointmentEvent } from "@/lib/owner/appointments";
+import { isBlocking } from "@shared/appointment-status";
 import { LEAD_STAGES, SlotTakenError, type LeadStage } from "@/lib/leads/types";
 import { getEmailAdapter } from "@/lib/email";
 import { retryFailedNotifications } from "@/lib/notifications";
@@ -79,7 +81,7 @@ export async function retryNotificationsAction(formData: FormData) {
 }
 
 export async function confirmAppointmentAction(formData: FormData) {
-  await requireOwner();
+  const owner = await requireOwner();
   const id = String(formData.get("leadId") ?? "");
   if (business.mode !== "LIVE") {
     return back(id, { error: "Appointments cannot be confirmed in PRELAUNCH mode. Switch NEXT_PUBLIC_BUSINESS_MODE to LIVE first." });
@@ -115,7 +117,8 @@ export async function confirmAppointmentAction(formData: FormData) {
   });
   const conflict = existing.find(
     (a) =>
-      a.status === "confirmed" &&
+      isBlocking(a.status) &&
+      a.status !== "held" &&
       overlapsWithBuffer(
         { start: new Date(a.startsAt), end: new Date(a.endsAt) },
         { start, end },
@@ -128,8 +131,9 @@ export async function confirmAppointmentAction(formData: FormData) {
     });
   }
 
+  let created;
   try {
-    await s.createAppointment({
+    created = await s.createAppointment({
       leadId: id,
       startsAt: start.toISOString(),
       endsAt: end.toISOString(),
@@ -155,26 +159,31 @@ export async function confirmAppointmentAction(formData: FormData) {
     }
     throw err;
   }
+  await logAppointmentEvent(s, { appointmentId: created.id, type: "created", to: "confirmed", note: notes, actor: owner.email });
   await s.updateLead(id, { stage: "scheduled" });
   revalidatePath("/admin/appointments");
   return back(id, { ok: "Appointment confirmed." });
 }
 
 export async function completeAppointmentAction(formData: FormData) {
-  await requireOwner();
+  const owner = await requireOwner();
   const id = String(formData.get("leadId") ?? "");
   const apptId = String(formData.get("appointmentId") ?? "");
   const revenue = Number(formData.get("revenue") ?? "");
   if (!Number.isFinite(revenue) || revenue < 0) return back(id, { error: "Enter the amount actually collected." });
   const s = await store();
+  const before = await s.getAppointment(apptId);
   await s.updateAppointment(apptId, { status: "completed", completedRevenueCents: Math.round(revenue * 100) });
+  if (before && before.status !== "completed") {
+    await logAppointmentEvent(s, { appointmentId: apptId, type: "status", from: before.status, to: "completed", note: `Collected ${(revenue).toFixed(2)} (dashboard)`, actor: owner.email });
+  }
   await s.updateLead(id, { stage: "completed" });
   revalidatePath("/admin/appointments");
   return back(id, { ok: "Job marked completed and revenue recorded." });
 }
 
 export async function cancelAppointmentAction(formData: FormData) {
-  await requireOwner();
+  const owner = await requireOwner();
   const id = String(formData.get("leadId") ?? "");
   const apptId = String(formData.get("appointmentId") ?? "");
   const deposit = String(formData.get("deposit") ?? "");
@@ -190,19 +199,22 @@ export async function cancelAppointmentAction(formData: FormData) {
       } catch (err) {
         return back(id, { error: `Refund failed, appointment not cancelled: ${err instanceof Error ? err.message : "unknown error"}` });
       }
-      await s.updateAppointment(apptId, { status: "cancelled", depositStatus: "refunded" });
+      await s.updateAppointment(apptId, { status: "cancelled", depositStatus: "refunded", cancelledBy: "owner" });
+      await logAppointmentEvent(s, { appointmentId: apptId, type: "status", from: appt.status, to: "cancelled", note: "Deposit refunded (dashboard)", actor: owner.email });
       revalidatePath("/admin/appointments");
       return back(id, { ok: "Appointment cancelled and deposit refunded." });
     }
     if (deposit === "keep") {
-      await s.updateAppointment(apptId, { status: "cancelled", depositStatus: "forfeited" });
+      await s.updateAppointment(apptId, { status: "cancelled", depositStatus: "forfeited", cancelledBy: "owner" });
+      await logAppointmentEvent(s, { appointmentId: apptId, type: "status", from: appt.status, to: "cancelled", note: "Deposit kept (dashboard)", actor: owner.email });
       revalidatePath("/admin/appointments");
       return back(id, { ok: "Appointment cancelled. Deposit kept per the cancellation policy." });
     }
     return back(id, { error: "Choose whether to refund or keep the deposit." });
   }
 
-  await s.updateAppointment(apptId, { status: "cancelled" });
+  await s.updateAppointment(apptId, { status: "cancelled", cancelledBy: "owner" });
+  await logAppointmentEvent(s, { appointmentId: apptId, type: "status", from: appt.status, to: "cancelled", note: "Cancelled from the dashboard", actor: owner.email });
   revalidatePath("/admin/appointments");
   return back(id, { ok: "Appointment cancelled." });
 }

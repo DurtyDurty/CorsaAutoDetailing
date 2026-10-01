@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { APPOINTMENT_STATUS_LABELS } from "@shared/appointment-status";
 import { business } from "@/config/business";
 import { requireOwner } from "@/lib/auth/owner";
 import { getLeadStore } from "@/lib/leads/store";
@@ -62,8 +63,8 @@ export default async function AppointmentsPage() {
                     <td className="px-4 py-3 whitespace-nowrap">
                       {a.depositCents ? `${formatUsd(a.depositCents / 100)} ${a.depositStatus}` : "-"}
                     </td>
-                    <td className="px-4 py-3 capitalize">
-                      {a.status}
+                    <td className="px-4 py-3">
+                      {APPOINTMENT_STATUS_LABELS[a.status]}
                       {a.status === "completed" && a.completedRevenueCents !== null && (
                         <span className="text-ink-muted"> · {formatUsd(a.completedRevenueCents / 100)} collected</span>
                       )}
