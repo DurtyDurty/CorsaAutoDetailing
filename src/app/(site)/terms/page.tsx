@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { business, isPrelaunch } from "@/config/business";
 import { Container } from "@/components/ui/Section";
 import { PageHero } from "@/components/site/PageHero";
+import { bookingEnabled } from "@/lib/booking";
 
 export const metadata: Metadata = {
   title: "Service terms",
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
  * until the owner decides them (OWNER_DECISIONS.md).
  */
 export default function TermsPage() {
+  const deposits = bookingEnabled();
   return (
     <>
       <PageHero eyebrow="Service terms" title="How working with us works." lede="Plain-language draft. Last updated September 2026." />
@@ -45,17 +47,32 @@ export default function TermsPage() {
 
         <h2>Scheduling</h2>
         <ul>
-          <li>Online bookings are confirmed when the deposit is paid; you&rsquo;ll receive a confirmation by email. Appointments arranged directly with us are confirmed when we agree on a time.</li>
+          {deposits ? (
+            <li>Online bookings are confirmed when the deposit is paid; you&rsquo;ll receive a confirmation by email. Appointments arranged directly with us are confirmed when we agree on a time.</li>
+          ) : (
+            <li>Appointments are confirmed when we agree on a time with you.</li>
+          )}
           <li>Times are in Eastern time and are arrival times.</li>
         </ul>
 
-        <h2>Deposits, cancellations and weather</h2>
-        <ul>
-          {business.booking.policy.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-          <li>Deposits are paid through Stripe&rsquo;s secure checkout. We never see or store your card details.</li>
-        </ul>
+        {deposits ? (
+          <>
+            <h2>Deposits, cancellations and weather</h2>
+            <ul>
+              {business.booking.policy.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+              <li>Deposits are paid through Stripe&rsquo;s secure checkout. We never see or store your card details.</li>
+            </ul>
+          </>
+        ) : (
+          <>
+            <h2>Weather</h2>
+            <ul>
+              <li>If weather prevents the service, we reschedule at no charge.</li>
+            </ul>
+          </>
+        )}
 
         <h2>At your location</h2>
         <ul>
@@ -65,7 +82,10 @@ export default function TermsPage() {
 
         <h2>Payment</h2>
         <p>
-          The only payment taken through this website is the booking deposit described above. The remaining balance is paid when the service is complete; accepted payment methods will be listed here before we open (owner decision pending).
+          {deposits
+            ? "The only payment taken through this website is the booking deposit described above. The remaining balance is paid when the service is complete."
+            : "No payment is taken through this website. You pay when the service is complete."}{" "}
+          Accepted payment methods will be listed here before we open (owner decision pending).
         </p>
 
         <h2>Maintenance plans</h2>
