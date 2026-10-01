@@ -270,7 +270,7 @@ export default function HomePage() {
               <p className="mt-6 text-lg text-chalk/75 leading-relaxed max-w-lg">
                 {isPrelaunch
                   ? "Leave your name, email and ZIP. We'll let you know when scheduling opens in your area. Nothing else, no spam."
-                  : "Tell us about your vehicle and we'll reply with a quote and available times."}
+                  : "Pick a service and an open time on the calendar. We hold it for you and confirm by email."}
               </p>
             </div>
             <div className="relative bg-white text-ink rounded-sm p-6 sm:p-8 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.8)]">
@@ -280,11 +280,11 @@ export default function HomePage() {
               ) : (
                 <div className="flex flex-col gap-4">
                   <ButtonLink href="/request" size="lg" variant="apex">
-                    Request an appointment
+                    Book a detail
                     <Arrow />
                   </ButtonLink>
                   <p className="text-sm text-ink-muted">
-                    Requests are reviewed before scheduling; a submitted request isn&rsquo;t a confirmed appointment.
+                    Your time is held while we review your request; you&rsquo;ll get a confirmation email once it&rsquo;s confirmed. Nothing is charged online.
                   </p>
                 </div>
               )}

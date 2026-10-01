@@ -1,4 +1,4 @@
-import { business } from "@/config/business";
+import { business, isPrelaunch } from "@/config/business";
 import type { FaqItem } from "@/components/site/Faq";
 
 export const HOME_FAQ: FaqItem[] = [
@@ -13,7 +13,9 @@ export const HOME_FAQ: FaqItem[] = [
   },
   {
     q: "Is a request the same as an appointment?",
-    a: "No. Every request is reviewed personally. You'll get a firm quote and, once we're open, a proposed time. Nothing is scheduled until you agree to it, and no payment is taken until availability and final pricing are confirmed.",
+    a: isPrelaunch
+      ? "No. Every request is reviewed personally. You'll get a firm quote and, once we're open, a proposed time. Nothing is scheduled until you agree to it, and no payment is taken until availability and final pricing are confirmed."
+      : "Almost. When you pick a time on the calendar, we hold it for you while we review your details. Once we confirm, you'll get a confirmation email, and that's your appointment. If that time doesn't work for us, we'll email you to pick another. Nothing is charged online; you pay when the service is complete.",
   },
   {
     q: "Do I need to provide water or power?",
