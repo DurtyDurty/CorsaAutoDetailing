@@ -53,6 +53,16 @@ export interface LeadSource {
   utmSource: string | null;
   utmMedium: string | null;
   utmCampaign: string | null;
+  /** Added with Google Ads tracking; older leads don't have them. */
+  utmTerm?: string | null;
+  utmContent?: string | null;
+  /** Google Ads click ids, used to report confirmed bookings back to Google Ads. */
+  gclid?: string | null;
+  gbraid?: string | null;
+  wbraid?: string | null;
+  /** When the visitor first arrived (first touch), and when the ad click happened. */
+  firstSeenAt?: string | null;
+  clickSeenAt?: string | null;
 }
 
 export interface LeadRecord {
@@ -252,6 +262,24 @@ export interface InboundEmailRecord {
 
 export type NewInboundEmail = Omit<InboundEmailRecord, "id" | "createdAt" | "readAt">;
 
+/** A conversion reported (or attempted) to Google Ads. No personal data. */
+export interface AdConversionRecord {
+  /** Google's dedupe key, e.g. "booking-<lead id>". */
+  transactionId: string;
+  kind: "inquiry" | "booking" | "paid";
+  leadId: string | null;
+  appointmentId: string | null;
+  /** Value last sent (or attempted). */
+  valueCents: number;
+  eventAt: string;
+  status: "sent" | "failed";
+  attempts: number;
+  lastError: string | null;
+  requestId: string | null;
+  sentAt: string | null;
+  updatedAt: string;
+}
+
 /** Thrown by `bookOnlineSlot` when the slot (plus travel buffer) overlaps an active appointment. */
 export class SlotTakenError extends Error {
   constructor() {
@@ -373,6 +401,10 @@ export interface LeadStore {
   /** Lead ids with at least one unread reply. */
   leadsWithUnreadInbound(): Promise<string[]>;
   markInboundRead(leadId: string): Promise<void>;
+
+  listAdConversions(): Promise<AdConversionRecord[]>;
+  /** Insert or replace by transactionId. */
+  saveAdConversion(row: AdConversionRecord): Promise<void>;
 
   createNotification(leadId: string, kind: NotificationKind): Promise<NotificationRecord>;
   updateNotification(

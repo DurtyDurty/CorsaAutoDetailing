@@ -2,7 +2,8 @@ import "server-only";
 import { z } from "zod";
 import { business } from "@/config/business";
 import { getLeadStore } from "@/lib/leads/store";
-import type { LeadRecord, LeadType, NewLead } from "@/lib/leads/types";
+import { cleanClickId, cleanPath, cleanReferrer, cleanTag, TOUCH_MAX_AGE_DAYS } from "@/lib/attribution";
+import type { LeadRecord, LeadSource, LeadType, NewLead } from "@/lib/leads/types";
 import { notifyForLead } from "@/lib/notifications";
 import { limitFormSubmission } from "@/lib/rate-limit";
 import { fieldErrors, formDataToObject, type FieldErrors } from "@/lib/validation";
@@ -31,6 +32,13 @@ export function baseLead(
     utmSource: string | null;
     utmMedium: string | null;
     utmCampaign: string | null;
+    utmTerm?: string | null;
+    utmContent?: string | null;
+    gclid?: string | null;
+    gbraid?: string | null;
+    wbraid?: string | null;
+    firstSeenAt?: string | null;
+    clickSeenAt?: string | null;
   },
 ): NewLead {
   const now = new Date().toISOString();
@@ -71,30 +79,60 @@ export function baseLead(
       marketingTextVersion: data.marketingEmail ? business.consent.marketingTextVersion : null,
       marketingAcceptedAt: data.marketingEmail ? now : null,
     },
-    source: {
-      landingPath: sanitizePath(data.landingPath),
-      referrer: sanitizeReferrer(data.referrer),
-      utmSource: data.utmSource,
-      utmMedium: data.utmMedium,
-      utmCampaign: data.utmCampaign,
-    },
+    source: leadSource(data, new Date(now)),
     photoRefs: [],
   };
 }
 
-function sanitizePath(p: string | null): string | null {
-  if (!p) return null;
-  // Path only, no query string (which could carry personal data).
-  return p.split("?")[0].slice(0, 200);
-}
-
-function sanitizeReferrer(r: string | null): string | null {
-  if (!r) return null;
-  try {
-    return new URL(r).host.slice(0, 120);
-  } catch {
-    return null;
-  }
+/**
+ * Attribution from the form's hidden fields. Values come from the browser, so
+ * each is re-cleaned: paths without query strings, referrer hosts only, tags
+ * without anything that looks like contact details, opaque click ids, and
+ * timestamps within Google's 90-day conversion window.
+ */
+export function leadSource(
+  d: {
+    landingPath: string | null;
+    referrer: string | null;
+    utmSource: string | null;
+    utmMedium: string | null;
+    utmCampaign: string | null;
+    utmTerm?: string | null;
+    utmContent?: string | null;
+    gclid?: string | null;
+    gbraid?: string | null;
+    wbraid?: string | null;
+    firstSeenAt?: string | null;
+    clickSeenAt?: string | null;
+  },
+  now: Date,
+): LeadSource {
+  const when = (iso: string | null | undefined) => {
+    const t = iso ? Date.parse(iso) : NaN;
+    if (!Number.isFinite(t) || t > now.getTime() + 60_000 || now.getTime() - t > TOUCH_MAX_AGE_DAYS * 86_400_000) return null;
+    return new Date(t).toISOString();
+  };
+  // A referrer may arrive as a full URL (older forms) or as a host (stored touch).
+  const ref = d.referrer && !d.referrer.includes("://") ? `https://${d.referrer}` : d.referrer;
+  const clickSeenAt = when(d.clickSeenAt);
+  const clicks = {
+    gclid: cleanClickId(d.gclid),
+    gbraid: cleanClickId(d.gbraid),
+    wbraid: cleanClickId(d.wbraid),
+  };
+  const anyClick = Boolean(clicks.gclid || clicks.gbraid || clicks.wbraid);
+  return {
+    landingPath: cleanPath(d.landingPath),
+    referrer: cleanReferrer(ref),
+    utmSource: cleanTag(d.utmSource),
+    utmMedium: cleanTag(d.utmMedium),
+    utmCampaign: cleanTag(d.utmCampaign),
+    utmTerm: cleanTag(d.utmTerm),
+    utmContent: cleanTag(d.utmContent),
+    ...clicks,
+    firstSeenAt: when(d.firstSeenAt),
+    clickSeenAt: anyClick ? clickSeenAt : null,
+  };
 }
 
 /**

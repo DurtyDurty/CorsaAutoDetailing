@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import type { FormResult } from "@/app/actions/leads";
 import { track, type AnalyticsEvent } from "@/lib/analytics";
+import { TOUCH_FIELDS } from "@/lib/attribution";
+import { captureTouch } from "@/lib/attribution-client";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
@@ -36,13 +38,10 @@ export function FormMeta() {
       const el = root.querySelector<HTMLInputElement>(`input[name="${name}"]`);
       if (el && !el.value) el.value = value;
     };
-    const params = new URLSearchParams(window.location.search);
     set("idempotencyKey", newKey());
-    set("landingPath", window.location.pathname);
-    set("referrer", document.referrer);
-    set("utmSource", params.get("utm_source")?.slice(0, 120) ?? "");
-    set("utmMedium", params.get("utm_medium")?.slice(0, 120) ?? "");
-    set("utmCampaign", params.get("utm_campaign")?.slice(0, 120) ?? "");
+    // First touch from the visitor's landing page (kept across pages), not just this page.
+    const touch = captureTouch();
+    for (const f of TOUCH_FIELDS) set(f, touch?.[f] ?? "");
   }, []);
   return (
     <div ref={wrap} hidden>
@@ -52,11 +51,9 @@ export function FormMeta() {
         effect wrote. With no value prop React leaves the DOM alone.
       */}
       <input type="hidden" name="idempotencyKey" />
-      <input type="hidden" name="landingPath" />
-      <input type="hidden" name="referrer" />
-      <input type="hidden" name="utmSource" />
-      <input type="hidden" name="utmMedium" />
-      <input type="hidden" name="utmCampaign" />
+      {TOUCH_FIELDS.map((f) => (
+        <input key={f} type="hidden" name={f} />
+      ))}
       {/* Honeypot: hidden from users and assistive tech, excluded from the tab order. */}
       <label htmlFor={honeyId}>Leave this field empty</label>
       <input id={honeyId} type="text" name="website" tabIndex={-1} autoComplete="off" />

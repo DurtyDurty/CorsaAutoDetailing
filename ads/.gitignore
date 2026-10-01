@@ -1,0 +1,7 @@
+# Secrets and local state never go in git.
+.env
+.state/
+.venv/
+reports/
+__pycache__/
+*.pyc

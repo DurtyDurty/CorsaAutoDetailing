@@ -4,6 +4,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { PrelaunchBanner } from "@/components/site/PrelaunchBanner";
 import { StickyCta } from "@/components/site/StickyCta";
 import { AnalyticsScript } from "@/components/site/AnalyticsScript";
+import { AttributionCapture } from "@/components/site/AttributionCapture";
 
 export default function SiteLayout({ children }: LayoutProps<"/">) {
   return (
@@ -22,6 +23,7 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
       <SiteFooter />
       <StickyCta {...primaryCta()} />
       <AnalyticsScript />
+      <AttributionCapture />
     </>
   );
 }

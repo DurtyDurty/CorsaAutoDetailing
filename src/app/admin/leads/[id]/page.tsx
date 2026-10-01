@@ -183,6 +183,9 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
               <Row label="Landing page" value={lead.source.landingPath} />
               <Row label="Referrer" value={lead.source.referrer} />
               <Row label="UTM" value={[lead.source.utmSource, lead.source.utmMedium, lead.source.utmCampaign].filter(Boolean).join(" / ")} />
+              <Row label="Keyword (utm_term)" value={lead.source.utmTerm ?? null} />
+              <Row label="Google Ads click" value={lead.source.gclid || lead.source.gbraid || lead.source.wbraid ? "Yes (click id saved)" : null} />
+              <Row label="First visit" value={lead.source.firstSeenAt ? formatEastern(lead.source.firstSeenAt) : null} />
             </dl>
           </section>
 

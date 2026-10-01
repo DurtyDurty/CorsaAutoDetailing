@@ -1,6 +1,7 @@
 import "server-only";
 import type { AppointmentSummary } from "@shared/api";
 import type { AppointmentStatus } from "@shared/appointment-status";
+import { isGoogleAds } from "@/lib/attribution";
 import type { LeadRecord, LeadStore } from "@/lib/leads/types";
 import { addDays, easternToUtc, todayEastern } from "@/lib/time";
 import { summarize } from "./appointments";
@@ -60,6 +61,12 @@ export interface Analytics {
   funnel: CountRow[];
   services: CountRow[];
   sources: CountRow[];
+  /**
+   * Customers who first came from a Google ad and sent a request in the period
+   * (a cohort by request date), and how far they got. Actual records only;
+   * spend comes from Google Ads separately.
+   */
+  googleAds: { leads: number; bookings: number; payingCustomers: number; revenueCents: number; from: string; to: string };
 }
 
 const day = (iso: string) => todayEastern(new Date(iso));
@@ -97,10 +104,13 @@ export function sourceLabel(l: Pick<LeadRecord, "source">): string {
   const s = l.source;
   if (s.landingPath === "owner-app") return "Booked in the app";
   if (s.landingPath === "email-reply") return "Emailed in";
+  if (isGoogleAds(s)) return "Google Ads";
   const utm = s.utmSource?.toLowerCase();
+  // Stored as a host ("www.google.com"); very old rows may hold a full URL.
   const ref = (() => {
+    if (!s.referrer) return null;
     try {
-      return s.referrer ? new URL(s.referrer).hostname.replace(/^www\./, "") : null;
+      return new URL(s.referrer.includes("://") ? s.referrer : `https://${s.referrer}`).hostname.replace(/^www\./, "");
     } catch {
       return null;
     }
@@ -209,6 +219,10 @@ export async function computeAnalytics(store: LeadStore, range: AnalyticsRange, 
     serviceRows.set(key, row);
   }
 
+  const adLeads = leadsNow.filter((l) => isGoogleAds(l.source) && l.stage !== "spam");
+  const adJobs = (id: string) => items.filter((a) => a.leadId === id);
+  const adPaid = adLeads.filter((l) => adJobs(l.id).some((a) => a.balance.collectedCents > 0));
+
   const next7 = items.filter((a) => BOOKED.includes(a.status) && a.status !== "completed" && day(a.startsAt) >= today && a.startsAt < next7Iso);
 
   return {
@@ -238,5 +252,13 @@ export async function computeAnalytics(store: LeadStore, range: AnalyticsRange, 
     ],
     services: [...serviceRows.values()].sort((a, b) => b.count - a.count || (b.cents ?? 0) - (a.cents ?? 0)),
     sources: tally(leadsNow.map(sourceLabel)),
+    googleAds: {
+      leads: adLeads.length,
+      bookings: adLeads.filter((l) => adJobs(l.id).some((a) => BOOKED.includes(a.status))).length,
+      payingCustomers: adPaid.length,
+      revenueCents: sum(adPaid.flatMap((l) => adJobs(l.id).map((a) => a.balance.collectedCents))),
+      from: start,
+      to: today,
+    },
   };
 }

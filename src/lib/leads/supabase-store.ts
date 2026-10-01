@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type {
+  AdConversionRecord,
   AppointmentEventRecord,
   AppointmentPatch,
   AppointmentRecord,
@@ -517,6 +518,48 @@ export class SupabaseLeadStore implements LeadStore {
       .maybeSingle();
     if (error) throw new Error(error.message);
     return data ? apptFromRow(data) : null;
+  }
+
+  async listAdConversions() {
+    const { data, error } = await this.client.from("ad_conversions").select("*").order("event_at", { ascending: false }).limit(5000);
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(
+      (r): AdConversionRecord => ({
+        transactionId: r.transaction_id as string,
+        kind: r.kind as AdConversionRecord["kind"],
+        leadId: (r.lead_id as string | null) ?? null,
+        appointmentId: (r.appointment_id as string | null) ?? null,
+        valueCents: r.value_cents as number,
+        eventAt: r.event_at as string,
+        status: r.status as AdConversionRecord["status"],
+        attempts: r.attempts as number,
+        lastError: (r.last_error as string | null) ?? null,
+        requestId: (r.request_id as string | null) ?? null,
+        sentAt: (r.sent_at as string | null) ?? null,
+        updatedAt: r.updated_at as string,
+      }),
+    );
+  }
+
+  async saveAdConversion(row: AdConversionRecord) {
+    const { error } = await this.client.from("ad_conversions").upsert(
+      {
+        transaction_id: row.transactionId,
+        kind: row.kind,
+        lead_id: row.leadId,
+        appointment_id: row.appointmentId,
+        value_cents: row.valueCents,
+        event_at: row.eventAt,
+        status: row.status,
+        attempts: row.attempts,
+        last_error: row.lastError?.slice(0, 1000) ?? null,
+        request_id: row.requestId,
+        sent_at: row.sentAt,
+        updated_at: row.updatedAt,
+      },
+      { onConflict: "transaction_id" },
+    );
+    if (error) throw new Error(error.message);
   }
 
   async listTimeOff(opts: { from?: string } = {}) {

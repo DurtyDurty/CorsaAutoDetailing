@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
     "condition", "condition_flags", "zip", "zip_eligibility", "city", "service_address", "location_type", "time_windows",
     "preferred_date", "estimate_total", "pricing_version", "price_acknowledged_at", "marketing_email", "membership_cadence",
     "future_interests", "follow_up_on", "archived_at", "landing_path", "utm_source", "utm_medium", "utm_campaign",
+    "utm_term", "utm_content", "google_ads_click", "first_seen_at",
   ];
   const rows = leads.map((l) => [
     l.id, l.createdAt, l.leadType, l.businessMode, l.stage, l.firstName, l.lastName, l.email, l.phone,
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
     l.condition, l.conditionFlags, l.zip, l.zipEligibility, l.city, l.serviceAddress, l.locationType, l.timeWindows,
     l.preferredDate, l.estimate?.total ?? "", l.pricingVersion, l.consent.priceAcknowledgedAt ?? "", l.consent.marketingEmail, l.membershipCadence,
     l.futureInterests, l.followUpOn, l.archivedAt, l.source.landingPath, l.source.utmSource, l.source.utmMedium, l.source.utmCampaign,
+    l.source.utmTerm ?? "", l.source.utmContent ?? "", Boolean(l.source.gclid || l.source.gbraid || l.source.wbraid), l.source.firstSeenAt ?? "",
   ]);
 
   const stamp = new Date().toISOString().slice(0, 10);

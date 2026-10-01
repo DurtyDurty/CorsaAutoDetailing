@@ -28,6 +28,7 @@ import type {
   NotificationStatus,
   StoreHealth,
   TimeOffRecord,
+  AdConversionRecord,
 } from "./types";
 import { SlotTakenError } from "./types";
 import { matchesFilter, computeCounts } from "./shared";
@@ -71,6 +72,7 @@ interface DemoData {
   appointmentEvents: AppointmentEventRecord[];
   payments: PaymentRecord[];
   inboundEmails: InboundEmailRecord[];
+  adConversions: AdConversionRecord[];
 }
 
 // Resolved per call so the working directory can be swapped in tests.
@@ -113,9 +115,10 @@ async function load(): Promise<DemoData> {
       appointmentEvents: parsed.appointmentEvents ?? [],
       payments: parsed.payments ?? [],
       inboundEmails: parsed.inboundEmails ?? [],
+      adConversions: parsed.adConversions ?? [],
     };
   } catch {
-    return { leads: [], appointments: [], notifications: [], timeOff: [], outboundEmails: [], appointmentEvents: [], payments: [], inboundEmails: [] };
+    return { leads: [], appointments: [], notifications: [], timeOff: [], outboundEmails: [], appointmentEvents: [], payments: [], inboundEmails: [], adConversions: [] };
   }
 }
 
@@ -404,6 +407,19 @@ export class DemoLeadStore implements LeadStore {
   async findAppointmentByCheckoutSession(sessionId: string) {
     const data = await load();
     return data.appointments.find((a) => a.checkoutSessionId === sessionId) ?? null;
+  }
+
+  async listAdConversions() {
+    const data = await load();
+    return [...data.adConversions].sort((a, b) => b.eventAt.localeCompare(a.eventAt));
+  }
+
+  saveAdConversion(row: AdConversionRecord) {
+    return serialized(async () => {
+      const data = await load();
+      data.adConversions = [...data.adConversions.filter((c) => c.transactionId !== row.transactionId), row];
+      await save(data);
+    });
   }
 
   async listTimeOff(opts: { from?: string } = {}) {

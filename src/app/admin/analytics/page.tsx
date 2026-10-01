@@ -8,6 +8,7 @@ import { ColumnChart } from "@/components/admin/analytics/ColumnChart";
 import { StatTile } from "@/components/admin/analytics/StatTile";
 import { compactUsd, fullUsd, pct } from "@/components/admin/analytics/format";
 import { cn } from "@/lib/utils";
+import { fetchAdSpend, spendConfigured, type AdSpend } from "@/lib/ads/spend";
 
 const RANGES = Object.keys(RANGE_LABELS) as AnalyticsRange[];
 
@@ -21,6 +22,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/admin/
   const range: AnalyticsRange = RANGES.includes(sp.range as AnalyticsRange) ? (sp.range as AnalyticsRange) : "30d";
 
   const [a, counts] = await Promise.all([computeAnalytics(store, range), store.counts()]);
+  const spend = await fetchAdSpend(a.googleAds.from, a.googleAds.to);
 
   const funnelTop = a.funnel[0]?.count ?? 0;
   const requestsTotal = a.sources.reduce((n, s) => n + s.count, 0);
@@ -130,6 +132,35 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/admin/
         </ChartCard>
       </div>
 
+      <GoogleAdsSection a={a} spend={spend} connected={spendConfigured()} />
     </div>
+  );
+}
+
+/** Paid search results from real records; spend only when Google Ads is connected, never estimated. */
+function GoogleAdsSection({ a, spend, connected }: { a: Awaited<ReturnType<typeof computeAnalytics>>; spend: AdSpend | null; connected: boolean }) {
+  const g = a.googleAds;
+  const per = (n: number) => (spend && n > 0 ? fullUsd(Math.round(spend.costCents / n)) : "–");
+  const spendNote = spend ? "Actual, from Google Ads" : connected ? "Couldn't reach Google Ads" : "Google Ads not connected";
+  return (
+    <section aria-labelledby="ads-title" className="flex flex-col gap-3">
+      <div>
+        <h2 id="ads-title" className="font-display text-2xl">Google Ads</h2>
+        <p className="text-xs text-ink-muted mt-1">
+          {a.periodLabel}. Customers whose first visit came from a Google ad and who sent a request in this period. Every number is from your records
+          or Google Ads; nothing is estimated.
+        </p>
+      </div>
+      <dl className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatTile label="Ad spend" value={spend ? fullUsd(spend.costCents) : "–"} note={spendNote} />
+        <StatTile label="Leads" value={String(g.leads)} note={spend ? `${spend.clicks} clicks` : undefined} />
+        <StatTile label="Bookings" value={String(g.bookings)} />
+        <StatTile label="Paying customers" value={String(g.payingCustomers)} />
+        <StatTile label="Revenue collected" value={fullUsd(g.revenueCents)} />
+        <StatTile label="Cost per lead" value={per(g.leads)} note={spend ? undefined : "Needs spend"} />
+        <StatTile label="Cost per booking" value={per(g.bookings)} note={spend ? undefined : "Needs spend"} />
+        <StatTile label="Cost per paying customer" value={per(g.payingCustomers)} note={spend ? undefined : "Needs spend"} />
+      </dl>
+    </section>
   );
 }

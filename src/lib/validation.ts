@@ -56,6 +56,13 @@ const meta = {
   utmSource: optionalText(80),
   utmMedium: optionalText(80),
   utmCampaign: optionalText(120),
+  utmTerm: optionalText(120),
+  utmContent: optionalText(120),
+  gclid: optionalText(250),
+  gbraid: optionalText(250),
+  wbraid: optionalText(250),
+  firstSeenAt: optionalText(40),
+  clickSeenAt: optionalText(40),
 };
 
 const consentFields = {

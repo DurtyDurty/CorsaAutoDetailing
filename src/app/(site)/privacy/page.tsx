@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <>
-      <PageHero eyebrow="Privacy" title="What we collect, and why." lede="Plain-language draft. Last updated September 2026." />
+      <PageHero eyebrow="Privacy" title="What we collect, and why." lede="Plain-language draft. Last updated October 2026." />
       <Container className="py-12 sm:py-16 max-w-3xl prose-basic">
         <h2>Who we are</h2>
         <p>
@@ -48,7 +48,7 @@ export default function PrivacyPage() {
             <strong>Maintenance-plan interest and contact messages:</strong> name, email, ZIP and your message.
           </li>
           <li>
-            <strong>Technical details:</strong> the page you arrived on, the referring site&rsquo;s domain, and campaign tags (utm_source, utm_medium, utm_campaign) if present. We do not store your IP address; a short-lived hashed value is used only to limit repeated submissions.
+            <strong>Technical details:</strong> the page you first arrived on and when, the referring site&rsquo;s domain, campaign tags (utm_source, utm_medium, utm_campaign, utm_term, utm_content) if present, and, if you came from one of our Google ads, the ad-click identifier Google adds to the link (gclid, gbraid or wbraid). Your browser keeps these in its own storage for up to 90 days so a later request can be credited to the ad; they identify an ad click, not you. We do not store your IP address; a short-lived hashed value is used only to limit repeated submissions.
           </li>
         </ul>
 
@@ -62,7 +62,10 @@ export default function PrivacyPage() {
 
         <h2>Who sees it</h2>
         <p>
-          The owner, through a password-protected dashboard. Your information is stored with our hosting and database provider and, when we email you, passed to our email delivery provider. We do not sell or rent your information, and we do not share it with advertisers.
+          The owner, through a password-protected dashboard. Your information is stored with our hosting and database provider and, when we email you, passed to our email delivery provider. We do not sell or rent your information, and we do not give your name or contact details to advertisers.
+        </p>
+        <p>
+          If you reached us by clicking one of our Google ads, we tell Google Ads when that click led to a request, a booking or a payment, so we can see which ads work. We send only the ad-click identifier, the date and the amount. We never send your name, email, phone number or address.
         </p>
 
         <h2>Analytics</h2>
@@ -70,7 +73,7 @@ export default function PrivacyPage() {
           {business.analytics.provider === "none"
             ? "This site currently runs no analytics."
             : "We use privacy-respecting, aggregate analytics that record events such as “form started” or “service viewed.” Analytics never receives your name, email, phone, address, notes or photos."}{" "}
-          We do not install advertising pixels.
+          We do not install advertising pixels or Google&rsquo;s advertising tag.
         </p>
 
         <h2>Retention</h2>
