@@ -201,8 +201,10 @@ export interface TodaySummary {
   unreadMessages: number;
   /** Appointments needing a decision (deposit pending / awaiting confirmation). */
   awaitingConfirmation: number;
-  /** Current job if one is underway, otherwise the next confirmed one today or later. */
+  /** The job to work on now: one underway, otherwise today's next confirmed job. Only ever today's. */
   focus: AppointmentSummary | null;
+  /** When nothing is left today: the next confirmed job on a later day (shown without actions). */
+  nextJob: AppointmentSummary | null;
   /** Times customers requested on the website, held for you to confirm or decline (soonest first). */
   toConfirm: AppointmentSummary[];
   timeline: AppointmentSummary[];

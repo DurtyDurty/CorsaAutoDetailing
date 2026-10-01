@@ -12,7 +12,7 @@ import { ConfirmCard } from "@/features/today/ConfirmCard";
 import { FocusCard } from "@/features/today/FocusCard";
 import { StatGrid } from "@/features/today/StatGrid";
 import { Timeline } from "@/features/today/Timeline";
-import { formatLongDate, formatTime, greeting } from "@/lib/format";
+import { formatLongDate, formatShortDay, formatTime, greeting } from "@/lib/format";
 
 export default function TodayScreen() {
   const { data, error, isPending, isRefetching, refetch, dataUpdatedAt } = useSummary();
@@ -59,9 +59,16 @@ export default function TodayScreen() {
             )}
 
             {data.focus ? (
-              <FocusCard appt={data.focus} isToday={data.timeline.some((a) => a.id === data.focus?.id)} />
+              <FocusCard appt={data.focus} isToday />
             ) : (
-              <EmptyState title="Nothing scheduled" detail="No upcoming jobs. New website bookings appear here automatically." />
+              <EmptyState
+                title={data.timeline.length > 0 ? "Done for today" : "No jobs today"}
+                detail={
+                  data.nextJob
+                    ? `Next job: ${formatShortDay(data.nextJob.startsAt)} at ${formatTime(data.nextJob.startsAt)}, ${data.nextJob.customerName} (${data.nextJob.serviceName ?? "service not set"}).`
+                    : "Nothing booked yet. New website requests appear here to confirm."
+                }
+              />
             )}
 
             <AttentionRow s={data} />

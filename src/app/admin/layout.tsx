@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getOwnerSession, signOut } from "@/lib/auth/owner";
-import { storeKind } from "@/lib/leads/store";
+import { getLeadStore, storeKind } from "@/lib/leads/store";
+import { listConversations } from "@/lib/owner/conversations";
 import { Wordmark } from "@/components/site/Wordmark";
 import { redirect } from "next/navigation";
 
@@ -15,6 +16,7 @@ export const dynamic = "force-dynamic";
 
 const NAV = [
   { href: "/admin", label: "Leads" },
+  { href: "/admin/inbox", label: "Inbox" },
   { href: "/admin/launch-list", label: "Launch list" },
   { href: "/admin/membership", label: "Plan interest" },
   { href: "/admin/appointments", label: "Appointments" },
@@ -30,6 +32,19 @@ async function signOutAction() {
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const session = await getOwnerSession();
   const demo = storeKind() === "demo";
+  // Unread conversations (website messages, requests, replies) for the Inbox badge.
+  const store = session ? await getLeadStore() : null;
+  const unread = store
+    ? (await listConversations(store, { filter: "unread", limit: 100 }).catch(() => ({ items: [] }))).items.length
+    : 0;
+  const badge = (href: string) =>
+    href === "/admin/inbox" && unread > 0 ? (
+      <span className="ml-1.5 inline-flex min-w-5 justify-center rounded-full bg-apex-deep px-1.5 text-[0.7rem] font-semibold text-white">
+        <span className="sr-only">, </span>
+        {unread}
+        <span className="sr-only"> unread</span>
+      </span>
+    ) : null;
   return (
     <div className="min-h-full flex flex-col bg-chalk">
       {demo && (
@@ -47,8 +62,9 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
             <div className="flex items-center gap-4 text-sm">
               <nav aria-label="Dashboard" className="hidden md:flex gap-5">
                 {NAV.map((n) => (
-                  <Link key={n.href} href={n.href} className="hover:text-apex-deep">
+                  <Link key={n.href} href={n.href} className="hover:text-apex-deep inline-flex items-center">
                     {n.label}
+                    {badge(n.href)}
                   </Link>
                 ))}
               </nav>
@@ -64,8 +80,9 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           <nav aria-label="Dashboard mobile" className="md:hidden border-t border-line overflow-x-auto">
             <div className="flex gap-5 px-5 py-2.5 text-sm whitespace-nowrap">
               {NAV.map((n) => (
-                <Link key={n.href} href={n.href} className="hover:text-apex-deep">
+                <Link key={n.href} href={n.href} className="hover:text-apex-deep inline-flex items-center">
                   {n.label}
+                  {badge(n.href)}
                 </Link>
               ))}
             </div>

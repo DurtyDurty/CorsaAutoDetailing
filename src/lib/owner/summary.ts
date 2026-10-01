@@ -63,9 +63,13 @@ export async function todaySummary(store: LeadStore, now: Date = new Date()): Pr
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 
   const underway = items.find((a) => FIELD_STATUSES.includes(a.status));
-  const next = items
+  const upcoming = items
     .filter((a) => a.status === "confirmed" && a.endsAt >= nowIso)
-    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0];
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  // Jobs only get action buttons on the day: future ones wait on the calendar.
+  const nextToday = upcoming.find((a) => a.startsAt < dayEnd);
+  const focus = underway ?? nextToday ?? null;
+  const nextJob = focus ? null : (upcoming.find((a) => a.startsAt >= dayEnd) ?? null);
   const toConfirm = items
     .filter((a) => a.status === "held" && a.depositStatus === "none" && a.endsAt >= nowIso)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
@@ -85,7 +89,8 @@ export async function todaySummary(store: LeadStore, now: Date = new Date()): Pr
     newRequests: requests.length,
     unreadMessages: unreadMessageLeads.size,
     awaitingConfirmation: toConfirm.length,
-    focus: underway ?? next ?? null,
+    focus,
+    nextJob,
     toConfirm,
     timeline,
   };

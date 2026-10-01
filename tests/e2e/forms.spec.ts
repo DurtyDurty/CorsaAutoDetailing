@@ -48,6 +48,39 @@ test.describe("lead forms (demo store)", () => {
     await expect(page.getByRole("heading", { level: 1 })).toContainText(/couldn.t find that submission/);
   });
 
+  test("dashboard inbox: open a conversation, email with a template, see it sent, archive it", async ({ page }) => {
+    await page.goto("/request?service=signature-full");
+    const form = page.getByRole("form", { name: "Launch list signup" });
+    const name = `Inbox ${unique()}`;
+    await form.getByLabel("First name").fill(name);
+    await form.getByLabel("ZIP code").fill("32068");
+    await form.getByLabel("Email", { exact: true }).fill(`${unique()}@example.com`);
+    await form.getByLabel(/I understand Corsa Auto Detailing will use/).check();
+    await form.getByRole("button", { name: "Join the launch list" }).click();
+    await expect(page).toHaveURL(/\/thanks\/launch-list\?ref=/);
+
+    await page.goto("/admin/login");
+    await page.getByLabel("Password").fill("corsa-demo");
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(page).toHaveURL(/\/admin$/);
+
+    await page.goto(`/admin/inbox?q=${encodeURIComponent(name)}`);
+    await page.getByRole("link", { name: new RegExp(name) }).first().click();
+    await expect(page).toHaveURL(/\/admin\/inbox\/[0-9a-f-]{36}/);
+    await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+    await expect(page.getByText("Joined the launch list")).toBeVisible();
+
+    await page.getByRole("combobox", { name: /Template/ }).selectOption({ label: "Request received" });
+    await expect(page.getByLabel("Subject")).toHaveValue(/We received your/);
+    await page.getByRole("button", { name: "Send email" }).click();
+    await expect(page.getByRole("status").filter({ hasText: /Sent to/ })).toBeVisible();
+    await expect(page.locator("ol").getByText("We received your", { exact: false }).first()).toBeVisible();
+
+    await page.getByRole("button", { name: "Archive" }).click();
+    await expect(page).toHaveURL(/\/admin\/inbox\?ok=Archived/);
+    await page.goto(`/admin/inbox?filter=archived&q=${encodeURIComponent(name)}`);
+    await expect(page.getByRole("link", { name: new RegExp(name) })).toBeVisible();
+  });
   test("owner can sign in (demo), see a launch-list lead, export CSV, and sign out", async ({ page }) => {
     // Create a lead of our own so this test does not depend on the others.
     await page.goto("/request?service=signature-full");

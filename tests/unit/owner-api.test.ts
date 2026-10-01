@@ -209,6 +209,17 @@ describe("owner API appointments", () => {
     expect(s.focus?.customerName).toBe("Riley Stone");
   });
 
+  it("keeps a job off Today until its day: it shows as the next job, without actions", async () => {
+    const r = await routes();
+    const { accessToken } = await signIn();
+    // 30 hours out is always a later calendar day.
+    const { appt } = await seedAppointment(30 * 60);
+    const s = (await (await r.summary.GET(req("/summary", { token: accessToken }))).json()) as TodaySummary;
+    expect(s.focus).toBeNull();
+    expect(s.nextJob?.id).toBe(appt.id);
+    expect(s.timeline.map((a) => a.id)).not.toContain(appt.id);
+  });
+
   it("lists and pages appointments", async () => {
     const r = await routes();
     const { accessToken } = await signIn();
