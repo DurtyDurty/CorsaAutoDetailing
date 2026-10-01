@@ -1,6 +1,18 @@
 # Corsa owner app: audit and plan
 
-Status (2026-10-01): Phase A (audit) and Phase B (shared contract, owner API, workflow migration) complete. Phase C next.
+Status (2026-10-01): Phases A and B complete. Phase C built (Expo SDK 57 app in `mobile/`: design system, sign-in, Today, More); waiting on publishing to Expo so it opens in Expo Go anywhere.
+
+## Phase C delivered
+
+- `mobile/`: Expo SDK 57, Expo Router (routes in `src/app`), TanStack Query, Zustand (session only), React Hook Form + shared Zod schemas, SecureStore (Keychain, this-device-only), haptics, NetInfo.
+- Design system (`src/design`): shared brand tokens, Barlow Condensed / Inter / JetBrains Mono like the website, 44 pt+ targets, status pills with text + glyph (not color alone), skeletons that respect Reduce Motion, error and empty states.
+- Brand assets rendered from `public/` by `mobile/scripts/build-brand-assets.mjs` (icon, splash mark, wordmark).
+- Screens: sign-in, Today (greeting, current/next job with call/text/navigate and the next workflow step, needs-you counts, booked/collected/outstanding, week and month, timeline; 30 s refresh, refetch on foreground, pull to refresh, stale-data notice), More (account, dashboard link, sign out / sign out everywhere).
+- API client: bearer token, early and on-401 refresh shared by concurrent requests, timeouts, offline-aware errors; signing out wipes the cache.
+- Metro resolves packages imported from `shared/` out of `mobile/node_modules` only.
+- `runtimeVersion` uses the `sdkVersion` policy so published updates open in Expo Go. Switch to `appVersion` or `fingerprint` before the first standalone (TestFlight) build.
+- Checks: `npm run check` in `mobile/` (lint, types, 11 Jest tests); iOS bundle builds with `npx expo export --platform ios`.
+- Not verified on a device yet.
 
 ## Phase B delivered
 

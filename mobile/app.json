@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "Corsa Owner",
+    "slug": "corsa-owner",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "corsaowner",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0c0d10",
+    "ios": {
+      "bundleIdentifier": "com.corsaautodetailing.owner",
+      "supportsTablet": false,
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.corsaautodetailing.owner",
+      "adaptiveIcon": {
+        "backgroundColor": "#0c0d10",
+        "foregroundImage": "./assets/splash-icon.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "backgroundColor": "#0c0d10"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "apiBaseUrl": "https://corsaautodetailing.com",
+      "dashboardUrl": "https://corsaautodetailing.com/admin"
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    }
+  }
+}
