@@ -16,8 +16,8 @@ export const HOME_FAQ: FaqItem[] = [
     a: "No. Every request is reviewed personally. You'll get a firm quote and, once we're open, a proposed time. Nothing is scheduled until you agree to it, and no payment is taken until availability and final pricing are confirmed.",
   },
   {
-    q: "Do I need to provide water?",
-    a: "No. You don't need to provide water at your location.",
+    q: "Do I need to provide water or power?",
+    a: "No. You don't need to provide water or an outlet at your location.",
   },
 
 ];

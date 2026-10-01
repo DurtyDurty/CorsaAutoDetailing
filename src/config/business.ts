@@ -26,7 +26,7 @@ export type ServiceId =
   | "monthly-maintenance"
   | "signature-interior"
   | "full-works-interior"
-  | "mold-remediation"
+
   | "signature-exterior"
   | "wax-and-buff";
 export type PackageGroupId = "popular" | "interior" | "exterior";
@@ -152,7 +152,7 @@ export const business = {
    * Bump whenever a price or service scope changes. Stored with each lead's
    * estimate so old inquiries can be understood later.
    */
-  pricingVersion: "2026-09-v7",
+  pricingVersion: "2026-09-v9",
   /** Shown next to all prices while in PRELAUNCH mode. */
   priceLabel: {
     PRELAUNCH: "Planned starting prices",
@@ -187,7 +187,8 @@ export const business = {
   ] satisfies PackageGroup[],
 
   // Ids are stable (URLs, saved leads); names changed 2026-09-30: signature-full = Essential Full Detail,
-  // platinum-full = Signature Full Detail, signature-interior/-exterior = Essential Interior/Exterior.
+  // platinum-full = Signature Full Detail, signature-interior/-exterior = Essential Interior/Exterior,
+  // wax-and-buff = Signature Exterior Detail.
   services: [
     {
       id: "signature-full",
@@ -198,6 +199,7 @@ export const business = {
       includesEverythingIn: null,
       includes: [
         "Exterior hand wash",
+        "Sealant application",
         "Wheels cleaned",
         "Tire shine",
         "Interior vacuum",
@@ -234,7 +236,7 @@ export const business = {
       includesEverythingIn: null,
       includesHeading: "Preferred client",
       includes: [
-        "1 exterior wash per month",
+        "1 exterior wash with sealant per month",
         "1 interior wash per month",
         "Priority booking",
         "15% off add-on services",
@@ -273,36 +275,25 @@ export const business = {
       billing: "visit",
     },
     {
-      id: "mold-remediation",
-      name: "Mold Remediation",
-      group: "interior",
-      tagline: "Deep Clean",
-      badge: null,
-      includesEverythingIn: "full-works-interior",
-      includes: ["Mold remediation treatment", "Ozone treatment", "Double shampoo"],
-      price: 300,
-      billing: "visit",
-    },
-    {
       id: "signature-exterior",
       name: "Essential Exterior Detail",
       group: "exterior",
       tagline: "Quick Refresh",
       badge: null,
       includesEverythingIn: null,
-      includes: ["Exterior hand wash", "Wheels cleaned", "Tire shine", "Spray sealant", "Exterior windows cleaned"],
+      includes: ["Exterior hand wash", "Sealant application", "Wheels cleaned", "Tire shine", "Exterior windows cleaned"],
       price: 125,
       billing: "visit",
     },
     {
       id: "wax-and-buff",
-      name: "Wax & Buff",
+      name: "Signature Exterior Detail",
       group: "exterior",
       tagline: "Showroom Shine",
       badge: null,
       includesEverythingIn: "signature-exterior",
       includes: ["Clay bar", "1-step paint enhancement", "Hand wax", "Plastic dressing"],
-      price: 349,
+      price: 200,
       billing: "visit",
     },
   ] satisfies ServiceDefinition[],

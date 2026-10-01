@@ -10,9 +10,9 @@ describe("computeEstimate", () => {
       "monthly-maintenance": 150,
       "signature-interior": 125,
       "full-works-interior": 225,
-      "mold-remediation": 300,
+
       "signature-exterior": 125,
-      "wax-and-buff": 349,
+      "wax-and-buff": 200,
     };
     expect(business.services.map((s) => s.id)).toEqual(Object.keys(expected));
     for (const service of business.services) {

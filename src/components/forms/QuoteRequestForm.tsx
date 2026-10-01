@@ -353,7 +353,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
           name="notes"
           label="Notes about the space"
           optional
-          hint="Is there room to work around the vehicle? Is an outdoor outlet nearby? This just helps us plan. It isn't a requirement, and you don't need to provide water."
+          hint="Is there room to work around the vehicle? This just helps us plan. You don't need to provide water or power."
           error={errors.notes}
         >
           {(p) => <Textarea name="notes" maxLength={1500} {...p} />}

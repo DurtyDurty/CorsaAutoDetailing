@@ -60,7 +60,7 @@ test.describe("public site", () => {
   test("services page shows every starting price, add-on range and disclosure", async ({ page }) => {
     await page.goto("/services");
     const text = (await page.textContent("main")) ?? "";
-    for (const price of ["$179", "$299", "$150/mo", "$125", "$225", "$300", "$349"]) expect(text).toContain(price);
+    for (const price of ["$179", "$299", "$150/mo", "$125", "$225", "$200"]) expect(text).toContain(price);
     for (const range of ["$35-$75", "$30-$75", "$50-$100", "$50", "$100-$150", "$175-$300"]) expect(text).toContain(range);
     expect(text).toMatch(/Planned starting price/);
     expect(text).toMatch(/Most popular/);
@@ -103,9 +103,9 @@ test.describe("public site", () => {
       ["Monthly Maintenance", "$150/mo"],
       ["Essential Interior Detail", "$125"],
       ["Full Works Interior", "$225"],
-      ["Mold Remediation", "$300"],
+
       ["Essential Exterior Detail", "$125"],
-      ["Wax & Buff", "$349"],
+      ["Signature Exterior Detail", "$200"],
 
     ]) {
       await expect(page.locator("article", { has: page.getByRole("heading", { name, exact: true }) })).toContainText(price);
@@ -116,7 +116,7 @@ test.describe("public site", () => {
   test("instant quote shows the starting price for the chosen package", async ({ page }) => {
     await page.goto("/services#quote");
     await page.getByLabel("Service", { exact: true }).selectOption("wax-and-buff");
-    await expect(page.locator("#quote")).toContainText("$349");
+    await expect(page.locator("#quote")).toContainText("$200");
   });
 
   test("before launch, package buttons ask for an email with the package pre-filled (no booking)", async ({ page }) => {
