@@ -202,9 +202,10 @@ export async function handleReceivedEmail(store: LeadStore, emailId: string): Pr
   const email = await fetchReceivedEmail(emailId);
   const from = parseAddress(email.from);
   if (!from.email.includes("@")) return { status: "ignored", reason: "No sender address." };
-  // Never file our own outgoing mail (or the owner copy) as a customer reply.
-  const ours = [process.env.EMAIL_FROM, process.env.OWNER_NOTIFY_EMAIL].filter(Boolean).map((a) => parseAddress(a!).email);
-  if (ours.includes(from.email)) return { status: "ignored", reason: "Sent by the business." };
+  // Never file the business's own sending address as a customer (e.g. a bounce or auto-reply loop).
+  // The owner's personal address is allowed: owner copies never go to the reply domain.
+  const sender = process.env.EMAIL_FROM ? parseAddress(process.env.EMAIL_FROM).email : null;
+  if (sender && from.email === sender) return { status: "ignored", reason: "Sent from the business address." };
 
   const lead = await findOrCreateLead(store, emailId, from, email.to ?? []);
   const rec = await store.recordInboundEmail({

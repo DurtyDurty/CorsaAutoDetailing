@@ -236,9 +236,13 @@ describe("receiving replies", () => {
     expect((await s.listLeads()).filter((l) => l.email === "new@example.com")).toHaveLength(1);
   });
 
-  it("ignores mail sent by the business itself", async () => {
-    received.e5 = { from: "owner@example.com", to: [`hello@${DOMAIN}`], subject: "x", text: "x", html: null, message_id: null, created_at: new Date().toISOString() };
+  it("ignores mail from the business sending address, but files the owner's own test emails", async () => {
+    process.env.EMAIL_FROM = "Corsa Auto Detailing <hello@corsaautodetailing.com>";
+    received.e5 = { from: "hello@corsaautodetailing.com", to: [`hello@${DOMAIN}`], subject: "x", text: "x", html: null, message_id: null, created_at: new Date().toISOString() };
     expect(await (await deliver("e5")).json()).toMatchObject({ status: "ignored" });
+    delete process.env.EMAIL_FROM;
+    received.e6 = { from: "owner@example.com", to: [`test@${DOMAIN}`], subject: "Testing", text: "Testing Corsa inbox", html: null, message_id: null, created_at: new Date().toISOString() };
+    expect(await (await deliver("e6")).json()).toMatchObject({ status: "stored" });
   });
 
   it("sends with a reply+ address only once receiving is set up", async () => {

@@ -28,12 +28,17 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
   }
-  if (event.type !== "email.received" || !event.data?.email_id) return NextResponse.json({ ignored: true });
+  if (event.type !== "email.received" || !event.data?.email_id) {
+    console.info(`[inbound] ignored event type ${event.type ?? "unknown"}`);
+    return NextResponse.json({ ignored: true });
+  }
 
   const store = await getLeadStore();
   if (!store) return NextResponse.json({ error: "Store unavailable." }, { status: 503 });
   try {
     const result = await handleReceivedEmail(store, event.data.email_id);
+    // Outcome only (no addresses or content) so delivery problems are visible in the logs.
+    console.info(`[inbound] ${result.status}${result.status === "ignored" ? `: ${result.reason}` : ""}`);
     return NextResponse.json(result);
   } catch (err) {
     console.error("[inbound] failed:", err instanceof Error ? err.message : err);
