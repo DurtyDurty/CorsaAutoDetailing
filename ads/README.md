@@ -104,6 +104,8 @@ If Google Ads isn't connected, spend shows "not connected". It is never estimate
 
 ## Activation checklist (owner action; the tool never does this)
 1. `validate-config` shows 0 errors. `campaign-status` shows the ads approved and nothing missing.
+   - The site is behind Vercel's Security Checkpoint, which challenged automated browsers on 2026-10-01.
+   - If an ad shows "Destination not working", Google's ad reviewer was blocked. Relax the Vercel Firewall challenge setting (verified bots, including Google's, should be allowed through).
 2. Auto-tagging is on. The conversion actions exist and uploads are `on`, with a `validate` day passed.
 3. The ad schedule matches your availability. The phone number is added if you want calls.
 4. Billing is set up in Google Ads, and the $10/day budget is confirmed.
