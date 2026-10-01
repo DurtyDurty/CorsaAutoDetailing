@@ -217,7 +217,7 @@ export interface ConversationSummary {
   customerName: string;
   email: string;
   kind: ConversationKind;
-  /** A website message or request nobody has handled yet. */
+  /** A website message or request nobody has handled yet, or a reply you haven't opened. */
   unread: boolean;
   lastActivityAt: string;
   preview: string;
@@ -227,7 +227,8 @@ export interface ConversationSummary {
 
 export type ConversationMessage =
   | { id: string; type: "website"; at: string; title: string; text: string }
-  | { id: string; type: "sent"; at: string; subject: string; body: string; status: "sent" | "failed"; error: string | null };
+  | { id: string; type: "sent"; at: string; subject: string; body: string; status: "sent" | "failed"; error: string | null }
+  | { id: string; type: "received"; at: string; from: string; subject: string; body: string };
 
 export interface ConversationDetail {
   leadId: string;

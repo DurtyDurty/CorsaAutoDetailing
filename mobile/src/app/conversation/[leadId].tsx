@@ -32,6 +32,17 @@ function Message({ m }: { m: ConversationMessage }) {
       </Card>
     );
   }
+  if (m.type === "received") {
+    return (
+      <Card style={styles.msg} accessible accessibilityLabel={`Reply from ${m.from}: ${m.subject}`}>
+        <Text variant="label" style={styles.replyLabel}>
+          Reply · {formatShortDay(m.at)} {formatTime(m.at)}
+        </Text>
+        {m.subject ? <Text variant="bodyStrong">{m.subject}</Text> : null}
+        <Text variant="body">{m.body}</Text>
+      </Card>
+    );
+  }
   const failed = m.status === "failed";
   return (
     <View style={[styles.sent, failed && styles.sentFailed]} accessible accessibilityLabel={`${failed ? "Not sent" : "You sent"}: ${m.subject}`}>
@@ -197,6 +208,7 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", gap: space.sm },
   action: { flex: 1 },
   msg: { gap: space.sm },
+  replyLabel: { color: colors.accent },
   sent: {
     gap: space.xs,
     backgroundColor: colors.surfaceRaised,

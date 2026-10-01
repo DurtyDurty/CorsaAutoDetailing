@@ -7,7 +7,9 @@ import type {
   AppointmentPatch,
   AppointmentRecord,
   AppointmentStatus,
+  InboundEmailRecord,
   NewAppointmentEvent,
+  NewInboundEmail,
   NewPayment,
   PaymentRecord,
   DashboardCounts,
@@ -68,6 +70,7 @@ interface DemoData {
   outboundEmails: OutboundEmailRecord[];
   appointmentEvents: AppointmentEventRecord[];
   payments: PaymentRecord[];
+  inboundEmails: InboundEmailRecord[];
 }
 
 // Resolved per call so the working directory can be swapped in tests.
@@ -109,9 +112,10 @@ async function load(): Promise<DemoData> {
       outboundEmails: parsed.outboundEmails ?? [],
       appointmentEvents: parsed.appointmentEvents ?? [],
       payments: parsed.payments ?? [],
+      inboundEmails: parsed.inboundEmails ?? [],
     };
   } catch {
-    return { leads: [], appointments: [], notifications: [], timeOff: [], outboundEmails: [], appointmentEvents: [], payments: [] };
+    return { leads: [], appointments: [], notifications: [], timeOff: [], outboundEmails: [], appointmentEvents: [], payments: [], inboundEmails: [] };
   }
 }
 
@@ -191,6 +195,7 @@ export class DemoLeadStore implements LeadStore {
       data.appointments = data.appointments.filter((a) => a.leadId !== id);
       data.notifications = data.notifications.filter((n) => n.leadId !== id);
       data.outboundEmails = data.outboundEmails.filter((e) => e.leadId !== id);
+      data.inboundEmails = data.inboundEmails.filter((e) => e.leadId !== id);
       const remaining = new Set(data.appointments.map((a) => a.id));
       data.appointmentEvents = data.appointmentEvents.filter((e) => remaining.has(e.appointmentId));
       data.payments = data.payments.filter((p) => remaining.has(p.appointmentId));
@@ -449,6 +454,43 @@ export class DemoLeadStore implements LeadStore {
       data.outboundEmails.push(rec);
       await save(data);
       return rec;
+    });
+  }
+
+  recordInboundEmail(input: NewInboundEmail) {
+    return serialized(async () => {
+      const data = await load();
+      if (data.inboundEmails.some((e) => e.providerEmailId === input.providerEmailId)) return null;
+      const rec: InboundEmailRecord = { ...input, id: randomUUID(), readAt: null, createdAt: now() };
+      data.inboundEmails.push(rec);
+      await save(data);
+      return rec;
+    });
+  }
+
+  async listInboundEmailsForLeads(leadIds: string[]) {
+    const data = await load();
+    const wanted = new Set(leadIds);
+    return data.inboundEmails.filter((e) => e.leadId && wanted.has(e.leadId)).sort((a, b) => b.receivedAt.localeCompare(a.receivedAt));
+  }
+
+  async leadsWithUnreadInbound() {
+    const data = await load();
+    return [...new Set(data.inboundEmails.filter((e) => !e.readAt && e.leadId).map((e) => e.leadId!))];
+  }
+
+  markInboundRead(leadId: string) {
+    return serialized(async () => {
+      const data = await load();
+      const ts = now();
+      let changed = false;
+      for (const e of data.inboundEmails) {
+        if (e.leadId === leadId && !e.readAt) {
+          e.readAt = ts;
+          changed = true;
+        }
+      }
+      if (changed) await save(data);
     });
   }
 

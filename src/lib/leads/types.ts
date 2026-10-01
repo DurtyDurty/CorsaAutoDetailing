@@ -234,6 +234,24 @@ export interface OutboundEmailRecord {
 
 export type NewOutboundEmail = Omit<OutboundEmailRecord, "id" | "createdAt">;
 
+/** A customer's email reply, received through Resend. */
+export interface InboundEmailRecord {
+  id: string;
+  providerEmailId: string;
+  leadId: string | null;
+  fromEmail: string;
+  fromName: string | null;
+  toEmail: string | null;
+  subject: string;
+  body: string;
+  messageId: string | null;
+  receivedAt: string;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export type NewInboundEmail = Omit<InboundEmailRecord, "id" | "createdAt" | "readAt">;
+
 /** Thrown by `bookOnlineSlot` when the slot (plus travel buffer) overlaps an active appointment. */
 export class SlotTakenError extends Error {
   constructor() {
@@ -347,6 +365,14 @@ export interface LeadStore {
   findOutboundEmailBySendKey(sendKey: string): Promise<OutboundEmailRecord | null>;
   /** Returns null if an email with the same sendKey was already recorded. */
   recordOutboundEmail(input: NewOutboundEmail): Promise<OutboundEmailRecord | null>;
+
+  /** Returns null if this provider email id was already stored (webhook retry). */
+  recordInboundEmail(input: NewInboundEmail): Promise<InboundEmailRecord | null>;
+  /** Newest first, for many leads at once. */
+  listInboundEmailsForLeads(leadIds: string[]): Promise<InboundEmailRecord[]>;
+  /** Lead ids with at least one unread reply. */
+  leadsWithUnreadInbound(): Promise<string[]>;
+  markInboundRead(leadId: string): Promise<void>;
 
   createNotification(leadId: string, kind: NotificationKind): Promise<NotificationRecord>;
   updateNotification(

@@ -44,11 +44,15 @@ export async function todaySummary(store: LeadStore, now: Date = new Date()): Pr
 
   // Expired holds stop counting as "to confirm" and free their times.
   await store.releaseExpiredHolds();
-  const [appts, requests, messages] = await Promise.all([
+  const [appts, requests, messages, unreadReplies] = await Promise.all([
     store.listAppointments({ from: rangeFrom, to: rangeTo }),
     store.listLeads({ leadType: "quote_request", stage: "new" }),
     store.listLeads({ leadType: "contact", stage: "new" }),
+    store.leadsWithUnreadInbound(),
   ]);
+  // A customer with a new website message and an unread reply counts once.
+  const unreadMessageLeads = new Set([...messages.map((l) => l.id), ...unreadReplies]);
+  for (const r of requests) unreadMessageLeads.delete(r.id);
   const items = await summarize(store, appts);
   const nowIso = now.toISOString();
 
@@ -79,7 +83,7 @@ export async function todaySummary(store: LeadStore, now: Date = new Date()): Pr
     week: bookedTotal(items, weekStart, weekEnd),
     month: bookedTotal(items, monthStart, monthEnd),
     newRequests: requests.length,
-    unreadMessages: messages.length,
+    unreadMessages: unreadMessageLeads.size,
     awaitingConfirmation: toConfirm.length,
     focus: underway ?? next ?? null,
     toConfirm,

@@ -1,6 +1,7 @@
 import "server-only";
 import { business, getService, getVehicleCategory } from "@/config/business";
 import { getEmailAdapter } from "@/lib/email";
+import { replyAddressFor } from "@/lib/inbound";
 import type { AppointmentRecord, LeadRecord, LeadStore, NotificationKind, NotificationRecord } from "@/lib/leads/types";
 import { billingSuffix, formatUsd } from "@/lib/pricing";
 import { formatEastern } from "@/lib/time";
@@ -197,7 +198,7 @@ async function attempt(store: LeadStore, record: NotificationRecord, lead: LeadR
             to,
             subject: customerSubject(lead, booking, requested),
             text: booking ? bookingBody(lead, booking) : customerBody(lead, requested),
-            replyTo: business.contact.email ?? undefined,
+            replyTo: replyAddressFor(lead.id) ?? business.contact.email ?? undefined,
           },
     );
     await store.updateNotification(record.id, {

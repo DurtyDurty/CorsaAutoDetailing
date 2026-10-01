@@ -5,7 +5,9 @@ import type {
   AppointmentPatch,
   AppointmentRecord,
   AppointmentStatus,
+  InboundEmailRecord,
   NewAppointmentEvent,
+  NewInboundEmail,
   NewPayment,
   PaymentRecord,
   DashboardCounts,
@@ -185,6 +187,23 @@ function outboundFromRow(r: Row): OutboundEmailRecord {
     status: r.status as OutboundEmailRecord["status"],
     providerMessageId: (r.provider_message_id as string | null) ?? null,
     error: (r.error as string | null) ?? null,
+    createdAt: r.created_at as string,
+  };
+}
+
+function inboundFromRow(r: Row): InboundEmailRecord {
+  return {
+    id: r.id as string,
+    providerEmailId: r.provider_email_id as string,
+    leadId: (r.lead_id as string | null) ?? null,
+    fromEmail: r.from_email as string,
+    fromName: (r.from_name as string | null) ?? null,
+    toEmail: (r.to_email as string | null) ?? null,
+    subject: (r.subject as string | null) ?? "",
+    body: (r.body as string | null) ?? "",
+    messageId: (r.message_id as string | null) ?? null,
+    receivedAt: r.received_at as string,
+    readAt: (r.read_at as string | null) ?? null,
     createdAt: r.created_at as string,
   };
 }
@@ -558,6 +577,40 @@ export class SupabaseLeadStore implements LeadStore {
     if (error?.code === "23505") return null;
     if (error) throw new Error(error.message);
     return outboundFromRow(data);
+  }
+
+  async recordInboundEmail(input: NewInboundEmail) {
+    const { data, error } = await this.client.from("inbound_emails").insert(snake({ ...input })).select("*").single();
+    // 23505 = unique violation on provider_email_id: this webhook was already handled.
+    if (error?.code === "23505") return null;
+    if (error) throw new Error(error.message);
+    return inboundFromRow(data);
+  }
+
+  async listInboundEmailsForLeads(leadIds: string[]) {
+    const results = await Promise.all(
+      batchesOf(leadIds).map(async (batch) => {
+        const { data, error } = await this.client.from("inbound_emails").select("*").in("lead_id", batch);
+        if (error) throw new Error(error.message);
+        return (data ?? []).map(inboundFromRow);
+      }),
+    );
+    return results.flat().sort((a, b) => b.receivedAt.localeCompare(a.receivedAt));
+  }
+
+  async leadsWithUnreadInbound() {
+    const { data, error } = await this.client.from("inbound_emails").select("lead_id").is("read_at", null).not("lead_id", "is", null);
+    if (error) throw new Error(error.message);
+    return [...new Set((data ?? []).map((r) => r.lead_id as string))];
+  }
+
+  async markInboundRead(leadId: string) {
+    const { error } = await this.client
+      .from("inbound_emails")
+      .update({ read_at: new Date().toISOString() })
+      .eq("lead_id", leadId)
+      .is("read_at", null);
+    if (error) throw new Error(error.message);
   }
 
   async createNotification(leadId: string, kind: NotificationKind) {

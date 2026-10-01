@@ -1,6 +1,7 @@
 import "server-only";
 import { business } from "@/config/business";
 import { getEmailAdapter } from "@/lib/email";
+import { replyAddressFor } from "@/lib/inbound";
 import type { LeadStore, OutboundEmailRecord } from "@/lib/leads/types";
 import { composeOwnerEmail } from "@/lib/owner-email";
 import { formatCents } from "@shared/money";
@@ -83,7 +84,8 @@ export async function sendOwnerEmail(
       to: lead.email,
       subject: input.subject,
       text: body,
-      replyTo: business.contact.email ?? undefined,
+      // Replies come back into the app when receiving is set up; otherwise to the contact inbox.
+      replyTo: replyAddressFor(leadId) ?? business.contact.email ?? undefined,
       idempotencyKey: `owner-email-${input.sendKey}`,
     });
     record = await store.recordOutboundEmail({ ...base, status: "sent", providerMessageId: id });
