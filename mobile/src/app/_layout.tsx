@@ -72,6 +72,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="conversation/[leadId]" options={{ ...pushed, title: "Conversation" }} />
             <Stack.Screen name="appointment/new" options={{ ...pushed, title: "New appointment", presentation: "modal" }} />
+            <Stack.Screen name="appointment/[id]" options={{ ...pushed, title: "Job" }} />
           </Stack.Protected>
         </Stack>
       </QueryClientProvider>

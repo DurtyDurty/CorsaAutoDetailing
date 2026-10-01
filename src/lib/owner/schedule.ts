@@ -41,7 +41,10 @@ export interface ScheduleInput {
  */
 export async function assertCanSchedule(
   store: LeadStore,
-  input: Pick<ScheduleInput, "date" | "time" | "durationMinutes" | "override">,
+  input: Pick<ScheduleInput, "date" | "time" | "durationMinutes" | "override"> & {
+    /** Rescheduling: the appointment being moved doesn't conflict with itself. */
+    excludeId?: string;
+  },
 ): Promise<{ start: Date; end: Date }> {
   if (business.mode !== "LIVE") {
     throw new ApiError("unavailable", "Appointments can't be booked while the site is in pre-launch mode.");
@@ -66,6 +69,7 @@ export async function assertCanSchedule(
   const nowIso = new Date().toISOString();
   const clash = nearby.find(
     (a) =>
+      a.id !== input.excludeId &&
       isBlocking(a.status) &&
       !(a.status === "held" && a.holdExpiresAt !== null && a.holdExpiresAt < nowIso) &&
       overlapsWithBuffer({ start: new Date(a.startsAt), end: new Date(a.endsAt) }, { start, end }, buffer),
@@ -74,7 +78,7 @@ export async function assertCanSchedule(
   return { start, end };
 }
 
-const overlapMessage = (buffer: number) =>
+export const overlapMessage = (buffer: number) =>
   `That overlaps another job (including the ${buffer}-minute travel buffer). Pick another time.`;
 
 /** Books a confirmed appointment for an existing lead, after assertCanSchedule. */

@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { Alert, StyleSheet, View } from "react-native";
 import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
 import type { AppointmentSummary } from "@shared/api";
 import { formatCents } from "@shared/money";
 import { ApiClientError } from "@/api/client";
@@ -30,9 +31,17 @@ export function FocusCard({ appt, isToday }: { appt: AppointmentSummary; isToday
     change.mutate(
       { id: appt.id, to: step.to, requestId: pending.current.id },
       {
-        onSuccess: () => {
+        onSuccess: (res) => {
           pending.current = null;
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          // Close-out: a finished job with money still owed goes straight to recording the payment.
+          const due = res.appointment.balance.balanceDueCents;
+          if (step.to === "completed" && due > 0) {
+            Alert.alert("Job complete", `${formatCents(due)} is still due. Record the payment now?`, [
+              { text: "Later", style: "cancel" },
+              { text: "Record payment", onPress: () => router.push({ pathname: "/appointment/[id]", params: { id: appt.id } }) },
+            ]);
+          }
         },
         onError: (err) => {
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -85,6 +94,7 @@ export function FocusCard({ appt, isToday }: { appt: AppointmentSummary; isToday
         {address && <Button label="Navigate" variant="secondary" onPress={() => void navigateTo(address)} style={styles.action} />}
       </View>
       {step && <Button label={step.label} haptic="medium" loading={change.isPending} onPress={onStep} fullWidth />}
+      <Button label="Details, payment & notes" variant="ghost" onPress={() => router.push({ pathname: "/appointment/[id]", params: { id: appt.id } })} />
     </Card>
   );
 }

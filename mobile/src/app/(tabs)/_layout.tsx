@@ -12,7 +12,7 @@ function Glyph({ char, color }: { char: string; color: ColorValue }) {
   );
 }
 
-/** Tabs appear as each area is built: Calendar and Customers come next. */
+/** Tabs appear as each area is built: Customers comes next. */
 export default function TabsLayout() {
   const { data } = useSummary();
   const unread = data ? data.newRequests + data.unreadMessages : 0;
@@ -34,6 +34,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color }) => <Glyph char="◉" color={color} />,
         }}
       />
+      <Tabs.Screen name="calendar" options={{ title: "Calendar", tabBarIcon: ({ color }) => <Glyph char="▦" color={color} /> }} />
       <Tabs.Screen
         name="inbox"
         options={{

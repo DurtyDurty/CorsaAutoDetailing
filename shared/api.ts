@@ -357,3 +357,43 @@ export interface BookingOptions {
   /** False before launch: the server refuses bookings in PRELAUNCH mode. */
   bookingOpen: boolean;
 }
+/* ---------- Working a job: reschedule, payments, receipt, notes ---------- */
+
+export const rescheduleSchema = z.object({
+  requestId: z.string().uuid(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date."),
+  time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Pick a time."),
+  durationMinutes: z.coerce.number().int().min(15).max(600),
+  /** Allow outside working hours / a day off. Never allows overlapping another job. */
+  override: z.boolean().default(false),
+  /** Email the customer the new time. */
+  notifyCustomer: z.boolean().default(true),
+});
+export type RescheduleInput = z.infer<typeof rescheduleSchema>;
+
+/** What the owner can record by hand; Stripe deposits are recorded by the server. */
+export const RECORDABLE_METHODS = ["card_reader", "cash", "digital"] as const;
+
+export const recordPaymentSchema = z.object({
+  requestId: z.string().uuid(),
+  kind: z.enum(["deposit", "balance", "refund"]).default("balance"),
+  method: z.enum(RECORDABLE_METHODS),
+  amountCents: z.coerce.number().int().min(1, "Enter an amount.").max(1_000_000, "That amount looks too large."),
+  note: z.string().trim().max(500).optional(),
+});
+export type RecordPaymentInput = z.infer<typeof recordPaymentSchema>;
+
+export const noteSchema = z.object({
+  requestId: z.string().uuid(),
+  note: z.string().trim().min(1, "Write a note.").max(1000),
+});
+
+export const receiptSchema = z.object({ requestId: z.string().uuid() });
+
+export interface WorkResponse {
+  appointment: AppointmentDetail;
+  /** For reschedule and receipt: whether the customer email went out. */
+  customerEmail: { status: "sent" | "failed" | "skipped"; error: string | null };
+  /** True when this requestId was already applied (double tap or retry). */
+  unchanged: boolean;
+}

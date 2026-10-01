@@ -1,4 +1,5 @@
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { router } from "expo-router";
 import type { AppointmentSummary } from "@shared/api";
 import { Card } from "@/design/Card";
 import { StatusPill } from "@/design/StatusPill";
@@ -10,11 +11,12 @@ export function Timeline({ items, focusId }: { items: AppointmentSummary[]; focu
   return (
     <Card style={styles.card}>
       {items.map((a, i) => (
-        <View
+        <Pressable
           key={a.id}
-          style={[styles.row, i > 0 && styles.divider]}
-          accessible
-          accessibilityLabel={`${formatTime(a.startsAt)}, ${a.customerName}, ${a.serviceName ?? "service not set"}`}
+          style={({ pressed }) => [styles.row, i > 0 && styles.divider, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={`${formatTime(a.startsAt)}, ${a.customerName}, ${a.serviceName ?? "service not set"}. Opens the job.`}
+          onPress={() => router.push({ pathname: "/appointment/[id]", params: { id: a.id } })}
         >
           <View style={styles.time}>
             <Text variant="bodyStrong" style={a.id === focusId ? styles.focus : undefined}>
@@ -26,7 +28,7 @@ export function Timeline({ items, focusId }: { items: AppointmentSummary[]; focu
             <Text variant="caption">{a.serviceName ?? "Service not set"}</Text>
             <StatusPill status={a.status} />
           </View>
-        </View>
+        </Pressable>
       ))}
     </Card>
   );
@@ -39,4 +41,5 @@ const styles = StyleSheet.create({
   time: { width: 76 },
   focus: { color: colors.accent },
   body: { flex: 1, gap: space.xs },
+  pressed: { opacity: 0.6 },
 });

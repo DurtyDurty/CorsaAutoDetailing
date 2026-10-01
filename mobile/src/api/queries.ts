@@ -3,7 +3,12 @@ import NetInfo from "@react-native-community/netinfo";
 import { randomUUID } from "expo-crypto";
 import { AppState, Platform } from "react-native";
 import type {
+  AppointmentDetail,
+  AppointmentSummary,
   BookingOptions,
+  RecordPaymentInput,
+  RescheduleInput,
+  WorkResponse,
   ConversationDetail,
   ConversationSummary,
   CreateAppointmentInput,
@@ -53,6 +58,8 @@ export const keys = {
   conversation: (leadId: string) => ["conversation", leadId] as const,
   bookingOptions: ["booking-options"] as const,
   customers: (q: string) => ["customers", q] as const,
+  appointments: (from: string, to: string) => ["appointments", from, to] as const,
+  appointmentsAll: ["appointments"] as const,
 };
 
 export function useSummary() {
@@ -98,6 +105,7 @@ export function useChangeStatus() {
     onSuccess: (data) => {
       qc.setQueryData(keys.appointment(data.appointment.id), data.appointment);
       void qc.invalidateQueries({ queryKey: keys.summary });
+      void qc.invalidateQueries({ queryKey: keys.appointmentsAll });
     },
   });
 }
@@ -206,3 +214,53 @@ export function useDeleteConversation() {
     },
   });
 }
+/* ---------- Calendar and job details ---------- */
+
+/** Every appointment overlapping [from, to] (all pages). */
+export function useAppointments(from: string, to: string) {
+  return useQuery({
+    queryKey: keys.appointments(from, to),
+    queryFn: async ({ signal }) => {
+      const items: AppointmentSummary[] = [];
+      let cursor: string | null = null;
+      do {
+        const params = new URLSearchParams({ from, to, limit: "200" });
+        if (cursor) params.set("cursor", cursor);
+        const page: Page<AppointmentSummary> = await apiRequest<Page<AppointmentSummary>>(`/appointments?${params}`, { signal });
+        items.push(...page.items);
+        cursor = page.nextCursor;
+      } while (cursor);
+      return items;
+    },
+    refetchInterval: 60_000,
+  });
+}
+
+export function useAppointment(id: string) {
+  return useQuery({
+    queryKey: keys.appointment(id),
+    queryFn: ({ signal }) => apiRequest<AppointmentDetail>(`/appointments/${id}`, { signal }),
+    enabled: !!id,
+  });
+}
+
+/** After any change to a job: refresh it, Today, the calendar and its conversation. */
+function refreshJob(qc: ReturnType<typeof useQueryClient>, detail: AppointmentDetail) {
+  qc.setQueryData(keys.appointment(detail.id), detail);
+  void qc.invalidateQueries({ queryKey: keys.summary });
+  void qc.invalidateQueries({ queryKey: keys.appointmentsAll });
+  void qc.invalidateQueries({ queryKey: keys.conversation(detail.leadId) });
+}
+
+function useWork<V>(path: (v: V) => string, body: (v: V) => unknown) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: V) => apiRequest<WorkResponse>(path(v), { method: "POST", body: body(v) }),
+    onSuccess: (data) => refreshJob(qc, data.appointment),
+  });
+}
+
+export const useReschedule = (id: string) => useWork<RescheduleInput>(() => `/appointments/${id}/reschedule`, (v) => v);
+export const useRecordPayment = (id: string) => useWork<RecordPaymentInput>(() => `/appointments/${id}/payments`, (v) => v);
+export const useSendReceipt = (id: string) => useWork<{ requestId: string }>(() => `/appointments/${id}/receipt`, (v) => v);
+export const useAddNote = (id: string) => useWork<{ requestId: string; note: string }>(() => `/appointments/${id}/notes`, (v) => v);
