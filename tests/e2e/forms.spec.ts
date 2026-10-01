@@ -68,7 +68,7 @@ test.describe("lead forms (demo store)", () => {
     await page.goto("/admin/launch-list");
     await page.getByRole("link", { name }).first().click();
     await expect(page).toHaveURL(/\/admin\/leads\//);
-    await expect(page.getByText("Signature Full Detail").first()).toBeVisible();
+    await expect(page.getByText("Essential Full Detail").first()).toBeVisible();
 
     // Write back from the dashboard (demo outbox stands in for Resend).
     await expect(page.getByRole("heading", { name: `Email ${name}` })).toBeVisible();

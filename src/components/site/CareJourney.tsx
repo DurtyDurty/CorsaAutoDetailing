@@ -2,11 +2,11 @@ import { getService } from "@/config/business";
 import { Arrow, ButtonLink } from "@/components/ui/Button";
 import { Container, Eyebrow } from "@/components/ui/Section";
 
-/** "Start With Platinum. Keep It Fresh Monthly." — recommended customer journey. */
+/** "Start With Signature. Keep It Fresh Monthly." — recommended customer journey. */
 export function CareJourney() {
-  const [platinum, monthly] = [getService("platinum-full"), getService("monthly-maintenance")];
+  const [signature, monthly] = [getService("platinum-full"), getService("monthly-maintenance")];
   const steps = [
-    { n: "01", name: platinum?.name, when: "First visit", what: "A full reset, inside and out." },
+    { n: "01", name: signature?.name, when: "First visit", what: "A full reset, inside and out." },
     { n: "02", name: monthly?.name, when: "Every month", what: "One exterior and one interior wash a month, plus priority booking." },
   ];
   return (
@@ -17,10 +17,10 @@ export function CareJourney() {
           <div>
             <Eyebrow onDark>Your Corsa care plan</Eyebrow>
             <h2 id="care-journey" className="mt-5 font-display italic font-extrabold text-5xl sm:text-6xl text-balance">
-              Start With Platinum. Keep It Fresh Monthly.
+              Start With Signature. Keep It Fresh Monthly.
             </h2>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-chalk/80">
-              For the best results, begin with the Platinum Full Detail to bring your vehicle back. Keep those results
+              For the best results, begin with the Signature Full Detail to bring your vehicle back. Keep those results
               with Monthly Maintenance: a wash inside and out every month, priority booking and 15% off add-ons.
             </p>
             <ButtonLink href="/request?service=monthly-maintenance" variant="apex" size="lg" className="mt-9">

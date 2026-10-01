@@ -187,10 +187,12 @@ export const business = {
     { id: "exterior", title: "Exterior packages", subtitle: "Spotless exterior detailing" },
   ] satisfies PackageGroup[],
 
+  // Ids are stable (URLs, saved leads); names changed 2026-09-30: signature-full = Essential Full Detail,
+  // platinum-full = Signature Full Detail, signature-interior/-exterior = Essential Interior/Exterior.
   services: [
     {
       id: "signature-full",
-      name: "Signature Full Detail",
+      name: "Essential Full Detail",
       group: "popular",
       tagline: null,
       badge: null,
@@ -208,7 +210,7 @@ export const business = {
     },
     {
       id: "platinum-full",
-      name: "Platinum Full Detail",
+      name: "Signature Full Detail",
       group: "popular",
       tagline: "Bring It Back",
       badge: "Most popular",
@@ -244,7 +246,7 @@ export const business = {
     },
     {
       id: "signature-interior",
-      name: "Signature Interior Detail",
+      name: "Essential Interior Detail",
       group: "interior",
       tagline: "Quick Refresh",
       badge: null,
@@ -284,7 +286,7 @@ export const business = {
     },
     {
       id: "signature-exterior",
-      name: "Signature Exterior Detail",
+      name: "Essential Exterior Detail",
       group: "exterior",
       tagline: "Quick Refresh",
       badge: null,

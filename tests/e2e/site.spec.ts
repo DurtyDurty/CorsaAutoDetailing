@@ -85,8 +85,8 @@ test.describe("public site", () => {
   test("home page shows packages but no prices", async ({ page }) => {
     await page.goto("/");
     const text = (await page.textContent("main")) ?? "";
+    expect(text).toContain("Essential Full Detail");
     expect(text).toContain("Signature Full Detail");
-    expect(text).toContain("Platinum Full Detail");
     expect(text).toContain("Monthly Maintenance");
     expect(text).not.toMatch(/\$\s?\d/);
     const jsonLd = (await page.locator('script[type="application/ld+json"]').allTextContents()).join("");
@@ -98,13 +98,13 @@ test.describe("public site", () => {
   test("services page shows every package with one starting price", async ({ page }) => {
     await page.goto("/services");
     for (const [name, price] of [
-      ["Signature Full Detail", "$179"],
-      ["Platinum Full Detail", "$299"],
+      ["Essential Full Detail", "$179"],
+      ["Signature Full Detail", "$299"],
       ["Monthly Maintenance", "$150/mo"],
-      ["Signature Interior Detail", "$125"],
+      ["Essential Interior Detail", "$125"],
       ["Full Works Interior", "$225"],
       ["Mold Remediation", "$300"],
-      ["Signature Exterior Detail", "$125"],
+      ["Essential Exterior Detail", "$125"],
       ["Wax & Buff", "$349"],
       ["Ceramic Coating", "$799"],
     ]) {
@@ -122,7 +122,7 @@ test.describe("public site", () => {
   test("before launch, package buttons ask for an email with the package pre-filled (no booking)", async ({ page }) => {
     await page.goto("/services");
     await expect(page.getByRole("link", { name: "Book now" })).toHaveCount(0);
-    // Second card is Platinum.
+    // Second card is Signature.
     await page.locator("article").getByRole("link", { name: "Get launch updates" }).nth(1).click();
     await expect(page).toHaveURL(/\/request\?service=platinum-full$/);
     await expect(page.getByRole("form", { name: "Service request" })).toHaveCount(0);

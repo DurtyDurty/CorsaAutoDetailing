@@ -76,7 +76,7 @@ export default function TermsPage() {
 
         <h2>At your location</h2>
         <ul>
-          <li>We ask about working space and access to water or power so we can plan. This information helps us prepare; it isn&rsquo;t a condition of service and doesn&rsquo;t change your price.</li>
+          <li>You don&rsquo;t need to provide water. We ask about working space and access to power so we can plan; this information helps us prepare, isn&rsquo;t a condition of service and doesn&rsquo;t change your price.</li>
           <li>Some HOAs and workplaces restrict vehicle washing on their property. Please check before we arrive.</li>
         </ul>
 

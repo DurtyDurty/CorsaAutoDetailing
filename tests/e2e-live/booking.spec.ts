@@ -58,7 +58,7 @@ async function openSlots(page: Page, service: string): Promise<string[]> {
 test.describe("after launch without deposits (LIVE mode, current production setup)", () => {
   test("Book now opens the request form with the package chosen and no vehicle size", async ({ page, isMobile }) => {
     await page.goto("/services");
-    await page.locator("article", { has: page.getByRole("heading", { name: "Platinum Full Detail" }) }).getByRole("link", { name: "Book now" }).click();
+    await page.locator("article", { has: page.getByRole("heading", { name: "Signature Full Detail" }) }).getByRole("link", { name: "Book now" }).click();
     await expect(page).toHaveURL(/\/request\?service=platinum-full$/);
     const form = page.getByRole("form", { name: "Service request" });
     await expect(form.getByLabel("Service", { exact: true })).toHaveValue("platinum-full");

@@ -2,15 +2,10 @@ import { business } from "@/config/business";
 import type { FaqItem } from "@/components/site/Faq";
 
 export const HOME_FAQ: FaqItem[] = [
-  {
-    q: "When are you opening?",
-    a: business.launchDate
-      ? `We're planning to open on ${business.launchDate}. Launch-list members hear first if anything changes.`
-      : "We don't have a confirmed opening date yet. We're finishing equipment purchases and practice work first. Join the launch list and we'll tell you the moment scheduling opens.",
-  },
+
   {
     q: "Which package should I choose?",
-    a: "For a complete reset inside and out, start with the Platinum Full Detail. If only the inside or the outside needs attention, choose one of the interior or exterior packages. After that, Monthly Maintenance keeps it fresh.",
+    a: "For a complete reset inside and out, start with the Signature Full Detail. If only the inside or the outside needs attention, choose one of the interior or exterior packages. After that, Monthly Maintenance keeps it fresh.",
   },
   {
     q: "Are the prices final?",
@@ -21,12 +16,12 @@ export const HOME_FAQ: FaqItem[] = [
     a: "No. Every request is reviewed personally. You'll get a firm quote and, once we're open, a proposed time. Nothing is scheduled until you agree to it, and no payment is taken until availability and final pricing are confirmed.",
   },
   {
-    q: "Do I need to provide water or power?",
-    a: "We ask about it so we can plan the visit. It helps to know what's available, but the answer doesn't change your quote and isn't a requirement to book.",
+    q: "Do I need to provide water?",
+    a: "No. You don't need to provide water at your location.",
   },
   {
     q: "Do you offer ceramic coating?",
-    a: "Yes. The Ceramic Coating package comes in 1-, 3- and 5-year options; its starting price is on the services page. The Signature Exterior Detail's spray sealant is lighter protection and isn't a ceramic coating.",
+    a: "Yes. The Ceramic Coating package comes in 1-, 3- and 5-year options; its starting price is on the services page. The Essential Exterior Detail's spray sealant is lighter protection and isn't a ceramic coating.",
   },
 ];
 
