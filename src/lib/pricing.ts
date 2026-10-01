@@ -1,4 +1,4 @@
-import { business, getService, getVehicleCategory } from "@/config/business";
+import { business, getService, getVehicleCategory, type ServiceDefinition } from "@/config/business";
 
 export interface EstimateLine {
   label: string;
@@ -9,10 +9,13 @@ export interface EstimateSnapshot {
   pricingVersion: string;
   serviceId: string;
   serviceName: string;
-  vehicleCategoryId: string;
-  vehicleCategoryLabel: string;
-  /** `null` when the vehicle category needs a custom quote. */
+  /** Older estimates were priced by vehicle size; newer ones have none. */
+  vehicleCategoryId: string | null;
+  vehicleCategoryLabel: string | null;
+  /** Older estimates: `null` when the vehicle category needed a custom quote. */
   basePrice: number | null;
+  /** Missing on estimates saved before monthly packages existed (= "visit"). */
+  billing?: ServiceDefinition["billing"];
   addOns: EstimateLine[];
   /** `null` when any component requires a custom quote. */
   total: number | null;
@@ -25,7 +28,8 @@ export interface EstimateSnapshot {
 
 export interface EstimateInput {
   serviceId: string;
-  vehicleCategoryId: string;
+  /** Recorded if supplied; never changes the price. */
+  vehicleCategoryId?: string | null;
   addOnIds?: string[];
   condition?: "normal" | "deeper" | "unsure" | null;
   conditionFlags?: string[];
@@ -53,12 +57,9 @@ export const CONDITION_FLAGS = Object.keys(CONDITION_FLAG_LABELS);
  */
 export function computeEstimate(input: EstimateInput): EstimateSnapshot | null {
   const service = getService(input.serviceId);
-  const vehicle = getVehicleCategory(input.vehicleCategoryId);
-  if (!service || !vehicle) return null;
-
-  const basePrice = vehicle.priced
-    ? service.prices[vehicle.id as keyof typeof service.prices]
-    : null;
+  if (!service) return null;
+  const vehicle = input.vehicleCategoryId ? getVehicleCategory(input.vehicleCategoryId) : undefined;
+  const basePrice = service.price;
 
   const addOns: EstimateLine[] = (input.addOnIds ?? [])
     .map((id) => business.addOns.find((a) => a.id === id))
@@ -66,9 +67,6 @@ export function computeEstimate(input: EstimateInput): EstimateSnapshot | null {
     .map((a) => ({ label: a.name, amount: a.price }));
 
   const reviewNotes: string[] = [];
-  if (!vehicle.priced) {
-    reviewNotes.push(`${vehicle.label} vehicles receive a custom quote.`);
-  }
   if (input.condition === "deeper") {
     reviewNotes.push("You indicated the vehicle needs deeper cleaning. We'll review scope with you before quoting.");
   } else if (input.condition === "unsure") {
@@ -81,21 +79,19 @@ export function computeEstimate(input: EstimateInput): EstimateSnapshot | null {
     );
   }
 
-  const requiresCustomQuote = basePrice === null;
-  const total = requiresCustomQuote
-    ? null
-    : basePrice + addOns.reduce((sum, a) => sum + a.amount, 0);
+  const total = basePrice + addOns.reduce((sum, a) => sum + a.amount, 0);
 
   return {
     pricingVersion: business.pricingVersion,
     serviceId: service.id,
     serviceName: service.name,
-    vehicleCategoryId: vehicle.id,
-    vehicleCategoryLabel: vehicle.label,
+    vehicleCategoryId: vehicle?.id ?? null,
+    vehicleCategoryLabel: vehicle?.label ?? null,
     basePrice,
+    billing: service.billing,
     addOns,
     total,
-    requiresCustomQuote,
+    requiresCustomQuote: false,
     reviewNotes,
     taxNotice: business.taxNotice,
     finalQuoteNotice: business.finalQuoteNotice,
@@ -115,9 +111,17 @@ export function formatUsdRange(min: number, max: number): string {
   return min === max ? formatUsd(min) : `${formatUsd(min)}-${formatUsd(max)}`;
 }
 
-/** Lowest priced base for a service, for "from $120" style copy. */
-export function startingPrice(serviceId: string): number | null {
-  const service = getService(serviceId);
-  if (!service) return null;
-  return Math.min(...Object.values(service.prices));
+/** "/mo" for monthly packages, "" otherwise. */
+export function billingSuffix(billing: ServiceDefinition["billing"] | undefined): string {
+  return billing === "monthly" ? "/mo" : "";
+}
+
+/** "$179" or "$150/mo". */
+export function formatServicePrice(service: Pick<ServiceDefinition, "price" | "billing">): string {
+  return `${formatUsd(service.price)}${billingSuffix(service.billing)}`;
+}
+
+/** Lowest per-visit starting price in a package group, for "from $125" style copy. */
+export function groupStartingPrice(group: ServiceDefinition["group"]): number {
+  return Math.min(...business.services.filter((s) => s.group === group && s.billing === "visit").map((s) => s.price));
 }

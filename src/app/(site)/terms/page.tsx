@@ -90,7 +90,7 @@ export default function TermsPage() {
 
         <h2>Maintenance plans</h2>
         <p>
-          Maintenance plans are not available yet. Registering interest doesn&rsquo;t enroll you in anything and nothing is charged.
+          Monthly Maintenance is arranged with you directly: we agree on your visits and how you&rsquo;ll pay. This website doesn&rsquo;t bill you automatically.
         </p>
 
         <h2>Contact</h2>

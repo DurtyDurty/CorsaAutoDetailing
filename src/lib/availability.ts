@@ -55,7 +55,7 @@ export function lastBookableDate(now: Date = new Date()): string {
 export function computeAvailability({ serviceId, busy, daysOff = [], now = new Date() }: AvailabilityInput): AvailableDay[] {
   const { workHours, workDays, travelBufferMinutes } = business.scheduling;
   const { slotIntervalMinutes } = business.booking;
-  const duration = business.booking.durationMinutes[serviceId];
+  const duration = business.booking.durationMinutes[serviceId] ?? business.scheduling.defaultDurationMinutes;
   const dayStart = toMin(workHours.start);
   const dayEnd = toMin(workHours.end);
   const off = new Set(daysOff);

@@ -2,6 +2,7 @@
 
 import { submitLaunchList } from "@/app/actions/leads";
 import { business } from "@/config/business";
+import { ServiceSelect } from "./ServiceSelect";
 import {
   ConsentFields,
   Field,
@@ -16,12 +17,10 @@ import {
 export function LaunchListForm({
   compact = false,
   initialService,
-  initialVehicle,
 }: {
   compact?: boolean;
-  /** Pre-selects the package / vehicle size a visitor chose before landing here. */
+  /** Pre-selects the package a visitor chose before landing here. */
   initialService?: string;
-  initialVehicle?: string;
 }) {
   const { onSubmit, pending, errors, message, onStart } = useLeadForm(submitLaunchList, {
     formName: "launch_list",
@@ -44,29 +43,8 @@ export function LaunchListForm({
       </Field>
       {!compact && (
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field name="vehicleCategory" label="Vehicle type" optional error={errors.vehicleCategory}>
-            {(p) => (
-              <Select name="vehicleCategory" defaultValue={initialVehicle ?? ""} {...p}>
-                <option value="">Choose…</option>
-                {business.vehicleCategories.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.label}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-          <Field name="serviceId" label="Service you're interested in" optional error={errors.serviceId}>
-            {(p) => (
-              <Select name="serviceId" defaultValue={initialService ?? ""} {...p}>
-                <option value="">Choose…</option>
-                {business.services.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </Select>
-            )}
+          <Field name="serviceId" label="Service you're interested in" optional error={errors.serviceId} className="sm:col-span-2">
+            {(p) => <ServiceSelect name="serviceId" placeholder="Choose…" showPrices={false} defaultValue={initialService ?? ""} {...p} />}
           </Field>
           <Field name="phone" label="Phone" optional error={errors.phone}>
             {(p) => <TextInput name="phone" type="tel" autoComplete="tel" {...p} />}

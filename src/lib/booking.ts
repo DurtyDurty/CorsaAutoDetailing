@@ -8,9 +8,12 @@ import { notifyForLead } from "@/lib/notifications";
 import { getPaymentAdapter } from "@/lib/payments";
 import { todayEastern } from "@/lib/time";
 
-/** Online booking runs only after launch, with a payment provider and a durable store. */
+/** Online booking runs only after launch, with a payment provider, a durable store, and a deposit and duration for every package. */
 export function bookingEnabled(): boolean {
-  return business.mode === "LIVE" && storeKind() !== "unavailable" && getPaymentAdapter().kind !== "disabled";
+  const configured = business.services.every(
+    (s) => business.booking.depositCents[s.id] && business.booking.durationMinutes[s.id],
+  );
+  return configured && business.mode === "LIVE" && storeKind() !== "unavailable" && getPaymentAdapter().kind !== "disabled";
 }
 
 /** Active appointments (confirmed, or held and not yet expired) as busy windows. */

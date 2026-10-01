@@ -4,11 +4,12 @@ const unique = () => `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 7)
 
 /**
  * LIVE mode (built by playwright.live.config.ts) with the demo payment
- * provider: the calendar + deposit flow customers get after launch.
+ * provider. Without per-package deposits and durations (business.booking),
+ * the site takes requests instead of deposit bookings.
  */
 
-async function fillVehicleAndCondition(page: Page, service: "essential" | "signature") {
-  await page.goto(`/request?service=${service}&vehicle=sedan`);
+async function fillVehicleAndCondition(page: Page, service: string) {
+  await page.goto(`/request?service=${service}`);
   const form = page.getByRole("form", { name: "Service request" });
   await form.getByLabel(/^Year\b/).fill("2019");
   await form.getByLabel(/^Make\b/).fill("Lexus");
@@ -16,7 +17,7 @@ async function fillVehicleAndCondition(page: Page, service: "essential" | "signa
   await form.getByRole("button", { name: "Continue" }).click();
   await form.getByRole("radio", { name: /Normal maintenance/ }).check();
   await form.getByRole("button", { name: "Continue" }).click();
-  await expect(form.getByRole("heading", { name: "Location & time" })).toBeVisible();
+  await expect(form.getByRole("heading", { name: /^Location & tim(e|ing)$/ })).toBeVisible();
   await form.getByLabel("Service address").fill("45 Oak Ln");
   await form.getByLabel("ZIP code").fill("32068");
   await form.getByRole("radio", { name: "Home" }).check();
@@ -54,22 +55,42 @@ async function openSlots(page: Page, service: string): Promise<string[]> {
   return days.flatMap((d) => d.slots);
 }
 
-test.describe("online booking after launch (LIVE mode, demo payments)", () => {
-  test("Book buttons and the header CTA lead to the booking calendar", async ({ page, isMobile }) => {
+test.describe("after launch without deposits (LIVE mode, current production setup)", () => {
+  test("Book now opens the request form with the package chosen and no vehicle size", async ({ page, isMobile }) => {
     await page.goto("/services");
-    await page.getByText("Small crossover or two-row SUV").first().click();
-    await page.getByRole("link", { name: "Book Signature" }).click();
-    await expect(page).toHaveURL(/\/request\?service=signature&vehicle=suv2$/);
+    await page.locator("article", { has: page.getByRole("heading", { name: "Platinum Full Detail" }) }).getByRole("link", { name: "Book now" }).click();
+    await expect(page).toHaveURL(/\/request\?service=platinum-full$/);
     const form = page.getByRole("form", { name: "Service request" });
-    await expect(form.getByRole("radio", { name: /Corsa Signature Detail/ })).toBeChecked();
-    await expect(form.getByRole("radio", { name: /Small crossover or two-row SUV/ })).toBeChecked();
-    await expect(form.locator('[data-step="0"]').getByText("$325")).toBeVisible();
+    await expect(form.getByLabel("Service", { exact: true })).toHaveValue("platinum-full");
+    await expect(form.locator('[data-step="0"]').getByText("$299", { exact: true })).toBeVisible();
+    await expect(form.getByText(/Vehicle type/)).toHaveCount(0);
     await expect(page.getByText(/Preparing to launch/)).toHaveCount(0);
     if (!isMobile) await expect(page.getByRole("banner").getByRole("link", { name: "Book a detail" })).toBeVisible();
   });
 
+  test("a customer sends a request for Monthly Maintenance without paying anything", async ({ page }) => {
+    const form = await fillVehicleAndCondition(page, "monthly-maintenance");
+    await expect(form.locator('input[name="slotStart"]')).toHaveCount(0);
+    await form.getByRole("checkbox", { name: /Flexible/ }).check();
+    await form.getByRole("button", { name: "Continue" }).click();
+    await expect(form.getByRole("heading", { name: "Contact & review" })).toBeVisible();
+    await expect(form.locator('[data-step="3"]').getByText("$150/mo", { exact: true })).toBeVisible();
+    await form.getByLabel("First name").fill("Riley");
+    await form.getByLabel("Email", { exact: true }).fill(`${unique()}@example.com`);
+    await form.getByLabel(/Phone/).fill("904-555-0101");
+    await form.getByLabel(/I understand Corsa Auto Detailing will use/).check();
+    await form.getByLabel(/displayed price is an estimate/).check();
+    await form.getByRole("button", { name: "Request an appointment" }).click();
+    await expect(page).toHaveURL(/\/thanks\/request\?ref=/);
+    await expect(page.getByText("Monthly Maintenance")).toBeVisible();
+  });
+});
+
+// Needs a deposit and a duration for every package in business.booking; skipped while deposits are off.
+test.describe.skip("online booking with deposits (LIVE mode, demo payments)", () => {
+
   test("book a time, pay the deposit, get confirmed; the slot disappears; owner can refund", async ({ page }) => {
-    await fillVehicleAndCondition(page, "signature");
+    await fillVehicleAndCondition(page, "platinum-full");
     const slot = await pickFirstSlot(page);
     const name = `Booker ${unique()}`;
     const form = await fillContactAndAgree(page, name);
@@ -84,7 +105,7 @@ test.describe("online booking after launch (LIVE mode, demo payments)", () => {
     await expect(page).toHaveURL(/\/booking\/confirmed\?session_id=/);
     await expect(page.getByRole("heading", { level: 1 })).toContainText(/You.re booked/);
     await expect(page.getByText(/\$50, credited toward your final price/)).toBeVisible();
-    expect(await openSlots(page, "signature")).not.toContain(slot);
+    expect(await openSlots(page, "platinum-full")).not.toContain(slot);
 
     // Owner view: deposit paid, cancel with refund.
     await page.goto("/admin/login");
@@ -96,26 +117,26 @@ test.describe("online booking after launch (LIVE mode, demo payments)", () => {
     await page.getByRole("button", { name: "Cancel & refund deposit" }).click();
     await expect(page.getByText("Appointment cancelled and deposit refunded.")).toBeVisible();
     // Cancelled → the time is bookable again.
-    expect(await openSlots(page, "signature")).toContain(slot);
+    expect(await openSlots(page, "platinum-full")).toContain(slot);
   });
 
   test("backing out of payment releases the held time immediately", async ({ page }) => {
-    await fillVehicleAndCondition(page, "essential");
+    await fillVehicleAndCondition(page, "signature-full");
     const slot = await pickFirstSlot(page);
     const form = await fillContactAndAgree(page, `Backout ${unique()}`);
     await form.getByRole("button", { name: "Pay $25 deposit & book" }).click();
     await expect(page).toHaveURL(/\/booking\/demo-checkout\?session=/);
     // While paying, the slot is held for everyone else.
-    expect(await openSlots(page, "essential")).not.toContain(slot);
+    expect(await openSlots(page, "signature-full")).not.toContain(slot);
     await page.getByRole("button", { name: "Cancel and go back" }).click();
     await expect(page).toHaveURL(/\/booking\/cancelled\?/);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Payment not completed");
-    expect(await openSlots(page, "essential")).toContain(slot);
+    expect(await openSlots(page, "signature-full")).toContain(slot);
   });
 
   test("owner blocks a day off: it leaves the calendar until reopened", async ({ page }) => {
     const days = async () => {
-      const res = await page.request.get("/api/availability?service=essential");
+      const res = await page.request.get("/api/availability?service=signature-full");
       return ((await res.json()) as { days: { date: string }[] }).days.map((d) => d.date);
     };
     // The last bookable day, so the other tests' "first open time" is unaffected.
@@ -143,12 +164,12 @@ test.describe("online booking after launch (LIVE mode, demo payments)", () => {
     // Customer B loads the calendar first, so the time still shows as open for them.
     const other = await browser.newContext();
     const pageB = await other.newPage();
-    await fillVehicleAndCondition(pageB, "essential");
+    await fillVehicleAndCondition(pageB, "signature-full");
     const slotB = await pickFirstSlot(pageB);
     await fillContactAndAgree(pageB, `Racer B ${unique()}`);
 
     // Customer A books the same (first) time and pays.
-    await fillVehicleAndCondition(page, "essential");
+    await fillVehicleAndCondition(page, "signature-full");
     const slotA = await pickFirstSlot(page);
     expect(slotA).toBe(slotB);
     const formA = await fillContactAndAgree(page, `Racer A ${unique()}`);

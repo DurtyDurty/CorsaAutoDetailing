@@ -11,12 +11,12 @@ import { BusinessJsonLd } from "@/components/site/JsonLd";
 import { Faq } from "@/components/site/Faq";
 import { SERVICES_FAQ } from "@/content/faq";
 import { ServiceViewTracker } from "@/components/site/ServiceViewTracker";
-import { startingPrice } from "@/lib/pricing";
+import { groupStartingPrice } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Detailing packages & pricing",
   description:
-    `Corsa Essential from $${startingPrice("essential")} and Signature from $${startingPrice("signature")}. Interior and exterior car detailing at your home or work in Clay County, St. Johns and Jacksonville.`,
+    `Full details from $${groupStartingPrice("popular")}, interior and exterior packages from $${Math.min(groupStartingPrice("interior"), groupStartingPrice("exterior"))}, plus ceramic coating and monthly maintenance. Mobile car detailing at your home or work in Clay County, St. Johns and Jacksonville.`,
   alternates: { canonical: "/services" },
 };
 
@@ -27,15 +27,15 @@ export default function ServicesPage() {
       <ServiceViewTracker />
       <PageHero
         eyebrow="Packages & pricing"
-        title="Two packages. Clear starting prices."
-        lede="Interior and exterior car detailing, done by hand at your home or workplace. Choose your vehicle size to see your starting price; the final price is confirmed at an in-person inspection before any work begins."
+        title="Every package. Clear starting prices."
+        lede="Full, interior and exterior car detailing, done by hand at your home or workplace. Every package has one starting price; the final price is confirmed at an in-person inspection before any work begins."
       />
 
       <Section tone="white" id="quote" className="scroll-mt-20">
         <SectionHeading
           eyebrow="Instant quote"
           title="Get your price in seconds."
-          lede="Pick a package and your vehicle size. No contact details needed."
+          lede="Pick a package to see its starting price. No contact details needed."
         />
         <InstantQuote className="mt-10 max-w-3xl" />
       </Section>

@@ -15,7 +15,6 @@ export const dynamic = "force-dynamic";
 export default async function BookingCancelledPage({ searchParams }: PageProps<"/booking/cancelled">) {
   const { appointment, t } = await searchParams;
   let serviceId: string | null = null;
-  let vehicle: string | null = null;
 
   const store = await getLeadStore();
   if (store && typeof appointment === "string" && typeof t === "string") {
@@ -24,10 +23,9 @@ export default async function BookingCancelledPage({ searchParams }: PageProps<"
     if (appt && lead && releaseToken(appt.id, lead) === t) {
       await releaseHold(appt);
       serviceId = appt.serviceId;
-      vehicle = lead.vehicleCategory;
     }
   }
-  const retry = `/request${serviceId ? `?service=${serviceId}${vehicle ? `&vehicle=${vehicle}` : ""}` : ""}`;
+  const retry = `/request${serviceId ? `?service=${serviceId}` : ""}`;
 
   return (
     <Container className="py-20 max-w-2xl">

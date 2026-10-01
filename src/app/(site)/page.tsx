@@ -106,9 +106,9 @@ export default function HomePage() {
             <div className="py-5 pr-4 lg:pl-4 lg:border-l border-line-dark">
               <dt className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-chalk/50">03 / Packages</dt>
               <dd className="mt-2 text-chalk text-sm leading-relaxed">
-                {business.services.map((s) => (
-                  <span key={s.id} className="block">
-                    {s.name}
+                {business.packageGroups.map((g) => (
+                  <span key={g.id} className="block">
+                    {g.title}
                   </span>
                 ))}
               </dd>
@@ -152,8 +152,8 @@ export default function HomePage() {
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
           <SectionHeading
             eyebrow="Detailing packages"
-            title="Two packages. Built to perform."
-            lede="Start with Signature for a full reset, then keep it sharp with Essential. Book either one, or see pricing and every detail on the services page."
+            title="Popular packages. Built to perform."
+            lede="Our most-booked packages. Interior-only and exterior-only packages, ceramic coating and every price are on the services page."
           />
           <div className="flex flex-col gap-3 shrink-0 lg:items-end">
             <Link
@@ -173,7 +173,7 @@ export default function HomePage() {
           </div>
         </div>
         <div className="mt-12">
-          <PackageCards showPrices={false} />
+          <PackageCards showPrices={false} groups={["popular"]} />
         </div>
       </Section>
 

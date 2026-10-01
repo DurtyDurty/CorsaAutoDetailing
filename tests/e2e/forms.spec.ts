@@ -28,12 +28,12 @@ test.describe("lead forms (demo store)", () => {
   });
 
   test("before launch, /request takes no bookings: it collects an email with the chosen package pre-filled", async ({ page }) => {
-    await page.goto("/request?service=signature&vehicle=suv2");
+    await page.goto("/request?service=platinum-full");
     await expect(page.getByRole("heading", { level: 1 })).toContainText(/not booking yet/i);
     await expect(page.getByRole("form", { name: "Service request" })).toHaveCount(0);
     const form = page.getByRole("form", { name: "Launch list signup" });
-    await expect(form.getByLabel(/Service you're interested in/)).toHaveValue("signature");
-    await expect(form.getByLabel(/Vehicle type/)).toHaveValue("suv2");
+    await expect(form.getByLabel(/Service you're interested in/)).toHaveValue("platinum-full");
+    await expect(form.getByLabel(/Vehicle type/)).toHaveCount(0);
 
     await form.getByLabel("First name").fill("Sam");
     await form.getByLabel("ZIP code").fill("32043");
@@ -50,7 +50,7 @@ test.describe("lead forms (demo store)", () => {
 
   test("owner can sign in (demo), see a launch-list lead, export CSV, and sign out", async ({ page }) => {
     // Create a lead of our own so this test does not depend on the others.
-    await page.goto("/request?service=essential&vehicle=sedan");
+    await page.goto("/request?service=signature-full");
     const form = page.getByRole("form", { name: "Launch list signup" });
     const name = `Admin ${unique()}`;
     await form.getByLabel("First name").fill(name);
@@ -68,7 +68,7 @@ test.describe("lead forms (demo store)", () => {
     await page.goto("/admin/launch-list");
     await page.getByRole("link", { name }).first().click();
     await expect(page).toHaveURL(/\/admin\/leads\//);
-    await expect(page.getByText("Corsa Essential Detail").first()).toBeVisible();
+    await expect(page.getByText("Signature Full Detail").first()).toBeVisible();
 
     // Write back from the dashboard (demo outbox stands in for Resend).
     await expect(page.getByRole("heading", { name: `Email ${name}` })).toBeVisible();

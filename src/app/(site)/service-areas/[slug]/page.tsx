@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: PageProps<"/service-areas/[sl
   if (!town) return {};
   return {
     title: { absolute: `Mobile Auto Detailing in ${town.name}, FL | Corsa` },
-    description: `Interior and exterior car detailing at your home or workplace in ${town.name}, FL. Corsa Essential and Signature Detail packages from ${business.brand.name}.`,
+    description: `Interior and exterior car detailing at your home or workplace in ${town.name}, FL. Full, interior and exterior detailing packages from ${business.brand.name}.`,
     alternates: { canonical: `/service-areas/${town.slug}` },
   };
 }

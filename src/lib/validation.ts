@@ -73,7 +73,6 @@ export const launchListSchema = z.object({
   email: emailSchema,
   zip: zipSchema,
   phone: phoneSchema.optional().transform((v) => v ?? null),
-  vehicleCategory: z.enum(vehicleIds).optional().or(z.literal("")).transform((v) => v || null),
   serviceId: z.enum(serviceIds).optional().or(z.literal("")).transform((v) => v || null),
   preferredContact: contactMethod.optional().or(z.literal("")).transform((v) => v || null),
 });
@@ -111,7 +110,6 @@ const quoteRequestFields = z
     ...consentFields,
     // Step 1
     serviceId: z.enum(serviceIds, { message: "Choose a service." }),
-    vehicleCategory: z.enum(vehicleIds, { message: "Choose a vehicle type." }),
     vehicleYear: z
       .string({ message: "Enter the vehicle year." })
       .trim()

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const PUBLIC_ROUTES = ["/", "/services", "/request", "/maintenance-plans", "/about", "/service-areas", "/contact", "/privacy", "/terms"];
+const PUBLIC_ROUTES = ["/", "/services", "/request", "/about", "/service-areas", "/contact", "/privacy", "/terms"];
 
 async function expectNoHorizontalOverflow(page: Page) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -60,11 +60,10 @@ test.describe("public site", () => {
   test("services page shows every starting price, add-on range and disclosure", async ({ page }) => {
     await page.goto("/services");
     const text = (await page.textContent("main")) ?? "";
-    for (const price of ["$140", "$180", "$220", "$275", "$325", "$375"]) expect(text).toContain(price);
+    for (const price of ["$179", "$299", "$150/mo", "$125", "$225", "$300", "$349", "$799"]) expect(text).toContain(price);
     for (const range of ["$35-$75", "$30-$75", "$50-$100", "$50", "$100-$150", "$175-$300"]) expect(text).toContain(range);
-    expect(text).toMatch(/Planned starting prices/);
-    expect(text).toMatch(/Best First Visit/);
-    expect(text).toMatch(/not a professionally installed ceramic coating/);
+    expect(text).toMatch(/Planned starting price/);
+    expect(text).toMatch(/Most popular/);
     expect(text).toMatch(/Final pricing is subject to an in-person vehicle inspection/);
     expect(text).toMatch(/Any applicable tax will be disclosed/);
   });
@@ -86,31 +85,59 @@ test.describe("public site", () => {
   test("home page shows packages but no prices", async ({ page }) => {
     await page.goto("/");
     const text = (await page.textContent("main")) ?? "";
-    expect(text).toContain("Corsa Essential Detail");
-    expect(text).toContain("Corsa Signature Detail");
+    expect(text).toContain("Signature Full Detail");
+    expect(text).toContain("Platinum Full Detail");
+    expect(text).toContain("Monthly Maintenance");
     expect(text).not.toMatch(/\$\s?\d/);
     const jsonLd = (await page.locator('script[type="application/ld+json"]').allTextContents()).join("");
     expect(jsonLd).not.toMatch(/"(price|minPrice|priceRange)"/);
-    await page.getByRole("link", { name: "See pricing & full details" }).first().click();
-    await expect(page).toHaveURL(/\/services#essential$/);
+    await page.getByRole("link", { name: "See pricing & details" }).first().click();
+    await expect(page).toHaveURL(/\/services#signature-full$/);
   });
 
-  test("before launch, package buttons ask for an email with the package and size pre-filled (no booking)", async ({ page }) => {
+  test("services page shows every package with one starting price", async ({ page }) => {
     await page.goto("/services");
-    await expect(page.getByRole("link", { name: /^Book / })).toHaveCount(0);
-    await page.getByText("Small crossover or two-row SUV").first().click();
-    // Second card is Signature.
-    await page.getByRole("link", { name: "Get launch updates" }).nth(1).click();
-    await expect(page).toHaveURL(/\/request\?service=signature&vehicle=suv2$/);
+    for (const [name, price] of [
+      ["Signature Full Detail", "$179"],
+      ["Platinum Full Detail", "$299"],
+      ["Monthly Maintenance", "$150/mo"],
+      ["Signature Interior Detail", "$125"],
+      ["Full Works Interior", "$225"],
+      ["Mold Remediation", "$300"],
+      ["Signature Exterior Detail", "$125"],
+      ["Wax & Buff", "$349"],
+      ["Ceramic Coating", "$799"],
+    ]) {
+      await expect(page.locator("article", { has: page.getByRole("heading", { name, exact: true }) })).toContainText(price);
+    }
+    await expect(page.locator("main")).not.toContainText("Coupe or sedan");
+  });
+
+  test("instant quote shows the starting price for the chosen package", async ({ page }) => {
+    await page.goto("/services#quote");
+    await page.getByLabel("Service", { exact: true }).selectOption("wax-and-buff");
+    await expect(page.locator("#quote")).toContainText("$349");
+  });
+
+  test("before launch, package buttons ask for an email with the package pre-filled (no booking)", async ({ page }) => {
+    await page.goto("/services");
+    await expect(page.getByRole("link", { name: "Book now" })).toHaveCount(0);
+    // Second card is Platinum.
+    await page.locator("article").getByRole("link", { name: "Get launch updates" }).nth(1).click();
+    await expect(page).toHaveURL(/\/request\?service=platinum-full$/);
     await expect(page.getByRole("form", { name: "Service request" })).toHaveCount(0);
     const form = page.getByRole("form", { name: "Launch list signup" });
-    await expect(form.getByLabel(/Service you're interested in/)).toHaveValue("signature");
-    await expect(form.getByLabel(/Vehicle type/)).toHaveValue("suv2");
+    await expect(form.getByLabel(/Service you're interested in/)).toHaveValue("platinum-full");
 
     await page.goto("/");
-    await page.getByRole("link", { name: "Get launch updates" }).first().click();
-    await expect(page).toHaveURL(/\/request\?service=essential$/);
-    await expect(page.getByRole("form", { name: "Launch list signup" }).getByLabel(/Service you're interested in/)).toHaveValue("essential");
+    await page.locator("article").getByRole("link", { name: "Get launch updates" }).first().click();
+    await expect(page).toHaveURL(/\/request\?service=signature-full$/);
+    await expect(page.getByRole("form", { name: "Launch list signup" }).getByLabel(/Service you're interested in/)).toHaveValue("signature-full");
+  });
+
+  test("old maintenance-plans links land on the Monthly Maintenance package", async ({ page }) => {
+    await page.goto("/maintenance-plans");
+    await expect(page).toHaveURL(/\/services#monthly-maintenance$/);
   });
 
   test("admin, export and photos are locked without a session", async ({ request, page }) => {

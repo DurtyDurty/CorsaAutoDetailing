@@ -2,7 +2,7 @@ import "server-only";
 import { business, getService, getVehicleCategory } from "@/config/business";
 import { getEmailAdapter } from "@/lib/email";
 import type { AppointmentRecord, LeadRecord, LeadStore, NotificationKind, NotificationRecord } from "@/lib/leads/types";
-import { formatUsd } from "@/lib/pricing";
+import { billingSuffix, formatUsd } from "@/lib/pricing";
 import { formatEastern } from "@/lib/time";
 import { shortRef } from "@/lib/utils";
 
@@ -49,7 +49,7 @@ function ownerBody(lead: LeadRecord, booking?: AppointmentRecord) {
     lines.push(
       "",
       `Service: ${getService(lead.serviceId ?? "")?.name ?? lead.serviceId ?? "n/a"}`,
-      `Vehicle: ${[lead.vehicleYear, lead.vehicleMake, lead.vehicleModel].filter(Boolean).join(" ") || "n/a"} (${getVehicleCategory(lead.vehicleCategory ?? "")?.label ?? lead.vehicleCategory ?? "n/a"})`,
+      `Vehicle: ${[lead.vehicleYear, lead.vehicleMake, lead.vehicleModel].filter(Boolean).join(" ") || "n/a"}${lead.vehicleCategory ? ` (${getVehicleCategory(lead.vehicleCategory)?.label ?? lead.vehicleCategory})` : ""}`,
     );
   }
   if (lead.condition) {
@@ -146,7 +146,7 @@ function customerBody(lead: LeadRecord) {
   if (lead.estimate && lead.leadType === "quote_request") {
     lines.push(
       "",
-      `Estimate: ${lead.estimate.total !== null ? formatUsd(lead.estimate.total) : "Custom quote"} for ${lead.estimate.serviceName} (${lead.estimate.vehicleCategoryLabel}).`,
+      `Estimate: ${lead.estimate.total !== null ? `${formatUsd(lead.estimate.total)}${billingSuffix(lead.estimate.billing)}` : "Custom quote"} for ${lead.estimate.serviceName}${lead.estimate.vehicleCategoryLabel ? ` (${lead.estimate.vehicleCategoryLabel})` : ""}.`,
       lead.estimate.finalQuoteNotice,
       lead.estimate.taxNotice,
     );

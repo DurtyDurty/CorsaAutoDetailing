@@ -20,32 +20,47 @@ export type VehicleCategoryId =
   | "oversized"
   | "other";
 
-export type ServiceId = "essential" | "signature";
-export type PricedVehicleId = Extract<VehicleCategoryId, "sedan" | "suv2" | "large">;
+export type ServiceId =
+  | "signature-full"
+  | "platinum-full"
+  | "monthly-maintenance"
+  | "signature-interior"
+  | "full-works-interior"
+  | "mold-remediation"
+  | "signature-exterior"
+  | "wax-and-buff"
+  | "ceramic-coating";
+export type PackageGroupId = "popular" | "interior" | "exterior";
 
+/** Vehicle sizes are no longer asked for (2026-09-30); kept so older leads still show a label. */
 export interface VehicleCategory {
   id: VehicleCategoryId;
   label: string;
-  /** Categories without a fixed base price require a custom quote. */
-  priced: boolean;
+}
+
+export interface PackageGroup {
+  id: PackageGroupId;
+  title: string;
+  subtitle: string;
 }
 
 export interface ServiceDefinition {
   id: ServiceId;
   name: string;
-  /** Short line used in the booking form and emails. */
-  tagline: string;
-  description: string;
-  /** Owner-supplied estimate shown on the card. */
-  duration: string;
-  /** Optional ribbon, e.g. "Best First Visit". */
+  group: PackageGroupId;
+  /** Short line under the name, e.g. "Bring It Back". */
+  tagline: string | null;
+  /** Optional ribbon, e.g. "Most popular". */
   badge: string | null;
   /** When set, the card shows "Everything in <that package>, plus:" above `includes`. */
   includesEverythingIn: ServiceId | null;
-  /** Inclusions grouped under headings (Exterior / Interior / Finish). Only claim equipment you use. */
-  includes: { heading: string; items: string[] }[];
-  /** Starting prices in USD by priced vehicle category. */
-  prices: Record<PricedVehicleId, number>;
+  /** Label above the list when it isn't "Everything in …" or "What's included". */
+  includesHeading?: string;
+  /** Only claim work and equipment you actually provide. */
+  includes: string[];
+  /** Starting price in USD, per visit or per month (see `billing`). */
+  price: number;
+  billing: "visit" | "monthly";
 }
 
 /** Extra work quoted as a range and confirmed at inspection. Never added to an online estimate automatically. */
@@ -138,7 +153,7 @@ export const business = {
    * Bump whenever a price or service scope changes. Stored with each lead's
    * estimate so old inquiries can be understood later.
    */
-  pricingVersion: "2026-09-planned-v4",
+  pricingVersion: "2026-09-v5",
   /** Shown next to all prices while in PRELAUNCH mode. */
   priceLabel: {
     PRELAUNCH: "Planned starting prices",
@@ -152,82 +167,155 @@ export const business = {
     pricing:
       "Prices shown are starting prices and apply to vehicles in average condition. Final pricing may vary based on vehicle size and condition. Excessive pet hair, sand, stains, odors, biological contamination, heavy mud or neglected interiors may require additional labor and charges. Corsa Auto Detailing will disclose any additional charges before beginning the service.",
     protection:
-      "Protection durability is an estimate and depends on mileage, storage, weather exposure and maintenance practices. The Signature Detail includes a ceramic sealant, not a professionally installed ceramic coating.",
+      "Protection durability is an estimate and depends on mileage, storage, weather exposure and maintenance practices.",
     inspection:
       "Final pricing is subject to an in-person vehicle inspection before service begins. Online prices are estimates based on vehicles in average condition. Vehicle size, condition, excessive pet hair, sand, mud, stains, odors, biological contamination, oxidation and other conditions requiring additional labor may affect the final price. Corsa Auto Detailing will inspect the vehicle, explain any recommended services or additional charges, and receive the customer’s approval before beginning work. Customers are under no obligation to accept additional services.",
   },
 
   vehicleCategories: [
-    { id: "sedan", label: "Coupe or sedan", priced: true },
-    { id: "suv2", label: "Small crossover or two-row SUV", priced: true },
-    { id: "large", label: "Pickup truck or three-row SUV", priced: true },
-    // Minivan / oversized / other were removed from the site 2026-09-28: those vehicles
-    // are quoted through the contact page. The ids stay in VehicleCategoryId for older leads.
+    { id: "sedan", label: "Coupe or sedan" },
+    { id: "suv2", label: "Small crossover or two-row SUV" },
+    { id: "large", label: "Pickup truck or three-row SUV" },
+    { id: "minivan", label: "Minivan" },
+    { id: "oversized", label: "Oversized or lifted truck" },
+    { id: "other", label: "Other" },
   ] satisfies VehicleCategory[],
+
+  packageGroups: [
+    { id: "popular", title: "Popular packages", subtitle: "Most booked" },
+    { id: "interior", title: "Interior packages", subtitle: "Comprehensive deep cleaning" },
+    { id: "exterior", title: "Exterior packages", subtitle: "Spotless exterior detailing" },
+  ] satisfies PackageGroup[],
 
   services: [
     {
-      id: "essential",
-      name: "Corsa Essential Detail",
-      tagline: "The basics, done right.",
-      description:
-        "A straightforward interior and exterior clean that keeps a well-kept vehicle looking fresh between deeper details.",
-      duration: "2-3 hours",
+      id: "signature-full",
+      name: "Signature Full Detail",
+      group: "popular",
+      tagline: null,
       badge: null,
       includesEverythingIn: null,
       includes: [
-        {
-          heading: "Exterior",
-          items: ["Hand wash", "Spot-free rinse", "Wheels and tires cleaned", "Exterior windows cleaned", "Tire shine"],
-        },
-        {
-          heading: "Interior",
-          items: ["Vacuum: seats, carpets and floor mats", "Dash, console and door panels wiped down", "Interior windows cleaned"],
-        },
+        "Exterior hand wash",
+        "Wheels cleaned",
+        "Tire shine",
+        "Interior vacuum",
+        "Windows cleaned",
+        "Interior surface cleaning",
       ],
-      prices: { sedan: 140, suv2: 180, large: 220 },
+      price: 179,
+      billing: "visit",
     },
     {
-      id: "signature",
-      name: "Corsa Signature Detail",
-      tagline: "Complete reset with premium protection.",
-      description:
-        "A comprehensive vehicle reset combining deeper cleaning with premium exterior and interior protection. Recommended for first-time customers and vehicles needing more than routine maintenance.",
-      duration: "4-6 hours",
-      badge: "Best First Visit",
-      includesEverythingIn: "essential",
+      id: "platinum-full",
+      name: "Platinum Full Detail",
+      group: "popular",
+      tagline: "Bring It Back",
+      badge: "Most popular",
+      includesEverythingIn: "signature-full",
       includes: [
-        {
-          heading: "Exterior decontamination and protection",
-          items: [
-            "Foam pre-wash",
-            "Bug and tar removal",
-            "Iron fallout removal",
-            "Clay bar treatment",
-            "Deep clean of wheels, tires and wheel wells",
-            "Door jambs cleaned",
-            "Ceramic paint sealant (up to 4-6 months)",
-            "Exterior trim UV protection",
-            "Premium tire dressing",
-          ],
-        },
-        {
-          heading: "Interior deep clean",
-          items: [
-            "Detailed brushing of every interior surface",
-            "Compressed-air cleaning of vents and crevices",
-            "Trunk vacuumed",
-            "Carpet and upholstery spot treatment",
-            "Light extraction",
-            "Leather cleaned and conditioned",
-            "UV protectant on dash and panels, matte finish",
-          ],
-        },
+        "Clay bar treatment",
+        "Stain removal",
+        "Steam and sanitation",
+        "Door jambs",
+        "Full interior deep clean",
+        "High-pressure air blasting",
       ],
-      prices: { sedan: 275, suv2: 325, large: 375 },
+      price: 299,
+      billing: "visit",
+    },
+    {
+      id: "monthly-maintenance",
+      name: "Monthly Maintenance",
+      group: "popular",
+      tagline: "Keep It Fresh",
+      badge: null,
+      includesEverythingIn: null,
+      includesHeading: "Preferred client",
+      includes: [
+        "1 exterior wash per month",
+        "1 interior wash per month",
+        "Priority booking",
+        "15% off add-on services",
+        "Exclusive client perks",
+      ],
+      price: 150,
+      billing: "monthly",
+    },
+    {
+      id: "signature-interior",
+      name: "Signature Interior Detail",
+      group: "interior",
+      tagline: "Quick Refresh",
+      badge: null,
+      includesEverythingIn: null,
+      // Air freshener left off on purpose (owner decision 2026-09-30).
+      includes: ["Interior vacuum", "Quick interior wipe-down", "Floor mats detailed", "Trunk detailed", "Windows cleaned"],
+      price: 125,
+      billing: "visit",
+    },
+    {
+      id: "full-works-interior",
+      name: "Full Works Interior",
+      group: "interior",
+      tagline: "Bring It Back",
+      badge: "Most popular",
+      includesEverythingIn: "signature-interior",
+      includes: [
+        "Steam and sanitation",
+        "Seats and carpets shampooed",
+        "High-pressure air blasting",
+        "UV protection on plastics",
+        "Double vacuum",
+      ],
+      price: 225,
+      billing: "visit",
+    },
+    {
+      id: "mold-remediation",
+      name: "Mold Remediation",
+      group: "interior",
+      tagline: "Deep Clean",
+      badge: null,
+      includesEverythingIn: "full-works-interior",
+      includes: ["Mold remediation treatment", "Ozone treatment", "Double shampoo"],
+      price: 300,
+      billing: "visit",
+    },
+    {
+      id: "signature-exterior",
+      name: "Signature Exterior Detail",
+      group: "exterior",
+      tagline: "Quick Refresh",
+      badge: null,
+      includesEverythingIn: null,
+      includes: ["Exterior hand wash", "Wheels cleaned", "Tire shine", "Spray sealant", "Exterior windows cleaned"],
+      price: 125,
+      billing: "visit",
+    },
+    {
+      id: "wax-and-buff",
+      name: "Wax & Buff",
+      group: "exterior",
+      tagline: "Showroom Shine",
+      badge: null,
+      includesEverythingIn: "signature-exterior",
+      includes: ["Clay bar", "1-step paint enhancement", "Hand wax", "Plastic dressing"],
+      price: 349,
+      billing: "visit",
+    },
+    {
+      id: "ceramic-coating",
+      name: "Ceramic Coating",
+      group: "exterior",
+      tagline: "Long-Term Protection",
+      badge: null,
+      includesEverythingIn: "signature-exterior",
+      includes: ["Hydrophobic protection", "9H and 10H surface hardness", "Ultimate deep gloss", "1-, 3- and 5-year options"],
+      price: 799,
+      billing: "visit",
     },
   ] satisfies ServiceDefinition[],
-
   /** Owner-approved fixed-price add-ons that the online estimate may add. None approved yet. */
   addOns: [] as FixedAddOn[],
 
@@ -251,7 +339,6 @@ export const business = {
   futureServices: [
     "Paint protection film (PPF)",
     "Window tinting",
-    "Professional ceramic coatings",
     "Multi-step paint correction",
   ],
 
@@ -298,7 +385,7 @@ export const business = {
         coverage: "core",
         blurb: "Northern St. Johns County, across the river from Clay County.",
         intro:
-          "St. Johns, in northern St. Johns County, is just across the St. Johns River from Clay County. We bring the Corsa Essential and Signature details to homes and workplaces throughout the area.",
+          "St. Johns, in northern St. Johns County, is just across the St. Johns River from Clay County. We bring full, interior and exterior detailing to homes and workplaces throughout the area.",
         page: true,
         zips: ["32259"],
       },
@@ -360,8 +447,8 @@ export const business = {
   },
 
   membership: {
-    /** Show the maintenance-plan interest page and home section. */
-    enabled: true,
+    /** Show the maintenance-plan interest page. Off since Monthly Maintenance became a package (2026-09-30); the page redirects to it. */
+    enabled: false,
     /** Set to true only when prices, terms, and a payment provider are approved. */
     billingEnabled: false,
     /** Unset on purpose: no invented prices. */
@@ -402,9 +489,10 @@ export const business = {
    * Deposit amounts are server-trusted: the browser never sends a price.
    */
   booking: {
-    depositCents: { essential: 2500, signature: 5000 } as Record<ServiceId, number>,
-    /** Calendar block per job (upper end of the published estimate). */
-    durationMinutes: { essential: 180, signature: 360 } as Record<ServiceId, number>,
+    /** Per package. Online booking stays off until every package has a deposit and a duration. */
+    depositCents: {} as Partial<Record<ServiceId, number>>,
+    /** Calendar block per job (upper end of the owner's estimate). */
+    durationMinutes: {} as Partial<Record<ServiceId, number>>,
     slotIntervalMinutes: 30,
     /** Earliest bookable day = today + minDaysAhead (Eastern). */
     minDaysAhead: 1,
@@ -415,7 +503,7 @@ export const business = {
     cancellationHours: 48,
     policyTextVersion: "2026-09-v1",
     policy: [
-      "A deposit of $25 (Essential) or $50 (Signature) holds your appointment and is credited toward your final price.",
+      "A deposit holds your appointment and is credited toward your final price.",
       "Cancel or reschedule at least 48 hours before your appointment for a full refund, or to move your deposit to a new date.",
       "Cancellations within 48 hours of the appointment, and no-shows, forfeit the deposit.",
       "If weather prevents the service, we reschedule at no charge and your deposit carries over.",

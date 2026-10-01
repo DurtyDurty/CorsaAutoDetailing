@@ -20,8 +20,7 @@ function without<T extends object>(obj: T, key: keyof T): Record<string, string 
 
 const validQuote = {
   idempotencyKey: KEY,
-  serviceId: "essential",
-  vehicleCategory: "sedan",
+  serviceId: "signature-full",
   vehicleYear: "2019",
   vehicleMake: "Lexus",
   vehicleModel: "IS F",

@@ -4,12 +4,13 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { submitBooking, submitQuoteRequest } from "@/app/actions/leads";
 import { business, type BusinessMode, type ServiceId } from "@/config/business";
 import { track } from "@/lib/analytics";
-import { CONDITION_FLAGS, computeEstimate, conditionFlagLabel, formatUsd } from "@/lib/pricing";
+import { CONDITION_FLAGS, billingSuffix, computeEstimate, conditionFlagLabel, formatUsd } from "@/lib/pricing";
 import { lookupZip, isValidZip } from "@/lib/zip";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { InspectionDisclaimer } from "@/components/site/Disclosures";
 import { SlotPicker } from "./SlotPicker";
+import { ServiceSelect } from "./ServiceSelect";
 import {
   ChoiceGroup,
   ConsentFields,
@@ -29,7 +30,6 @@ const BOOKING_STEPS = ["Service & vehicle", "Condition", "Location & time", "Con
 /** Which step each server-validated field lives on, so errors jump to the right place. */
 const FIELD_STEP: Record<string, number> = {
   serviceId: 0,
-  vehicleCategory: 0,
   vehicleYear: 0,
   vehicleMake: 0,
   vehicleModel: 0,
@@ -61,12 +61,11 @@ interface Props {
   earliestDate: string | null;
   photosEnabled: boolean;
   initialService?: string;
-  initialVehicle?: string;
   /** Online booking: pick an open time and pay the deposit (LIVE + payments configured). */
   booking?: boolean;
 }
 
-export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialService, initialVehicle, booking = false }: Props) {
+export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialService, booking = false }: Props) {
   const { onSubmit, pending, errors, message, onStart } = useLeadForm(booking ? submitBooking : submitQuoteRequest, {
     formName: booking ? "booking" : "quote_request",
     leadType: "quote_request",
@@ -74,7 +73,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
   const STEPS = booking ? BOOKING_STEPS : REQUEST_STEPS;
   const [step, setStep] = useState(0);
   const [serviceId, setServiceId] = useState(initialService ?? "");
-  const [vehicle, setVehicle] = useState(initialVehicle ?? "");
+
   const [condition, setCondition] = useState("");
   const [flags, setFlags] = useState<string[]>([]);
   const [contactMethod, setContactMethod] = useState("email");
@@ -97,10 +96,8 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
 
   const estimate = useMemo(
     () =>
-      serviceId && vehicle
-        ? computeEstimate({ serviceId, vehicleCategoryId: vehicle, condition: condition as never, conditionFlags: flags })
-        : null,
-    [serviceId, vehicle, condition, flags],
+      serviceId ? computeEstimate({ serviceId, condition: condition as never, conditionFlags: flags }) : null,
+    [serviceId, condition, flags],
   );
   const zipInfo = isValidZip(zip) ? lookupZip(zip) : null;
 
@@ -121,8 +118,8 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
       form.reportValidity();
       return;
     }
-    if (step === 0 && serviceId && vehicle) {
-      track("pricing_vehicle_selected", { service: serviceId, vehicle_category: vehicle });
+    if (step === 0 && serviceId) {
+      track("pricing_vehicle_selected", { service: serviceId });
     }
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   }
@@ -186,35 +183,17 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
 
       {/* Step 1 */}
       <div data-step="0" hidden={step !== 0} className="flex flex-col gap-5">
-        <ChoiceGroup
-          legend="Service"
-          name="serviceId"
-          type="radio"
-          required
-          defaultValue={serviceId}
-          onChange={setServiceId}
-          error={errors.serviceId}
-          options={business.services.map((s) => ({
-            value: s.id,
-            label: s.badge ? `${s.name} (${s.badge})` : s.name,
-            description: `${s.tagline} Est. ${s.duration}.`,
-          }))}
-        />
-        <ChoiceGroup
-          legend="Vehicle type"
-          name="vehicleCategory"
-          type="radio"
-          hint="Minivan, oversized or lifted truck, or something unusual? Send us a message on the contact page for a custom quote."
-          required
-          defaultValue={vehicle}
-          onChange={setVehicle}
-          error={errors.vehicleCategory}
-          options={business.vehicleCategories.map((v) => ({
-            value: v.id,
-            label: v.label,
-            description: v.priced ? undefined : "Custom quote",
-          }))}
-        />
+        <Field name="serviceId" label="Service" error={errors.serviceId}>
+          {(p) => (
+            <ServiceSelect
+              name="serviceId"
+              value={serviceId}
+              onChange={(e) => setServiceId(e.target.value)}
+              required
+              {...p}
+            />
+          )}
+        </Field>
         <div className="grid gap-5 sm:grid-cols-3">
           <Field name="vehicleYear" label="Year" error={errors.vehicleYear}>
             {(p) => (
@@ -441,7 +420,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
         {isLast ? (
           <SubmitButton pending={pending} className="w-full sm:w-auto">
             {booking && serviceId
-              ? `Pay ${formatUsd(business.booking.depositCents[serviceId as ServiceId] / 100)} deposit & book`
+              ? `Pay ${formatUsd((business.booking.depositCents[serviceId as ServiceId] ?? 0) / 100)} deposit & book`
               : mode === "PRELAUNCH"
                 ? "Send my request"
                 : "Request an appointment"}
@@ -459,7 +438,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
 /** Deposit amount, policy and the required agreement (online booking only). */
 function DepositPolicy({ serviceId, required, error }: { serviceId: ServiceId; required: boolean; error?: string }) {
   const id = useId();
-  const deposit = business.booking.depositCents[serviceId] / 100;
+  const deposit = (business.booking.depositCents[serviceId] ?? 0) / 100;
   return (
     <div className="flex flex-col gap-3 border-t border-line pt-5">
       <div id={`${id}-text`} className="border-l-[3px] border-asphalt bg-white px-4 py-3.5 text-sm leading-relaxed">
@@ -536,7 +515,7 @@ function EstimatePanel({
   if (!estimate) {
     return compact ? null : (
       <div className="border border-line bg-white rounded-sm px-5 py-4 text-sm text-ink-muted">
-        Choose a service and vehicle type to see an estimate.
+        Choose a service to see an estimate.
       </div>
     );
   }
@@ -547,10 +526,10 @@ function EstimatePanel({
       </p>
       <div className="mt-2 flex items-baseline justify-between gap-4">
         <p className="font-medium">
-          {estimate.serviceName} <span className="text-ink-muted">· {estimate.vehicleCategoryLabel}</span>
+          {estimate.serviceName}
         </p>
         <p className="font-display text-2xl">
-          {estimate.total !== null ? formatUsd(estimate.total) : "Custom quote"}
+          {estimate.total !== null ? `${formatUsd(estimate.total)}${billingSuffix(estimate.billing)}` : "Custom quote"}
         </p>
       </div>
       {estimate.addOns.length > 0 && (

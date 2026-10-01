@@ -10,7 +10,7 @@ export const HOME_FAQ: FaqItem[] = [
   },
   {
     q: "Which package should I choose?",
-    a: "If it's your first visit, or the vehicle needs more than routine upkeep, start with the Corsa Signature Detail. After that, the Corsa Essential Detail every four to six weeks keeps it clean.",
+    a: "For a complete reset inside and out, start with the Platinum Full Detail. If only the inside or the outside needs attention, choose one of the interior or exterior packages. After that, Monthly Maintenance keeps it fresh.",
   },
   {
     q: "Are the prices final?",
@@ -25,23 +25,23 @@ export const HOME_FAQ: FaqItem[] = [
     a: "We ask about it so we can plan the visit. It helps to know what's available, but the answer doesn't change your quote and isn't a requirement to book.",
   },
   {
-    q: "Is the Signature sealant a ceramic coating?",
-    a: "No. The Signature Detail includes a ceramic paint sealant that provides up to 4-6 months of protection. It isn't a professionally installed ceramic coating, which we don't offer at launch.",
+    q: "Do you offer ceramic coating?",
+    a: "Yes. The Ceramic Coating package comes in 1-, 3- and 5-year options; its starting price is on the services page. The Signature Exterior Detail's spray sealant is lighter protection and isn't a ceramic coating.",
   },
 ];
 
 export const SERVICES_FAQ: FaqItem[] = [
   {
     q: "How long does a visit take?",
-    a: `About ${business.services.map((s) => `${s.duration} for the ${s.name}`).join(" and ")}. Vehicle size and condition can change that; we'll give you a time estimate with your quote.`,
+    a: "It depends on the package and on the vehicle's size and condition. We'll give you a time estimate with your quote.",
   },
   {
-    q: "Which vehicle size am I?",
-    a: "Coupes and sedans are one size; small crossovers and two-row SUVs another; pickup trucks and three-row SUVs a third. Minivans, oversized or lifted trucks and anything unusual are quoted individually, so send us a message through the contact page. If you're between two sizes, pick the closer one and we'll confirm at inspection.",
+    q: "Does vehicle size change the price?",
+    a: "Prices shown are starting prices. Larger vehicles, and vehicles that need extra work, can cost more. We confirm the final price at an in-person inspection before any work begins, and nothing extra is done without your approval.",
   },
   {
     q: "How long does the protection last?",
-    a: `${business.disclosures.protection} As a guide, the Signature Detail's ceramic sealant lasts up to 4-6 months.`,
+    a: `${business.disclosures.protection} Ceramic coating comes in 1-, 3- and 5-year options.`,
   },
   {
     q: "Are there travel or condition charges?",

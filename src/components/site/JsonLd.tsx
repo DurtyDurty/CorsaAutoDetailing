@@ -9,8 +9,7 @@ import { business, absoluteUrl } from "@/config/business";
  */
 export function BusinessJsonLd({ withOffers = true }: { withOffers?: boolean }) {
   const id = absoluteUrl("/#business");
-  const priced = business.vehicleCategories.filter((v) => v.priced);
-  const allPrices = business.services.flatMap((s) => Object.values(s.prices));
+  const visitPrices = business.services.filter((s) => s.billing === "visit").map((s) => s.price);
 
   const areaServed = [
     { "@type": "City", name: "Jacksonville, FL" },
@@ -24,18 +23,19 @@ export function BusinessJsonLd({ withOffers = true }: { withOffers?: boolean }) 
   const packageOffers = business.services.map((s) => ({
     "@type": "Offer",
     priceCurrency: "USD",
-    price: Math.min(...Object.values(s.prices)),
-    priceSpecification: priced.map((v) => ({
-      "@type": "PriceSpecification",
-      name: `${v.label} (starting price)`,
-      minPrice: s.prices[v.id as keyof typeof s.prices],
+    price: s.price,
+    priceSpecification: {
+      "@type": "UnitPriceSpecification",
+      name: "Starting price",
+      minPrice: s.price,
       priceCurrency: "USD",
-    })),
+      ...(s.billing === "monthly" ? { unitText: "MONTH" } : {}),
+    },
     itemOffered: {
       "@type": "Service",
       name: s.name,
       serviceType: "Mobile auto detailing",
-      description: s.description,
+      description: s.includes.join(", "),
       provider: { "@id": id },
       areaServed,
     },
@@ -67,7 +67,7 @@ export function BusinessJsonLd({ withOffers = true }: { withOffers?: boolean }) 
     areaServed,
     ...(withOffers
       ? {
-          priceRange: `$${Math.min(...allPrices)}-$${Math.max(...allPrices)}`,
+          priceRange: `$${Math.min(...visitPrices)}-$${Math.max(...visitPrices)}`,
           hasOfferCatalog: {
             "@type": "OfferCatalog",
             name: "Detailing packages and additional services",

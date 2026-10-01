@@ -33,7 +33,6 @@ export async function submitLaunchList(_prev: FormResult | null, formData: FormD
       phone: d.phone,
       zip: d.zip,
       zipEligibility: lookupZip(d.zip).eligibility,
-      vehicleCategory: d.vehicleCategory,
       serviceId: d.serviceId,
       preferredContact: d.preferredContact,
     }),
@@ -92,7 +91,6 @@ function buildQuoteLead(d: QuoteRequestInput): NewLead {
     lastName: d.lastName,
     phone: d.phone,
     preferredContact: d.preferredContact,
-    vehicleCategory: d.vehicleCategory,
     vehicleYear: d.vehicleYear,
     vehicleMake: d.vehicleMake,
     vehicleModel: d.vehicleModel,
@@ -110,7 +108,6 @@ function buildQuoteLead(d: QuoteRequestInput): NewLead {
     notes: d.notes,
     estimate: computeEstimate({
       serviceId: d.serviceId,
-      vehicleCategoryId: d.vehicleCategory,
       condition: d.condition,
       conditionFlags: d.conditionFlags,
     }),
@@ -204,9 +201,11 @@ export async function submitBooking(_prev: FormResult | null, formData: FormData
 
   const serviceId = d.serviceId as ServiceId;
   const service = getService(serviceId)!;
+  // bookingEnabled() guarantees both are set for every package.
+  const durationMinutes = business.booking.durationMinutes[serviceId]!;
+  const depositCents = business.booking.depositCents[serviceId]!;
   const startsAt = new Date(d.slotStart);
-  const endsAt = new Date(startsAt.getTime() + business.booking.durationMinutes[serviceId] * 60_000);
-  const depositCents = business.booking.depositCents[serviceId];
+  const endsAt = new Date(startsAt.getTime() + durationMinutes * 60_000);
 
   let appt;
   try {

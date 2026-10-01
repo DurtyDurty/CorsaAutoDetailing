@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   title: isPrelaunch ? "Get launch updates" : "Request an appointment",
   description: isPrelaunch
     ? "Booking opens soon. Leave your email and we'll send updates, including the day booking opens."
-    : "Book the Corsa Essential or Signature Detail: tell us about your vehicle, its condition and where it'll be. Final pricing is confirmed at inspection; nothing is charged online.",
+    : "Book a Corsa detail: tell us about your vehicle, its condition and where it'll be. Final pricing is confirmed at inspection; nothing is charged online.",
   alternates: { canonical: "/request" },
   robots: { index: false, follow: true },
 };
@@ -27,8 +27,7 @@ export const metadata: Metadata = {
 export default async function RequestPage({ searchParams }: PageProps<"/request">) {
   const sp = await searchParams;
   const service = typeof sp.service === "string" && business.services.some((s) => s.id === sp.service) ? sp.service : undefined;
-  const vehicle =
-    typeof sp.vehicle === "string" && business.vehicleCategories.some((v) => v.id === sp.vehicle) ? sp.vehicle : undefined;
+
   const unavailable = storeKind() === "unavailable";
   const serviceName = service ? business.services.find((s) => s.id === service)?.name : undefined;
 
@@ -42,7 +41,7 @@ export default async function RequestPage({ searchParams }: PageProps<"/request"
         />
         <Container className="py-12 sm:py-16">
           <div className="max-w-2xl border border-line bg-white rounded-sm p-6 sm:p-8">
-            {unavailable ? <UnavailableNotice /> : <LaunchListForm initialService={service} initialVehicle={vehicle} />}
+            {unavailable ? <UnavailableNotice /> : <LaunchListForm initialService={service} />}
           </div>
         </Container>
       </>
@@ -71,7 +70,6 @@ export default async function RequestPage({ searchParams }: PageProps<"/request"
               earliestDate={earliestPreferenceDate()}
               photosEnabled={photosEnabled()}
               initialService={service}
-              initialVehicle={vehicle}
               booking={booking}
             />
           )}

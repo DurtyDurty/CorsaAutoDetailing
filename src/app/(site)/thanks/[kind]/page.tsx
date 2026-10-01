@@ -5,7 +5,7 @@ import { business, isPrelaunch } from "@/config/business";
 import { Container } from "@/components/ui/Section";
 import { ButtonLink } from "@/components/ui/Button";
 import { getLeadStore } from "@/lib/leads/store";
-import { formatUsd } from "@/lib/pricing";
+import { billingSuffix, formatUsd } from "@/lib/pricing";
 import { shortRef } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -86,10 +86,11 @@ export default async function ThanksPage({ params, searchParams }: PageProps<"/t
           <p className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-apex-deep">Your estimate</p>
           <p className="mt-2 flex items-baseline justify-between gap-4">
             <span>
-              {lead.estimate.serviceName} · {lead.estimate.vehicleCategoryLabel}
+              {lead.estimate.serviceName}
+              {lead.estimate.vehicleCategoryLabel && ` · ${lead.estimate.vehicleCategoryLabel}`}
             </span>
             <span className="font-display text-2xl">
-              {lead.estimate.total !== null ? formatUsd(lead.estimate.total) : "Custom quote"}
+              {lead.estimate.total !== null ? `${formatUsd(lead.estimate.total)}${billingSuffix(lead.estimate.billing)}` : "Custom quote"}
             </span>
           </p>
           <p className="mt-3 text-xs text-ink-muted">
