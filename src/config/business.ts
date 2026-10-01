@@ -473,8 +473,19 @@ export const business = {
   booking: {
     /** Per package. Online booking stays off until every package has a deposit and a duration. */
     depositCents: {} as Partial<Record<ServiceId, number>>,
-    /** Calendar block per job (upper end of the owner's estimate). */
-    durationMinutes: {} as Partial<Record<ServiceId, number>>,
+    /**
+     * Calendar block per job: the upper end of the owner's estimate (2026-10-01):
+     * Essential packages and Monthly Maintenance 2-3 hrs, Signature packages 4-5 hrs.
+     */
+    durationMinutes: {
+      "signature-full": 180, // Essential Full Detail
+      "signature-interior": 180, // Essential Interior Detail
+      "signature-exterior": 180, // Essential Exterior Detail
+      "monthly-maintenance": 180,
+      "platinum-full": 300, // Signature Full Detail
+      "full-works-interior": 300, // Signature Interior Detail
+      "wax-and-buff": 300, // Signature Exterior Detail
+    } as Partial<Record<ServiceId, number>>,
     slotIntervalMinutes: 30,
     /** Earliest bookable day = today + minDaysAhead (Eastern). */
     minDaysAhead: 1,

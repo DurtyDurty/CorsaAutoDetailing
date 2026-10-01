@@ -238,7 +238,14 @@ export async function bookFromApp(store: LeadStore, actor: string, input: Create
 
 export function bookingOptions(): BookingOptions {
   return {
-    services: business.services.map((s) => ({ id: s.id, name: s.name, group: s.group, priceCents: s.price * 100, billing: s.billing })),
+    services: business.services.map((s) => ({
+      id: s.id,
+      name: s.name,
+      group: s.group,
+      priceCents: s.price * 100,
+      billing: s.billing,
+      durationMinutes: business.booking.durationMinutes[s.id] ?? null,
+    })),
     defaultDurationMinutes: business.scheduling.defaultDurationMinutes,
     travelBufferMinutes: business.scheduling.travelBufferMinutes,
     workHours: business.scheduling.workHours,

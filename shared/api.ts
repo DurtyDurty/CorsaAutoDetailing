@@ -334,6 +334,8 @@ export interface ServiceOption {
   group: string;
   priceCents: number;
   billing: "visit" | "monthly";
+  /** How long the calendar blocks for this package, when set. */
+  durationMinutes: number | null;
 }
 
 export interface BookingOptions {

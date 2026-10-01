@@ -20,7 +20,7 @@ import { colors, MIN_TOUCH, radius, space } from "@/design/theme";
 import { pickerDate, pickerTime } from "@/lib/format";
 import { useDebounced } from "@/lib/use-debounced";
 
-const DURATIONS = [60, 90, 120, 180, 240, 360];
+const DURATIONS = [60, 90, 120, 180, 240, 300, 360];
 const durationLabel = (m: number) => (m % 60 === 0 ? `${m / 60} hr` : `${Math.floor(m / 60)}.5 hr`);
 
 function tomorrowAtNine(): Date {
@@ -213,9 +213,11 @@ export default function NewAppointmentScreen() {
                     selected={existing}
                     onSelect={(c) => {
                       setExisting(c);
-                      if (!serviceId && c.serviceId && services.some((s) => s.id === c.serviceId)) {
-                        setServiceId(c.serviceId);
-                        setPrice(String((services.find((s) => s.id === c.serviceId)?.priceCents ?? 0) / 100));
+                      const match = services.find((s) => s.id === c.serviceId);
+                      if (!serviceId && match) {
+                        setServiceId(match.id);
+                        setPrice(String(match.priceCents / 100));
+                        if (match.durationMinutes) setDuration(match.durationMinutes);
                       }
                     }}
                   />
@@ -273,6 +275,7 @@ export default function NewAppointmentScreen() {
                       onPress={() => {
                         setServiceId(s.id);
                         setPrice(String(s.priceCents / 100));
+                        if (s.durationMinutes) setDuration(s.durationMinutes);
                       }}
                     />
                   ))}
