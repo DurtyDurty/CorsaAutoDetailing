@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { submitBooking, submitQuoteRequest } from "@/app/actions/leads";
+import { submitBooking, submitCalendarRequest, submitQuoteRequest } from "@/app/actions/leads";
 import { business, type BusinessMode, type ServiceId } from "@/config/business";
 import { track } from "@/lib/analytics";
 import { CONDITION_FLAGS, billingSuffix, computeEstimate, conditionFlagLabel, formatUsd } from "@/lib/pricing";
@@ -26,6 +26,7 @@ import {
 
 const REQUEST_STEPS = ["Service & vehicle", "Condition", "Location & timing", "Contact & review"] as const;
 const BOOKING_STEPS = ["Service & vehicle", "Condition", "Location & time", "Contact & deposit"] as const;
+const CALENDAR_STEPS = ["Service & vehicle", "Condition", "Location & time", "Contact & review"] as const;
 
 /** Which step each server-validated field lives on, so errors jump to the right place. */
 const FIELD_STEP: Record<string, number> = {
@@ -63,14 +64,18 @@ interface Props {
   initialService?: string;
   /** Online booking: pick an open time and pay the deposit (LIVE + payments configured). */
   booking?: boolean;
+  /** Deposits off: pick an open time, which is held for the owner to confirm. */
+  calendar?: boolean;
 }
 
-export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialService, booking = false }: Props) {
-  const { onSubmit, pending, errors, message, onStart } = useLeadForm(booking ? submitBooking : submitQuoteRequest, {
-    formName: booking ? "booking" : "quote_request",
-    leadType: "quote_request",
-  });
-  const STEPS = booking ? BOOKING_STEPS : REQUEST_STEPS;
+export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialService, booking = false, calendar = false }: Props) {
+  const { onSubmit, pending, errors, message, onStart } = useLeadForm(
+    booking ? submitBooking : calendar ? submitCalendarRequest : submitQuoteRequest,
+    { formName: booking ? "booking" : calendar ? "calendar_request" : "quote_request", leadType: "quote_request" },
+  );
+  const STEPS = booking ? BOOKING_STEPS : calendar ? CALENDAR_STEPS : REQUEST_STEPS;
+  // Both booking styles make the customer pick a real open time from the calendar.
+  const pickTime = booking || calendar;
   const [step, setStep] = useState(0);
   const [serviceId, setServiceId] = useState(initialService ?? "");
 
@@ -321,7 +326,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
             { value: "other", label: "Somewhere else" },
           ]}
         />
-        {booking ? (
+        {pickTime ? (
           <SlotPicker serviceId={serviceId} required={step === 2} error={errors.slotStart} />
         ) : (
           <ChoiceGroup
@@ -334,7 +339,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
             options={business.scheduling.timeWindows.map((w) => ({ value: w.id, label: w.label }))}
           />
         )}
-        {booking ? null : earliestDate ? (
+        {pickTime ? null : earliestDate ? (
           <Field
             name="preferredDate"
             label="Preferred date"
@@ -421,9 +426,11 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
           <SubmitButton pending={pending} className="w-full sm:w-auto">
             {booking && serviceId
               ? `Pay ${formatUsd((business.booking.depositCents[serviceId as ServiceId] ?? 0) / 100)} deposit & book`
-              : mode === "PRELAUNCH"
-                ? "Send my request"
-                : "Request an appointment"}
+              : calendar
+                ? "Request this time"
+                : mode === "PRELAUNCH"
+                  ? "Send my request"
+                  : "Request an appointment"}
           </SubmitButton>
         ) : (
           <Button type="button" size="lg" onClick={goNext} className="w-full sm:w-auto">

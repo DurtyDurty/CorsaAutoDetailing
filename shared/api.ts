@@ -176,6 +176,8 @@ export interface StatusChangeResponse {
   appointment: AppointmentDetail;
   /** True when the appointment already had this status (repeat tap). */
   unchanged: boolean;
+  /** Confirming or declining a website request emails the customer; null otherwise. */
+  customerEmail: { status: "sent" | "failed"; error: string | null } | null;
 }
 
 /* ---------- Today / summary ---------- */
@@ -199,8 +201,10 @@ export interface TodaySummary {
   unreadMessages: number;
   /** Appointments needing a decision (deposit pending / awaiting confirmation). */
   awaitingConfirmation: number;
-  /** Current job if one is underway, otherwise the next upcoming one today or later. */
+  /** Current job if one is underway, otherwise the next confirmed one today or later. */
   focus: AppointmentSummary | null;
+  /** Times customers requested on the website, held for you to confirm or decline (soonest first). */
+  toConfirm: AppointmentSummary[];
   timeline: AppointmentSummary[];
 }
 

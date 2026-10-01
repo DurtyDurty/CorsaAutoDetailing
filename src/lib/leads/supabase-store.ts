@@ -443,6 +443,17 @@ export class SupabaseLeadStore implements LeadStore {
     return data ? apptFromRow(data) : null;
   }
 
+  async releaseExpiredHolds() {
+    const { data, error } = await this.client
+      .from("appointments")
+      .update({ status: "cancelled", deposit_status: "released", updated_at: new Date().toISOString() })
+      .eq("status", "held")
+      .lt("hold_expires_at", new Date().toISOString())
+      .select("id");
+    if (error) throw new Error(error.message);
+    return (data ?? []).length;
+  }
+
   async bookOnlineSlot(input: OnlineHoldInput) {
     const { data, error } = await this.client.rpc("book_online_slot", {
       p_lead_id: input.leadId,

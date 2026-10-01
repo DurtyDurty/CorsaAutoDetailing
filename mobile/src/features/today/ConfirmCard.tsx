@@ -1,0 +1,95 @@
+import { useRef } from "react";
+import { Alert, StyleSheet, View } from "react-native";
+import * as Haptics from "expo-haptics";
+import type { AppointmentSummary, StatusChangeResponse } from "@shared/api";
+import { formatCents } from "@shared/money";
+import { ApiClientError } from "@/api/client";
+import { newRequestId, useChangeStatus } from "@/api/queries";
+import { Button } from "@/design/Button";
+import { Card } from "@/design/Card";
+import { Text } from "@/design/Text";
+import { colors, space } from "@/design/theme";
+import { addressLine, formatShortDay, formatTimeRange, vehicleLine } from "@/lib/format";
+import { callPhone } from "@/lib/native";
+
+type Decision = "confirmed" | "declined";
+
+function emailNote(res: StatusChangeResponse): string {
+  const e = res.customerEmail;
+  if (!e) return "";
+  return e.status === "sent" ? " The customer was emailed." : ` The email to the customer didn't send: ${e.error ?? "unknown error"}.`;
+}
+
+/** A time a customer picked on the website, waiting for the owner's yes or no. */
+export function ConfirmCard({ appt }: { appt: AppointmentSummary }) {
+  const change = useChangeStatus();
+  const pending = useRef<{ to: Decision; id: string } | null>(null);
+  const vehicle = vehicleLine(appt.vehicle);
+  const address = addressLine(appt);
+
+  const decide = (to: Decision) => {
+    if (pending.current?.to !== to) pending.current = { to, id: newRequestId() };
+    change.mutate(
+      {
+        id: appt.id,
+        to,
+        requestId: pending.current.id,
+        ...(to === "declined" ? { reason: "Requested time not available" } : {}),
+      },
+      {
+        onSuccess: (res) => {
+          pending.current = null;
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          Alert.alert(to === "confirmed" ? "Confirmed" : "Declined", `${appt.customerName}.${emailNote(res)}`);
+        },
+        onError: (err) => {
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          const offline = err instanceof ApiClientError && (err.code === "network" || err.code === "timeout");
+          if (!offline) pending.current = null;
+          Alert.alert(offline ? "Not sent yet" : "Couldn't update", err.message);
+        },
+      },
+    );
+  };
+
+  return (
+    <Card style={styles.card} accessibilityLabel={`Request from ${appt.customerName} for ${formatShortDay(appt.startsAt)}`}>
+      <Text variant="label" style={styles.label}>
+        Requested · {formatShortDay(appt.startsAt)}
+      </Text>
+      <View style={styles.block}>
+        <Text variant="heading">{appt.customerName}</Text>
+        <Text variant="bodyStrong">{appt.serviceName ?? "Service not set"}</Text>
+        <Text variant="caption">{formatTimeRange(appt.startsAt, appt.endsAt)}</Text>
+        {vehicle && <Text variant="body">{vehicle}</Text>}
+        {address && <Text variant="caption">{address}</Text>}
+        {appt.quotedPriceCents > 0 && <Text variant="caption">Starting price {formatCents(appt.quotedPriceCents)}</Text>}
+      </View>
+      <View style={styles.actions}>
+        <Button
+          label="Decline"
+          variant="danger"
+          disabled={change.isPending}
+          onPress={() =>
+            Alert.alert("Decline this request?", "The customer gets an email asking them to pick another time.", [
+              { text: "Keep it", style: "cancel" },
+              { text: "Decline", style: "destructive", onPress: () => decide("declined") },
+            ])
+          }
+          style={styles.action}
+        />
+        {appt.phone && <Button label="Call" variant="secondary" onPress={() => void callPhone(appt.phone!)} style={styles.action} />}
+        <Button label="Confirm" haptic="medium" loading={change.isPending} onPress={() => decide("confirmed")} style={styles.action} />
+      </View>
+      <Text variant="caption">Confirming emails the customer a confirmation from your business address.</Text>
+    </Card>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: { gap: space.md, borderColor: colors.warning },
+  label: { color: colors.warning },
+  block: { gap: space.xs },
+  actions: { flexDirection: "row", gap: space.sm },
+  action: { flex: 1 },
+});

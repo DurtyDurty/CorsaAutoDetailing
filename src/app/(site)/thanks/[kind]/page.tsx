@@ -6,6 +6,7 @@ import { Container } from "@/components/ui/Section";
 import { ButtonLink } from "@/components/ui/Button";
 import { getLeadStore } from "@/lib/leads/store";
 import { billingSuffix, formatUsd } from "@/lib/pricing";
+import { formatEastern } from "@/lib/time";
 import { shortRef } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -54,6 +55,12 @@ export default async function ThanksPage({ params, searchParams }: PageProps<"/t
   const store = await getLeadStore();
   const lead = typeof ref === "string" && store ? await store.getLead(ref).catch(() => null) : null;
 
+  // A calendar request (deposits off) holds the time the customer picked.
+  const requested =
+    lead && kind === "request" && store
+      ? (await store.listAppointments({ leadId: lead.id })).find((a) => a.status === "held" && a.depositStatus === "none")
+      : undefined;
+
   if (!lead) {
     return (
       <Container className="py-20 max-w-2xl">
@@ -78,8 +85,19 @@ export default async function ThanksPage({ params, searchParams }: PageProps<"/t
   return (
     <Container className="py-20 max-w-2xl">
       <p className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-apex-deep">Reference {shortRef(lead.id)}</p>
-      <h1 className="font-display text-4xl sm:text-5xl mt-3 text-balance">{copy.title}</h1>
-      <p className="mt-5 text-lg text-ink-muted leading-relaxed">{copy.body}</p>
+      <h1 className="font-display text-4xl sm:text-5xl mt-3 text-balance">{requested ? "Time requested." : copy.title}</h1>
+      <p className="mt-5 text-lg text-ink-muted leading-relaxed">
+        {requested
+          ? "We're holding this time for you while we review your request. It isn't confirmed yet: you'll get a confirmation email as soon as it is."
+          : copy.body}
+      </p>
+
+      {requested && (
+        <div className="mt-8 border-l-[3px] border-apex-deep bg-white px-5 py-4">
+          <p className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-apex-deep">Requested time</p>
+          <p className="mt-2 font-display text-2xl">{formatEastern(requested.startsAt, { dateStyle: "full", timeStyle: "short" })} ET</p>
+        </div>
+      )}
 
       {lead.estimate && (
         <div className="mt-8 border border-line bg-white rounded-md p-5">

@@ -22,7 +22,10 @@ const LEAD_TYPE_LABEL: Record<LeadRecord["leadType"], string> = {
 /** "Sat, Nov 7, 2026 at 9:00 AM ET" */
 const whenLabel = (a: AppointmentRecord) => `${formatEastern(a.startsAt, { dateStyle: "full", timeStyle: "short" })} ET`;
 
-function ownerSubject(lead: LeadRecord, booking?: AppointmentRecord) {
+function ownerSubject(lead: LeadRecord, booking?: AppointmentRecord, requested?: AppointmentRecord) {
+  if (requested) {
+    return `[${business.brand.shortName}] Time requested: ${lead.firstName}, ${formatEastern(requested.startsAt, { dateStyle: "medium", timeStyle: "short" })}. Confirm in the app (${shortRef(lead.id)})`;
+  }
   if (booking) {
     return `[${business.brand.shortName}] New booking: ${lead.firstName}, ${formatEastern(booking.startsAt, { dateStyle: "medium", timeStyle: "short" })} (${shortRef(lead.id)})`;
   }
@@ -30,11 +33,13 @@ function ownerSubject(lead: LeadRecord, booking?: AppointmentRecord) {
 }
 
 /** Internal notes are intentionally excluded from every email. */
-function ownerBody(lead: LeadRecord, booking?: AppointmentRecord) {
+function ownerBody(lead: LeadRecord, booking?: AppointmentRecord, requested?: AppointmentRecord) {
   const lines = [
-    booking
-      ? `Online booking for ${whenLabel(booking)}. Deposit ${formatUsd((booking.depositCents ?? 0) / 100)} paid.`
-      : `${LEAD_TYPE_LABEL[lead.leadType]} received ${formatEastern(lead.createdAt)} ET`,
+    requested
+      ? `Requested time: ${whenLabel(requested)}. It's held until ${formatEastern(requested.holdExpiresAt ?? requested.startsAt)} ET. Confirm or decline it in the Corsa Owner app.`
+      : booking
+        ? `Online booking for ${whenLabel(booking)}. Deposit ${formatUsd((booking.depositCents ?? 0) / 100)} paid.`
+        : `${LEAD_TYPE_LABEL[lead.leadType]} received ${formatEastern(lead.createdAt)} ET`,
     `Reference: ${shortRef(lead.id)}`,
     `Mode: ${lead.businessMode}`,
     "",
@@ -79,7 +84,10 @@ function ownerBody(lead: LeadRecord, booking?: AppointmentRecord) {
   return lines.filter((l) => l !== null).join("\n");
 }
 
-function customerSubject(lead: LeadRecord, booking?: AppointmentRecord) {
+function customerSubject(lead: LeadRecord, booking?: AppointmentRecord, requested?: AppointmentRecord) {
+  if (requested) {
+    return `${business.brand.name}: we received your request for ${formatEastern(requested.startsAt, { dateStyle: "medium", timeStyle: "short" })}`;
+  }
   if (booking) {
     return `${business.brand.name}: you're booked for ${formatEastern(booking.startsAt, { dateStyle: "medium", timeStyle: "short" })}`;
   }
@@ -126,13 +134,15 @@ function bookingBody(lead: LeadRecord, booking: AppointmentRecord) {
 }
 
 /** Customer acknowledgement. Never confirms an appointment. */
-function customerBody(lead: LeadRecord) {
+function customerBody(lead: LeadRecord, requested?: AppointmentRecord) {
   const intro: Record<LeadRecord["leadType"], string> = {
     launch_list: `Thanks for joining the launch list. We're preparing to open in ${business.serviceAreas.region}, and you'll be among the first to hear when scheduling opens.`,
     quote_request:
       lead.businessMode === "PRELAUNCH"
         ? `Thanks for your request. We're not scheduling appointments yet because we're still preparing to launch, but we've saved your details and will reach out with a quote and timing once we open.`
-        : `Thanks for your request. This is not a confirmed appointment yet. ${business.owner.name} will review your vehicle and location details and reply with a quote and available times.`,
+        : requested
+          ? `Thanks for your request. You asked for ${whenLabel(requested)}, and we're holding that time for you. It isn't confirmed yet: ${business.owner.name} will review your vehicle and location details, and you'll get a confirmation email once it is.`
+          : `Thanks for your request. This is not a confirmed appointment yet. ${business.owner.name} will review your vehicle and location details and reply with a quote and available times.`,
     membership_interest: `Thanks for your interest in a maintenance plan. Plans aren't available yet and nothing has been charged. We'll share details once pricing and terms are finalized.`,
     contact: `Thanks for getting in touch. We've received your message and will reply as soon as we can.`,
   };
@@ -176,18 +186,17 @@ async function attempt(store: LeadStore, record: NotificationRecord, lead: LeadR
     return;
   }
   try {
-    // A paid online booking gets booking-specific emails instead of the "request received" ones.
-    const booking =
-      lead.leadType === "quote_request"
-        ? (await store.listAppointments({ leadId: lead.id })).find((a) => a.source === "online" && a.depositStatus === "paid")
-        : undefined;
+    // A paid online booking gets booking-specific emails; a calendar request names the time it holds.
+    const appts = lead.leadType === "quote_request" ? await store.listAppointments({ leadId: lead.id }) : [];
+    const booking = appts.find((a) => a.source === "online" && a.depositStatus === "paid");
+    const requested = booking ? undefined : appts.find((a) => a.source === "online" && a.status === "held" && a.depositStatus === "none");
     const { id } = await adapter.send(
       record.kind === "owner_notify"
-        ? { to, subject: ownerSubject(lead, booking), text: ownerBody(lead, booking), replyTo: lead.email }
+        ? { to, subject: ownerSubject(lead, booking, requested), text: ownerBody(lead, booking, requested), replyTo: lead.email }
         : {
             to,
-            subject: customerSubject(lead, booking),
-            text: booking ? bookingBody(lead, booking) : customerBody(lead),
+            subject: customerSubject(lead, booking, requested),
+            text: booking ? bookingBody(lead, booking) : customerBody(lead, requested),
             replyTo: business.contact.email ?? undefined,
           },
     );

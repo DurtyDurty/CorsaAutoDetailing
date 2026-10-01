@@ -181,6 +181,14 @@ function requirePhone(data: { phone: string | null }, ctx: z.RefinementCtx) {
 
 export const quoteRequestSchema = quoteRequestFields.superRefine(requirePhone);
 
+/** Calendar request (deposits off) = the request fields + a chosen open time. */
+export const calendarRequestSchema = quoteRequestFields
+  .extend({
+    slotStart: z.string({ message: "Choose a date and time." }).datetime({ message: "Choose a date and time." }),
+  })
+  .superRefine(requirePhone);
+export type CalendarRequestInput = z.infer<typeof calendarRequestSchema>;
+
 /** Online booking = the request fields + a chosen slot + agreeing to the deposit policy. */
 export const bookingRequestSchema = quoteRequestFields
   .extend({

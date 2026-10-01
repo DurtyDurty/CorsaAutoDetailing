@@ -68,21 +68,28 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     if (!isMobile) await expect(page.getByRole("banner").getByRole("link", { name: "Book a detail" })).toBeVisible();
   });
 
-  test("a customer sends a request for Monthly Maintenance without paying anything", async ({ page }) => {
+  test("a customer must pick a time from the calendar; it's held for the owner, nothing is paid", async ({ page }) => {
     const form = await fillVehicleAndCondition(page, "monthly-maintenance");
-    await expect(form.locator('input[name="slotStart"]')).toHaveCount(0);
-    await form.getByRole("checkbox", { name: /Flexible/ }).check();
+    // No time picked yet: can't continue.
+    await form.getByRole("button", { name: "Continue" }).click();
+    await expect(form.getByRole("heading", { name: /^Location & tim(e|ing)$/ })).toBeVisible();
+    await expect(form.getByRole("checkbox", { name: /Flexible/ })).toHaveCount(0);
+    const slot = await pickFirstSlot(page);
     await form.getByRole("button", { name: "Continue" }).click();
     await expect(form.getByRole("heading", { name: "Contact & review" })).toBeVisible();
     await expect(form.locator('[data-step="3"]').getByText("$150/mo", { exact: true })).toBeVisible();
+    await expect(form.getByText(/deposit/i)).toHaveCount(0);
     await form.getByLabel("First name").fill("Riley");
     await form.getByLabel("Email", { exact: true }).fill(`${unique()}@example.com`);
     await form.getByLabel(/Phone/).fill("904-555-0101");
     await form.getByLabel(/I understand Corsa Auto Detailing will use/).check();
     await form.getByLabel(/displayed price is an estimate/).check();
-    await form.getByRole("button", { name: "Request an appointment" }).click();
+    await form.getByRole("button", { name: "Request this time" }).click();
     await expect(page).toHaveURL(/\/thanks\/request\?ref=/);
+    await expect(page.getByRole("heading", { name: "Time requested." })).toBeVisible();
     await expect(page.getByText("Monthly Maintenance")).toBeVisible();
+    // The held time is gone from the calendar.
+    expect(await openSlots(page, "monthly-maintenance")).not.toContain(slot);
   });
 });
 

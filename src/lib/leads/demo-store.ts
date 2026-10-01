@@ -316,6 +316,22 @@ export class DemoLeadStore implements LeadStore {
     });
   }
 
+  releaseExpiredHolds() {
+    return serialized(async () => {
+      const data = await load();
+      const ts = now();
+      let n = 0;
+      for (const a of data.appointments) {
+        if (a.status === "held" && a.holdExpiresAt !== null && a.holdExpiresAt < ts) {
+          Object.assign(a, { status: "cancelled", depositStatus: "released", updatedAt: ts });
+          n++;
+        }
+      }
+      if (n) await save(data);
+      return n;
+    });
+  }
+
   bookOnlineSlot(input: OnlineHoldInput) {
     return serialized(async () => {
       const data = await load();

@@ -3,7 +3,9 @@
 import { headers } from "next/headers";
 import { business, getService, type ServiceId } from "@/config/business";
 import { isSlotAvailable } from "@/lib/availability";
-import { bookingEnabled, calendarState, releaseToken } from "@/lib/booking";
+import { bookingEnabled, calendarRequestsEnabled, calendarState, releaseToken } from "@/lib/booking";
+import { notifyForLead } from "@/lib/notifications";
+import { todayEastern } from "@/lib/time";
 import { SlotTakenError, type LeadRecord, type NewLead } from "@/lib/leads/types";
 import { getPaymentAdapter } from "@/lib/payments";
 import { intake, baseLead, type IntakeResult } from "@/lib/leads/intake";
@@ -17,7 +19,9 @@ import {
   membershipInterestSchema,
   quoteRequestSchema,
   bookingRequestSchema,
+  calendarRequestSchema,
   type BookingRequestInput,
+  type CalendarRequestInput,
   type QuoteRequestInput,
 } from "@/lib/validation";
 
@@ -133,6 +137,91 @@ export async function submitQuoteRequest(_prev: FormResult | null, formData: For
     build: buildQuoteLead,
     afterSave: savePhotos,
   });
+  return withRedirect(result, "request");
+}
+
+/**
+ * Calendar request (deposits off): the customer picks an open time, which is
+ * held for the owner to confirm or decline in the app. No payment. Emails go
+ * out after the hold exists, so they can name the requested time.
+ */
+export async function submitCalendarRequest(_prev: FormResult | null, formData: FormData): Promise<FormResult> {
+  if (!calendarRequestsEnabled()) {
+    return { status: "unavailable", message: "Online scheduling isn't available right now. Please try again shortly or send us a message." };
+  }
+  const store = await getLeadStore();
+  if (!store) return { status: "unavailable", message: "We can't take requests right now. Please try again shortly." };
+
+  const requestedService = String(formData.get("serviceId") ?? "");
+  const requestedSlot = String(formData.get("slotStart") ?? "");
+  if (getService(requestedService) && requestedSlot) {
+    await store.releaseExpiredHolds();
+    const free = isSlotAvailable({ serviceId: requestedService as ServiceId, ...(await calendarState(store)), startIso: requestedSlot });
+    if (!free) return SLOT_TAKEN;
+  }
+
+  let input: CalendarRequestInput | null = null;
+  const result = await intake({
+    leadType: "quote_request",
+    schema: calendarRequestSchema,
+    formData,
+    notify: false,
+    build: (d) => {
+      input = d;
+      return { ...buildQuoteLead(d), preferredDate: todayEastern(new Date(d.slotStart)) };
+    },
+    afterSave: savePhotos,
+  });
+  if (result.status !== "ok" || !input) return withRedirect(result, "request");
+  const d: CalendarRequestInput = input;
+  const lead = await store.getLead(result.leadId);
+  if (!lead) return { status: "error", message: "Something went wrong saving your request. Please try again." };
+  // A resubmitted form (same idempotency key) already holds its time.
+  if (!result.created && (await store.listAppointments({ leadId: lead.id })).some((a) => a.status === "held")) {
+    return withRedirect(result, "request");
+  }
+
+  const serviceId = d.serviceId as ServiceId;
+  const startsAt = new Date(d.slotStart);
+  const minutes = business.booking.durationMinutes[serviceId] ?? business.scheduling.defaultDurationMinutes;
+  const holdUntil = Math.min(Date.now() + business.booking.requestHoldHours * 3600_000, startsAt.getTime());
+  let appt;
+  try {
+    await store.releaseExpiredHolds();
+    appt = await store.createAppointment({
+      leadId: lead.id,
+      startsAt: startsAt.toISOString(),
+      endsAt: new Date(startsAt.getTime() + minutes * 60_000).toISOString(),
+      status: "held",
+      quotedPriceCents: Math.round((lead.estimate?.total ?? 0) * 100),
+      customerAgreed: false,
+      completedRevenueCents: null,
+      notes: null,
+      source: "online",
+      serviceId,
+      depositCents: null,
+      depositStatus: "none",
+      checkoutSessionId: null,
+      paymentIntentId: null,
+      holdExpiresAt: new Date(holdUntil).toISOString(),
+      bufferMinutes: business.scheduling.travelBufferMinutes,
+    });
+  } catch (err) {
+    // The request stays saved (it shows in the owner's Inbox); emails wait until a time is held,
+    // so a customer who picks another time isn't emailed twice.
+    if (err instanceof SlotTakenError) return SLOT_TAKEN;
+    throw err;
+  }
+  await store.addAppointmentEvent({
+    appointmentId: appt.id,
+    type: "created",
+    fromStatus: null,
+    toStatus: "held",
+    note: "Requested on the website; waiting for you to confirm",
+    actor: "website",
+    requestId: null,
+  });
+  await notifyForLead(store, lead);
   return withRedirect(result, "request");
 }
 

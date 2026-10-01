@@ -319,6 +319,8 @@ export interface LeadStore {
   listPayments(opts: { appointmentIds?: string[]; from?: string; to?: string }): Promise<PaymentRecord[]>;
   /** Returns null if a payment with the same requestId was already recorded. */
   recordPayment(input: NewPayment): Promise<PaymentRecord | null>;
+  /** Cancel `held` appointments whose hold has expired, so their times can be booked again. */
+  releaseExpiredHolds(): Promise<number>;
   /**
    * Atomically release stale holds and reserve `input` as a `held` online
    * appointment. Throws SlotTakenError if it overlaps (with buffer) an active one.

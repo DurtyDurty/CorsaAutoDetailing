@@ -42,6 +42,8 @@ export async function todaySummary(store: LeadStore, now: Date = new Date()): Pr
   const horizon = startOf(addDays(today, 60));
   const rangeTo = [weekEnd, monthEnd, horizon].sort().at(-1)!;
 
+  // Expired holds stop counting as "to confirm" and free their times.
+  await store.releaseExpiredHolds();
   const [appts, requests, messages] = await Promise.all([
     store.listAppointments({ from: rangeFrom, to: rangeTo }),
     store.listLeads({ leadType: "quote_request", stage: "new" }),
@@ -58,8 +60,11 @@ export async function todaySummary(store: LeadStore, now: Date = new Date()): Pr
 
   const underway = items.find((a) => FIELD_STATUSES.includes(a.status));
   const next = items
-    .filter((a) => (a.status === "confirmed" || a.status === "held") && a.endsAt >= nowIso)
+    .filter((a) => a.status === "confirmed" && a.endsAt >= nowIso)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0];
+  const toConfirm = items
+    .filter((a) => a.status === "held" && a.depositStatus === "none" && a.endsAt >= nowIso)
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 
   return {
     date: today,
@@ -75,8 +80,9 @@ export async function todaySummary(store: LeadStore, now: Date = new Date()): Pr
     month: bookedTotal(items, monthStart, monthEnd),
     newRequests: requests.length,
     unreadMessages: messages.length,
-    awaitingConfirmation: items.filter((a) => a.status === "held" && a.endsAt >= nowIso).length,
+    awaitingConfirmation: toConfirm.length,
     focus: underway ?? next ?? null,
+    toConfirm,
     timeline,
   };
 }

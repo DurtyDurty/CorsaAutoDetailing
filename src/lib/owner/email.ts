@@ -3,6 +3,48 @@ import { business } from "@/config/business";
 import { getEmailAdapter } from "@/lib/email";
 import type { LeadStore, OutboundEmailRecord } from "@/lib/leads/types";
 import { composeOwnerEmail } from "@/lib/owner-email";
+import { formatCents } from "@shared/money";
+import { formatEastern } from "@/lib/time";
+
+/** "You're booked" email, from the app booking or a confirmed website request. */
+export function appointmentConfirmationEmail(a: {
+  firstName: string;
+  serviceName: string;
+  startsAt: string;
+  address: string | null;
+  priceCents: number;
+}) {
+  return {
+    subject: `Your ${a.serviceName} is confirmed for ${formatEastern(a.startsAt, { dateStyle: "medium", timeStyle: undefined })}`,
+    message: [
+      `Hi ${a.firstName},`,
+      "",
+      `You're booked with ${business.brand.name}.`,
+      "",
+      `Service: ${a.serviceName}`,
+      `When: ${formatEastern(a.startsAt, { dateStyle: "full", timeStyle: "short" })} (Eastern)`,
+      ...(a.address ? [`Where: ${a.address}`] : []),
+      `Quoted price: ${formatCents(a.priceCents)}. ${business.finalQuoteNotice}`,
+      "",
+      "You don't need to provide water or power. If anything changes, just reply to this email.",
+    ].join("\n"),
+  };
+}
+
+/** Sent when the owner declines a time a customer requested on the website. */
+export function requestDeclinedEmail(a: { firstName: string; startsAt: string }) {
+  const site = business.brand.canonicalDomain.replace(/\/$/, "");
+  return {
+    subject: `About your ${business.brand.name} request`,
+    message: [
+      `Hi ${a.firstName},`,
+      "",
+      `Thanks for requesting ${formatEastern(a.startsAt, { dateStyle: "full", timeStyle: "short" })}. Unfortunately we can't make that time work.`,
+      "",
+      `You're welcome to pick another time at ${site}/request, or reply to this email and we'll find one together.`,
+    ].join("\n"),
+  };
+}
 
 export type SendOwnerEmailResult =
   | { status: "sent"; record: OutboundEmailRecord | null; alreadySent: boolean }

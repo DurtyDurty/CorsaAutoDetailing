@@ -481,6 +481,8 @@ export const business = {
     maxDaysAhead: 30,
     /** How long a slot is held while the customer pays. Stripe Checkout expires at 30 min; this is longer so a late payment still finds its hold. */
     holdMinutes: 40,
+    /** No-deposit calendar requests: the picked time is held this long for the owner to confirm (never past the start time). */
+    requestHoldHours: 48,
     checkoutMinutes: 30,
     cancellationHours: 48,
     policyTextVersion: "2026-09-v1",

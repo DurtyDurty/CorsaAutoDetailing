@@ -9,14 +9,13 @@ import {
   type NewCustomerInput,
 } from "@shared/api";
 import { isBlocking } from "@shared/appointment-status";
-import { formatCents } from "@shared/money";
 import { ApiError } from "@/lib/api/http";
 import { SlotTakenError, type AppointmentRecord, type LeadStore, type NewLead } from "@/lib/leads/types";
 import { computeEstimate } from "@/lib/pricing";
-import { easternToUtc, formatEastern, isIsoDate, overlapsWithBuffer, withinWorkHours } from "@/lib/time";
+import { easternToUtc, isIsoDate, overlapsWithBuffer, withinWorkHours } from "@/lib/time";
 import { lookupZip } from "@/lib/zip";
 import { getAppointmentDetail, logAppointmentEvent } from "./appointments";
-import { sendOwnerEmail } from "./email";
+import { appointmentConfirmationEmail, sendOwnerEmail } from "./email";
 
 /** A booking may start up to this long ago (the owner entering a job they're already at). */
 const PAST_GRACE_MS = 15 * 60_000;
@@ -168,25 +167,6 @@ function newLeadFromApp(input: CreateAppointmentInput, c: NewCustomerInput): New
   };
 }
 
-function confirmationEmail(a: { firstName: string; serviceName: string; startsAt: string; address: string | null; priceCents: number }) {
-  const when = formatEastern(a.startsAt, { dateStyle: "full", timeStyle: "short" });
-  return {
-    subject: `Your ${a.serviceName} is confirmed for ${formatEastern(a.startsAt, { dateStyle: "medium", timeStyle: undefined })}`,
-    message: [
-      `Hi ${a.firstName},`,
-      "",
-      `You're booked with ${business.brand.name}.`,
-      "",
-      `Service: ${a.serviceName}`,
-      `When: ${when} (Eastern)`,
-      ...(a.address ? [`Where: ${a.address}`] : []),
-      `Quoted price: ${formatCents(a.priceCents)}. ${business.finalQuoteNotice}`,
-      "",
-      "You don't need to provide water or power. If anything changes, just reply to this email.",
-    ].join("\n"),
-  };
-}
-
 /** Book from the app: new or existing customer, then (optionally) email the confirmation. */
 export async function bookFromApp(store: LeadStore, actor: string, input: CreateAppointmentInput): Promise<CreateAppointmentResponse> {
   const service = getService(input.serviceId);
@@ -228,7 +208,7 @@ export async function bookFromApp(store: LeadStore, actor: string, input: Create
   let confirmationError: string | null = null;
   if (input.sendConfirmation) {
     const lead = (await store.getLead(leadId))!;
-    const email = confirmationEmail({
+    const email = appointmentConfirmationEmail({
       firstName: lead.firstName,
       serviceName: service.name,
       startsAt: appt.startsAt,

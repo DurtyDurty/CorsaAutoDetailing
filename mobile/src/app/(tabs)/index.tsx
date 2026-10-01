@@ -8,6 +8,7 @@ import { EmptyState, ErrorState } from "@/design/States";
 import { Text } from "@/design/Text";
 import { colors, space } from "@/design/theme";
 import { AttentionRow } from "@/features/today/AttentionRow";
+import { ConfirmCard } from "@/features/today/ConfirmCard";
 import { FocusCard } from "@/features/today/FocusCard";
 import { StatGrid } from "@/features/today/StatGrid";
 import { Timeline } from "@/features/today/Timeline";
@@ -44,6 +45,17 @@ export default function TodayScreen() {
               <Text variant="caption" style={styles.stale} accessibilityRole="alert">
                 Can&apos;t reach the server. Showing the last update from {formatTime(new Date(dataUpdatedAt).toISOString())}.
               </Text>
+            )}
+
+            {data.toConfirm.length > 0 && (
+              <View style={styles.section}>
+                <Text variant="label" style={styles.stale}>
+                  To confirm ({data.toConfirm.length})
+                </Text>
+                {data.toConfirm.map((a) => (
+                  <ConfirmCard key={a.id} appt={a} />
+                ))}
+              </View>
             )}
 
             {data.focus ? (

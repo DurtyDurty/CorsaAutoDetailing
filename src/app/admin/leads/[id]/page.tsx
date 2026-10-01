@@ -307,7 +307,17 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
                 </div>
               ) : heldAppt ? (
                 <p className="text-sm text-ink-muted">
-                  Online booking in progress: {formatEastern(heldAppt.startsAt)} ET is held until {heldAppt.holdExpiresAt ? formatEastern(heldAppt.holdExpiresAt) : "payment"} while the customer pays the deposit.
+                  {heldAppt.depositStatus === "none" ? (
+                    <>
+                      Requested on the website: {formatEastern(heldAppt.startsAt)} ET, held until{" "}
+                      {heldAppt.holdExpiresAt ? formatEastern(heldAppt.holdExpiresAt) : "the start time"}. Confirm or decline it in the Corsa Owner app; the customer is emailed either way.
+                    </>
+                  ) : (
+                    <>
+                      Online booking in progress: {formatEastern(heldAppt.startsAt)} ET is held until{" "}
+                      {heldAppt.holdExpiresAt ? formatEastern(heldAppt.holdExpiresAt) : "payment"} while the customer pays the deposit.
+                    </>
+                  )}
                 </p>
               ) : business.mode !== "LIVE" ? (
                 <p className="text-sm text-ink-muted">

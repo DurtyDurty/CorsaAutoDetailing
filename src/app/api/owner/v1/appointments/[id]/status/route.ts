@@ -11,6 +11,6 @@ export const POST = withOwner<{ id: string }>(async (req, { owner, params }) => 
   const id = requireUuid(params.id);
   const input = await parseBody(req, statusChangeSchema);
   const store = await requireStore();
-  const { unchanged } = await changeAppointmentStatus(store, owner.email, id, input);
-  return json<StatusChangeResponse>({ appointment: await getAppointmentDetail(store, id), unchanged });
+  const { unchanged, customerEmail } = await changeAppointmentStatus(store, owner.email, id, input);
+  return json<StatusChangeResponse>({ appointment: await getAppointmentDetail(store, id), unchanged, customerEmail: customerEmail ?? null });
 });

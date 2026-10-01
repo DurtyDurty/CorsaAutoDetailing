@@ -16,6 +16,7 @@ import {
 } from "@shared/appointment-status";
 import { computeBalance } from "@shared/money";
 import { ApiError } from "@/lib/api/http";
+import { appointmentConfirmationEmail, requestDeclinedEmail, sendOwnerEmail } from "./email";
 import type {
   AppointmentEventRecord,
   AppointmentPatch,
@@ -170,6 +171,8 @@ export async function listAppointmentSummaries(store: LeadStore, q: ListAppointm
 export interface StatusChangeResult {
   appointment: AppointmentRecord;
   unchanged: boolean;
+  /** Set when confirming or declining a website request emailed the customer. */
+  customerEmail?: { status: "sent" | "failed"; error: string | null } | null;
 }
 
 /**
@@ -212,6 +215,10 @@ export async function changeAppointmentStatus(
     patch.depositStatus = "released";
     patch.holdExpiresAt = null;
   }
+  // A website calendar request (no deposit) the owner accepts: it's now a firm booking.
+  const acceptingRequest = appt.status === "held" && input.to === "confirmed" && appt.depositStatus === "none";
+  const decliningRequest = appt.status === "held" && input.to === "declined" && appt.depositStatus === "none";
+  if (acceptingRequest) patch.holdExpiresAt = null;
 
   const updated = await store.updateAppointmentIfStatus(id, appt.status, patch);
   if (!updated) {
@@ -231,10 +238,52 @@ export async function changeAppointmentStatus(
     requestId: input.requestId,
   });
 
+  let customerEmail: StatusChangeResult["customerEmail"] = null;
+  if (acceptingRequest || decliningRequest) {
+    customerEmail = await emailCustomerAboutRequest(store, actor, updated, acceptingRequest ? "confirmed" : "declined");
+  }
+
   if (input.to === "completed") await store.updateLead(appt.leadId, { stage: "completed" });
   if (input.to === "declined") await store.updateLead(appt.leadId, { stage: "lost" });
+  if (acceptingRequest) await store.updateLead(appt.leadId, { stage: "scheduled" });
 
-  return { appointment: updated, unchanged: false };
+  return { appointment: updated, unchanged: false, customerEmail };
+}
+
+/**
+ * Tell the customer their website request was confirmed or declined, from the
+ * business address. Keyed by appointment, so it's sent at most once.
+ */
+async function emailCustomerAboutRequest(
+  store: LeadStore,
+  actor: string,
+  appt: AppointmentRecord,
+  outcome: "confirmed" | "declined",
+): Promise<{ status: "sent" | "failed"; error: string | null }> {
+  const lead = await store.getLead(appt.leadId);
+  if (!lead) return { status: "failed", error: "Customer not found." };
+  const email =
+    outcome === "confirmed"
+      ? appointmentConfirmationEmail({
+          firstName: lead.firstName,
+          serviceName: (appt.serviceId && getService(appt.serviceId)?.name) || "detail",
+          startsAt: appt.startsAt,
+          address: [lead.serviceAddress, lead.city, lead.zip].filter(Boolean).join(", ") || null,
+          priceCents: appt.quotedPriceCents,
+        })
+      : requestDeclinedEmail({ firstName: lead.firstName, startsAt: appt.startsAt });
+  const sent = await sendOwnerEmail(store, lead.id, { ...email, sendKey: `${outcome}-${appt.id}` });
+  const result =
+    sent.status === "sent"
+      ? { status: "sent" as const, error: null }
+      : { status: "failed" as const, error: sent.status === "not_found" ? "Customer not found." : sent.reason };
+  await logAppointmentEvent(store, {
+    appointmentId: appt.id,
+    type: "note",
+    note: result.status === "sent" ? `Customer emailed: request ${outcome}` : `Email to customer failed: ${result.error}`,
+    actor,
+  });
+  return result;
 }
 
 /** Audit entry for changes made outside changeAppointmentStatus (dashboard forms, booking flow). */

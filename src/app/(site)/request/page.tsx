@@ -5,7 +5,7 @@ import { PageHero } from "@/components/site/PageHero";
 import { QuoteRequestForm } from "@/components/forms/QuoteRequestForm";
 import { LaunchListForm } from "@/components/forms/LaunchListForm";
 import { earliestPreferenceDate } from "@/lib/time";
-import { bookingEnabled } from "@/lib/booking";
+import { bookingEnabled, calendarRequestsEnabled } from "@/lib/booking";
 import { photosEnabled } from "@/lib/photos";
 import { storeKind } from "@/lib/leads/store";
 import { UnavailableNotice } from "@/components/site/UnavailableNotice";
@@ -49,15 +49,18 @@ export default async function RequestPage({ searchParams }: PageProps<"/request"
   }
 
   const booking = bookingEnabled();
+  const calendar = calendarRequestsEnabled();
   return (
     <>
       <PageHero
-        eyebrow={booking ? "Book a detail" : "Request an appointment"}
-        title={booking ? "Pick your time. Lock it in." : "Tell us about your car."}
+        eyebrow={booking || calendar ? "Book a detail" : "Request an appointment"}
+        title={booking ? "Pick your time. Lock it in." : calendar ? "Pick your time. We'll confirm it." : "Tell us about your car."}
         lede={
           booking
             ? "Four short steps: your vehicle, its condition, where and when, then a small deposit to hold the time. Prices shown are starting estimates; the final price is confirmed at an in-person inspection before any work begins."
-            : "Four short steps. Prices shown are starting estimates; the final price is confirmed at an in-person inspection before any work begins. No payment is collected until availability and final pricing are confirmed."
+            : calendar
+              ? "Four short steps: your vehicle, its condition, where, and a time from the calendar. We hold that time while we review your request, then email you to confirm. Prices shown are starting estimates; the final price is confirmed at an in-person inspection. Nothing is charged online."
+              : "Four short steps. Prices shown are starting estimates; the final price is confirmed at an in-person inspection before any work begins. No payment is collected until availability and final pricing are confirmed."
         }
       />
       <Container className="py-12 sm:py-16">
@@ -71,6 +74,7 @@ export default async function RequestPage({ searchParams }: PageProps<"/request"
               photosEnabled={photosEnabled()}
               initialService={service}
               booking={booking}
+              calendar={calendar}
             />
           )}
         </div>

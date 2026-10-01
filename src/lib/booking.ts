@@ -17,6 +17,20 @@ export function bookingEnabled(): boolean {
   return configured && business.mode === "LIVE" && storeKind() !== "unavailable" && getPaymentAdapter().kind !== "disabled";
 }
 
+/**
+ * Calendar requests: with deposits off, customers still pick an open time from
+ * the calendar. The time is held (no payment) until the owner confirms or
+ * declines it in the app, or the hold expires.
+ */
+export function calendarRequestsEnabled(): boolean {
+  return business.mode === "LIVE" && storeKind() !== "unavailable" && !bookingEnabled();
+}
+
+/** The public availability calendar is shown in either booking style. */
+export function calendarOpen(): boolean {
+  return bookingEnabled() || calendarRequestsEnabled();
+}
+
 /** Active appointments (confirmed, or held and not yet expired) as busy windows. */
 export async function busyWindows(store: LeadStore, now: Date = new Date()): Promise<BusyWindow[]> {
   const nowIso = now.toISOString();
