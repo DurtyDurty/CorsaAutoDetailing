@@ -17,7 +17,7 @@ Things the website is deliberately silent or provisional about until you decide.
 ## Contact & hours
 
 - [ ] **Public email address** (required before launch; also used as reply-to on customer emails). → `NEXT_PUBLIC_CONTACT_EMAIL`
-- [ ] **Public phone number** (optional; omitted until set). → `NEXT_PUBLIC_CONTACT_PHONE`
+- [x] **Public phone number.** Set 2026-10-02: 904-649-0739 (site contact page, footer, and the Google Ads call asset). → `NEXT_PUBLIC_CONTACT_PHONE`
 - [ ] **Reply hours** — the site makes no response-time promise until you set a truthful one, e.g. "Mon–Sat, 9am–6pm ET". → `NEXT_PUBLIC_RESPONSE_HOURS`
 - [ ] **Social profiles** (omitted until set). → `NEXT_PUBLIC_SOCIAL_*`
 - [ ] **Owner alert inbox** for new-lead emails. → `OWNER_NOTIFY_EMAIL`

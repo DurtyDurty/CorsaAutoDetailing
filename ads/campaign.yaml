@@ -145,5 +145,5 @@ assets:
     - { text: "Contact Us", url: /contact, line1: "Questions before you book?", line2: "Send us a message" }
   # Added only once a business phone number exists (NEXT_PUBLIC_CONTACT_PHONE). null = no call asset.
   call:
-    phone: null
+    phone: "904-649-0739"
     country_code: US
