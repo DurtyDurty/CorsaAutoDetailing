@@ -263,6 +263,15 @@ class BuildTests(unittest.TestCase):
         self.assertEqual(camp.target_spend.cpc_bid_ceiling_micros, 3_500_000)
 
 
+class QueryTests(unittest.TestCase):
+    def test_filter_field_added_to_select(self):
+        q = g.with_filter_fields("SELECT ad_group.name FROM ad_group WHERE campaign.resource_name = 'x'")
+        self.assertTrue(q.startswith("SELECT campaign.resource_name, ad_group.name"))
+        same = "SELECT campaign.resource_name, campaign.id FROM campaign WHERE campaign.resource_name = 'x'"
+        self.assertEqual(g.with_filter_fields(same), same)
+        self.assertEqual(g.with_filter_fields("SELECT a FROM b"), "SELECT a FROM b")
+
+
 class NegativeSuggestionTests(unittest.TestCase):
     def row(self, term, clicks=1, status="NONE", conv=0.0):
         return negatives.TermRow(term, "Mobile Detailing", status, 10, clicks, clicks * 1_500_000, conv)

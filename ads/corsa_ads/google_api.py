@@ -99,7 +99,16 @@ def with_retry(fn: Callable[[], Any], attempts: int = 3, sleep: Callable[[float]
             sleep(2 ** i)
 
 
+def with_filter_fields(query: str) -> str:
+    """GAQL requires campaign.resource_name in SELECT when the query filters on it (except FROM campaign)."""
+    head, sep, where = query.partition(" WHERE ")
+    if sep and "campaign.resource_name" in where and "campaign.resource_name" not in head:
+        head = head.replace("SELECT ", "SELECT campaign.resource_name, ", 1)
+    return head + sep + where
+
+
 def search(client, customer_id: str, query: str) -> list:
+    query = with_filter_fields(query)
     svc = client.get_service("GoogleAdsService")
     return with_retry(lambda: list(svc.search(customer_id=customer_id, query=query)))
 
