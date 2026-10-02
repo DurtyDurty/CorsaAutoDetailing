@@ -144,7 +144,7 @@ def cmd_keyword_estimates(args, env) -> int:
     req.customer_id = cid
     req.keywords.extend(sorted({k.text for grp in cfg.ad_groups for k in grp.keywords}))
     req.geo_target_constants.extend(f"geoTargetConstants/{l['id']}" for l in cfg.campaign["locations"])
-    req.language = "languageConstants/1000"
+    req.language = f"languageConstants/{cfg.campaign['languages'][0]['id']}"
     req.keyword_plan_network = client.enums.KeywordPlanNetworkEnum.GOOGLE_SEARCH
     try:
         resp = g.with_retry(lambda: svc.generate_keyword_historical_metrics(request=req))
@@ -207,7 +207,7 @@ def cmd_create(args, env) -> int:
         out(f"NOTE  {n}")
     steps = plan_mod.missing(cfg, ex)
     if not steps:
-        out("Nothing to create: everything in campaign.yaml already exists. Nothing was changed.")
+        out(f"Nothing to create: everything in {Path(args.config).name} already exists. Nothing was changed.")
         return 0
     out(f"{len(steps)} item(s) to create" + (" (campaign already exists; adding only what's missing)" if ex.campaign else "") + ":")
     for s in steps:
@@ -232,7 +232,7 @@ def cmd_create(args, env) -> int:
     after = g.discover(client, cid, cfg)
     out(f"Campaign status now: {after.campaign_status}" + ("" if after.campaign_status == "PAUSED" else "  !! not PAUSED; check Google Ads"))
     left = plan_mod.missing(cfg, after)
-    out("Everything in campaign.yaml exists." if not left else f"{len(left)} item(s) still missing; rerun create-campaign --paused.")
+    out(f"Everything in {Path(args.config).name} exists." if not left else f"{len(left)} item(s) still missing; rerun create-campaign --paused.")
     return 0
 
 

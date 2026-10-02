@@ -130,7 +130,7 @@ def preview(cfg: Config, ex: Existing | None = None) -> str:
         f"  Bidding: Maximize Clicks" + (f", max CPC ${c['bidding']['max_cpc_usd']:.2f}" if cfg.max_cpc_micros else ", no max CPC"),
         f"  Networks: Google Search only (Search Partners off, Display off)",
         f"  Locations ({c['location_matching']}: people in or regularly in): " + "; ".join(f"{l['name']} [{l['id']}]" for l in c["locations"]),
-        f"  Language: English [1000]",
+        f"  Language: " + ", ".join(f"{l['name']} [{l['id']}]" for l in c["languages"]),
         f"  Schedule ({c.get('expected_time_zone', 'account time zone')}): {', '.join(d[:3].title() for d in c['schedule']['days'])} {c['schedule']['start']}-{c['schedule']['end']}",
         f"  Start date: {c.get('start_date') or 'none (runs once enabled)'}",
         "",

@@ -36,6 +36,9 @@ VERIFIED_GEO = {
     9196545: "Fleming Island, Florida, United States",
 }
 ENGLISH = 1000
+SPANISH = 1003
+# One language per campaign: English and Spanish each get their own campaign.
+LANGUAGES = {ENGLISH: "English", SPANISH: "Spanish"}
 
 # Pages that exist on the site (src/app/(site)); tests check each against the repo.
 KNOWN_PATHS = {
@@ -54,13 +57,14 @@ DAYS = ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUN
 
 # Claims the business can't make (no ceramic service, no guarantees, no fake urgency, deposits are off).
 BANNED = [
-    (r"\bceramic\b|\bcoating", "ceramic/coating claim (the sealant is a sealant)"),
-    (r"guarantee", "guarantee claim"),
-    (r"#\s*1\b|\bnumber one\b|\bbest\b|\bcheapest\b|\blowest\b", "superlative claim"),
-    (r"limited time|hurry|act now|spots? left|only \d+|last chance|today only|ends soon", "false urgency or scarcity"),
-    (r"\bdeposit", "deposits are off"),
-    (r"\bfree\b", "'free' offer that doesn't exist"),
-    (r"\bcertified\b|\blicensed\b|\binsured\b", "credential not verified in the repo"),
+    (r"\bceramic\b|\bcoating|cer[áa]mic|recubrimiento", "ceramic/coating claim (the sealant is a sealant)"),
+    (r"guarantee|garant", "guarantee claim"),
+    (r"#\s*1\b|\bnumber one\b|\bbest\b|\bcheapest\b|\blowest\b|\bel mejor\b|\blos mejores\b|m[áa]s barato|n[úu]mero uno", "superlative claim"),
+    (r"limited time|hurry|act now|spots? left|only \d+|last chance|today only|ends soon"
+     r"|tiempo limitado|[úu]ltim[oa]s? (cupos|lugares|citas)|solo hoy|no espere|ap[úu]rese", "false urgency or scarcity"),
+    (r"\bdeposit|dep[óo]sito", "deposits are off"),
+    (r"\bfree\b|\bgratis\b", "'free' offer that doesn't exist"),
+    (r"\bcertified\b|\blicensed\b|\binsured\b|certificad|licenciad|asegurad", "credential not verified in the repo"),
 ]
 
 # Characters Google rejects in keywords.
@@ -265,8 +269,9 @@ def validate(cfg: Config, prices: set[int] | None = None) -> Config:
         e.append("campaign.locations has duplicates")
     if c.get("location_matching") != "PRESENCE":
         e.append("campaign.location_matching must be PRESENCE (people in the towns, not interested in them)")
-    if [l.get("id") for l in c.get("languages") or []] != [ENGLISH]:
-        e.append("campaign.languages must be English only (1000); Spanish gets its own campaign")
+    langs = [l.get("id") for l in c.get("languages") or []]
+    if len(langs) != 1 or langs[0] not in LANGUAGES:
+        e.append("campaign.languages must be exactly one of English (1000) or Spanish (1003); each language gets its own campaign")
 
     sch = c.get("schedule") or {}
     days = sch.get("days") or []

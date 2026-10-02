@@ -137,6 +137,7 @@ assets:
     - Veteran-Owned
     - No Water or Power Needed
     - Home or Work Visits
+    - Se Habla Español
   sitelinks:
     - { text: "Book a Detail", url: /request, line1: "Pick a date that works for you", line2: "We confirm your time by email" }
     - { text: "Packages & Prices", url: /services, line1: "Essential and Signature options", line2: "Interior, exterior or full" }

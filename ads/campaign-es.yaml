@@ -1,0 +1,113 @@
+# Corsa Auto Detailing: Spanish Search campaign (owner speaks Spanish; "Se habla español" is in the site footer).
+# Same towns, networks and schedule as campaign.yaml; its own budget. The site has no Spanish pages,
+# so ads link to the regular pages and say the owner attends customers in Spanish.
+#   python -m corsa_ads --config campaign-es.yaml validate-config
+# Prices and claims must match src/config/business.ts.
+
+site: https://corsaautodetailing.com
+
+campaign:
+  name: "Corsa | Search | Clay County | ES | Launch Oct 2026"
+  status: PAUSED
+  daily_budget_usd: 5.00
+  budget_name: "Corsa | Clay County ES | Daily budget"
+  bidding:
+    strategy: MAXIMIZE_CLICKS
+    max_cpc_usd: null
+  networks:
+    google_search: true
+    search_partners: false
+    display: false
+  eu_political_advertising: false
+  start_date: null
+  expected_time_zone: America/New_York
+  locations:
+    - { id: 1015119, name: "Middleburg, Florida, United States", type: City }
+    - { id: 1015041, name: "Green Cove Springs, Florida, United States", type: City }
+    - { id: 9196545, name: "Fleming Island, Florida, United States", type: City }
+  location_matching: PRESENCE
+  # Google shows these ads to people whose Google language setting is Spanish.
+  languages:
+    - { id: 1003, name: Spanish }
+  schedule:
+    days: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
+    start: "08:00"
+    end: "19:00"
+
+# Negatives only block the exact words given (no plurals, accents or synonyms), so variants are listed.
+negative_keywords:
+  - { text: trabajo, match: BROAD }
+  - { text: trabajos, match: BROAD }
+  - { text: empleo, match: BROAD }
+  - { text: empleos, match: BROAD }
+  - { text: salario, match: BROAD }
+  - { text: sueldo, match: BROAD }
+  - { text: curso, match: BROAD }
+  - { text: cursos, match: BROAD }
+  - { text: como hacer, match: PHRASE }
+  - { text: cómo hacer, match: PHRASE }
+  - { text: productos, match: BROAD }
+  - { text: equipo, match: BROAD }
+  - { text: mayoreo, match: BROAD }
+  - { text: lavado automático, match: PHRASE }
+  - { text: lavado automatico, match: PHRASE }
+  - { text: autolavado, match: BROAD }
+  - { text: túnel, match: BROAD }
+  - { text: tunel, match: BROAD }
+
+ad_groups:
+  - name: Detallado a Domicilio
+    final_url: /
+    keywords:
+      - { text: detallado de autos a domicilio, match: PHRASE }
+      - { text: detallado de carros a domicilio, match: PHRASE }
+      - { text: lavado de autos a domicilio, match: PHRASE }
+      - { text: lavado de carros a domicilio, match: PHRASE }
+      - { text: limpieza de autos a domicilio, match: PHRASE }
+      - { text: detallado de autos, match: PHRASE }
+      - { text: detallado de carros, match: PHRASE }
+      - { text: lavado de carros cerca de mi, match: EXACT }
+      - { text: detallado de autos cerca de mi, match: EXACT }
+      - { text: detallado de autos middleburg, match: PHRASE, final_url: /service-areas/middleburg }
+      - { text: detallado de autos green cove springs, match: PHRASE, final_url: /service-areas/green-cove-springs }
+      - { text: detallado de autos fleming island, match: PHRASE, final_url: /service-areas/fleming-island }
+    ad:
+      path1: Detallado
+      path2: Domicilio
+      headlines:
+        - Detallado de Autos a Domicilio
+        - Se Habla Español
+        - Vamos a Su Casa o Trabajo
+        - Desde $125
+        - Negocio de un Veterano
+        - Reserve Su Cita en Línea
+        - No Necesita Agua ni Corriente
+        - Detallado en Middleburg
+        - Detallado en Fleming Island
+        - Detallado en Green Cove
+        - Interior y Exterior
+        - Lavado a Mano con Sellador
+        - Paquetes Essential y Signature
+        - Citas Desde el 8 de Octubre
+        - Detallado Móvil Premium
+      descriptions:
+        - Detallado de autos a domicilio en Middleburg, Fleming Island y Green Cove Springs.
+        - Paquetes de interior, exterior o completo desde $125. Le atendemos en español.
+        - Negocio de un veterano. Llevamos todo el equipo; no necesita agua ni corriente.
+        - Elija su fecha en línea y le confirmamos por correo. Citas desde el 8 de octubre.
+
+assets:
+  callouts:
+    - Se Habla Español
+    - Servicio a Domicilio
+    - Reserve en Línea
+    - Negocio de Veterano
+    - Sin Agua ni Corriente
+  sitelinks:
+    - { text: "Reservar Cita", url: /request, line1: "Elija el día que le convenga", line2: "Le confirmamos por correo" }
+    - { text: "Paquetes y Precios", url: /services, line1: "Opciones Essential y Signature", line2: "Interior, exterior o completo" }
+    - { text: "Zonas de Servicio", url: /service-areas, line1: "Middleburg y Fleming Island", line2: "Green Cove Springs y alrededores" }
+    - { text: "Contacto", url: /contact, line1: "¿Preguntas antes de reservar?", line2: "Escríbanos; hablamos español" }
+  call:
+    phone: null
+    country_code: US

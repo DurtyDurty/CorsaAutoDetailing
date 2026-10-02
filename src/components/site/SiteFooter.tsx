@@ -85,7 +85,8 @@ export function SiteFooter() {
       <div className="border-t border-line-dark">
         <Container className="py-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between text-sm text-chalk/60">
           <p>© {new Date().getFullYear()} {business.brand.name}. Serving {business.serviceAreas.region}.</p>
-          <div className="flex gap-5">
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            <span lang="es">Se habla español</span>
             <Link href="/privacy" className="hover:text-apex">
               Privacy
             </Link>

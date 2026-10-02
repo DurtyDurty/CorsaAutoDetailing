@@ -80,7 +80,23 @@ class ConfigTests(unittest.TestCase):
     def test_networks_and_language(self):
         self.assertTrue(cfg_with(**{"campaign.networks.search_partners": True}).errors)
         self.assertTrue(cfg_with(**{"campaign.networks.display": True}).errors)
-        self.assertTrue(cfg_with(**{"campaign.languages": [{"id": 1003, "name": "Spanish"}]}).errors)
+        self.assertTrue(cfg_with(**{"campaign.languages": [{"id": 1001, "name": "German"}]}).errors)
+        both = [{"id": 1000, "name": "English"}, {"id": 1003, "name": "Spanish"}]
+        self.assertIn("exactly one", " ".join(cfg_with(**{"campaign.languages": both}).errors))
+
+    def test_spanish_campaign(self):
+        es = config.load(config.ADS_DIR / "campaign-es.yaml")
+        self.assertEqual(es.errors, [])
+        self.assertEqual(es.campaign["status"], "PAUSED")
+        self.assertEqual(es.budget_micros, 5_000_000)
+        self.assertEqual([l["id"] for l in es.campaign["languages"]], [1003])
+        self.assertNotEqual(es.campaign["name"], config.load().campaign["name"])
+        self.assertNotEqual(es.campaign["budget_name"], config.load().campaign["budget_name"])
+        for bad in ("Recubrimiento Cerámico", "El Mejor Detallado", "Últimos Cupos Hoy", "Lavado Gratis", "Pague un Depósito"):
+            errors = []
+            config.check_text("h", bad, 30, errors)
+            self.assertTrue(errors, bad)
+        self.assertIn("Se Habla Español", config.load().callouts)
 
     def test_locations_are_the_three_verified_towns_only(self):
         c = config.load()
@@ -247,7 +263,8 @@ class BuildTests(unittest.TestCase):
         assets = self.kind("asset_operation")
         links = self.kind("campaign_asset_operation")
         self.assertEqual(len(assets), len(links), "every asset is linked to the campaign")
-        self.assertEqual(len(assets), 5 + 4)
+        self.assertEqual(len(assets), len(self.cfg.callouts) + len(self.cfg.sitelinks))
+        self.assertEqual(len(self.cfg.sitelinks), 4)
 
     def test_rerun_with_existing_campaign_uses_its_resource_names(self):
         ex = full_existing(self.cfg)
