@@ -56,6 +56,8 @@ def full_existing(cfg) -> plan.Existing:
             ex.callouts.add(s.key[0])
         elif k == "sitelink":
             ex.sitelinks.add(s.key[0])
+        elif k == "call":
+            ex.has_call = True
     return ex
 
 
@@ -69,7 +71,7 @@ class ConfigTests(unittest.TestCase):
     def test_budget_micros(self):
         self.assertEqual(config.usd_to_micros(10), 10_000_000)
         self.assertEqual(config.usd_to_micros(12.34), 12_340_000)
-        self.assertEqual(config.load().budget_micros, 10_000_000)
+        self.assertEqual(config.load().budget_micros, 5_000_000)
         self.assertIn("whole cents", " ".join(cfg_with(**{"campaign.daily_budget_usd": 10.005}).errors))
         self.assertIn("safety cap", " ".join(cfg_with(**{"campaign.daily_budget_usd": 500}).errors))
         self.assertTrue(cfg_with(**{"campaign.daily_budget_usd": 0}).errors)
@@ -178,7 +180,9 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(kinds[:2], ["budget", "campaign"])
         self.assertEqual(kinds.count("location"), 3)
         self.assertEqual(kinds.count("keyword"), 12)
-        self.assertEqual(kinds.count("call"), 0, "no call asset without a phone number")
+        self.assertEqual(kinds.count("call"), 1)
+        no_phone = cfg_with(**{"assets.call.phone": None})
+        self.assertEqual([s.kind for s in plan.desired(no_phone)].count("call"), 0, "no call asset without a phone number")
 
     def test_rerun_creates_nothing(self):
         c = config.load()
@@ -204,7 +208,7 @@ class PlanTests(unittest.TestCase):
     def test_preview(self):
         text = plan.preview(config.load())
         self.assertIn("PAUSED", text)
-        self.assertIn("10000000 micros", text)
+        self.assertIn("5000000 micros", text)
         self.assertIn("Middleburg, Florida, United States [1015119]", text)
         self.assertRegex(text, r"H1\s+28/30  Clay County Mobile Detailing")
 
@@ -236,7 +240,7 @@ class BuildTests(unittest.TestCase):
 
     def test_budget(self):
         (b,) = self.kind("campaign_budget_operation")
-        self.assertEqual(b.amount_micros, 10_000_000)
+        self.assertEqual(b.amount_micros, 5_000_000)
         self.assertFalse(b.explicitly_shared)
 
     def test_criteria(self):
@@ -263,7 +267,7 @@ class BuildTests(unittest.TestCase):
         assets = self.kind("asset_operation")
         links = self.kind("campaign_asset_operation")
         self.assertEqual(len(assets), len(links), "every asset is linked to the campaign")
-        self.assertEqual(len(assets), len(self.cfg.callouts) + len(self.cfg.sitelinks))
+        self.assertEqual(len(assets), len(self.cfg.callouts) + len(self.cfg.sitelinks) + 1, "callouts, sitelinks and the call asset")
         self.assertEqual(len(self.cfg.sitelinks), 4)
 
     def test_rerun_with_existing_campaign_uses_its_resource_names(self):

@@ -9,7 +9,7 @@ campaign:
   name: "Corsa | Search | Clay County | Launch Oct 2026"
   # Always created PAUSED. The CLI refuses any other value; enabling is a manual step for the owner.
   status: PAUSED
-  daily_budget_usd: 10.00
+  daily_budget_usd: 5.00
   budget_name: "Corsa | Clay County | Daily budget"
   bidding:
     strategy: MAXIMIZE_CLICKS

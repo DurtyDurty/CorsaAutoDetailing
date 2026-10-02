@@ -110,7 +110,7 @@ If Google Ads isn't connected, spend shows "not connected". It is never estimate
    - If an ad shows "Destination not working", Google's ad reviewer was blocked. Relax the Vercel Firewall challenge setting (verified bots, including Google's, should be allowed through).
 2. Auto-tagging is on. The conversion actions exist and uploads are `on`, with a `validate` day passed.
 3. The ad schedule matches your availability. The phone number is added if you want calls.
-4. Billing is set up in Google Ads, and the $10/day budget is confirmed.
+4. Billing is set up in Google Ads, and the budget is confirmed: $5/day English and $5/day Spanish to start (owner decision 2026-10-02; raise both in Google Ads once the trailer arrives).
 5. Enable the campaign yourself in Google Ads. Watch `report` and `search-terms` daily for the first week. Add negatives you agree with to `campaign.yaml` and run `create-campaign --paused` to add them.
 6. To stop at any time, run `pause-campaign`.
 
