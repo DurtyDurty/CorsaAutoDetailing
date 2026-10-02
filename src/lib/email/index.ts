@@ -2,6 +2,7 @@ import "server-only";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { storeKind } from "@/lib/leads/store";
+import { cleanLine } from "@/lib/utils";
 
 export interface EmailMessage {
   to: string;
@@ -87,17 +88,26 @@ class DisabledAdapter implements EmailAdapter {
   }
 }
 
+/** Subjects carry customer-typed text (names, reply subjects): always one line, whoever built it. */
+function singleLineSubject(adapter: EmailAdapter): EmailAdapter {
+  return {
+    kind: adapter.kind,
+    send: (message) => adapter.send({ ...message, subject: cleanLine(message.subject, 300) }),
+  };
+}
+
 let cached: EmailAdapter | undefined;
 
 export function getEmailAdapter(): EmailAdapter {
   if (cached) return cached;
   const kind = emailKind();
-  cached =
+  cached = singleLineSubject(
     kind === "resend"
       ? new ResendAdapter(process.env.RESEND_API_KEY!, process.env.EMAIL_FROM!)
       : kind === "demo"
         ? new DemoOutboxAdapter()
-        : new DisabledAdapter();
+        : new DisabledAdapter(),
+  );
   return cached;
 }
 

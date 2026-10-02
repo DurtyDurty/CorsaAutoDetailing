@@ -6,12 +6,13 @@ import { isSlotAvailable } from "@/lib/availability";
 import { bookingEnabled, calendarRequestsEnabled, calendarState, releaseToken } from "@/lib/booking";
 import { notifyForLead } from "@/lib/notifications";
 import { todayEastern } from "@/lib/time";
-import { SlotTakenError, type LeadRecord, type NewLead } from "@/lib/leads/types";
+import { SlotTakenError, type LeadRecord, type LeadStore, type NewLead } from "@/lib/leads/types";
 import { getPaymentAdapter } from "@/lib/payments";
 import { intake, baseLead, type IntakeResult } from "@/lib/leads/intake";
 import { getLeadStore } from "@/lib/leads/store";
 import { photosEnabled, storeLeadPhotos } from "@/lib/photos";
 import { computeEstimate } from "@/lib/pricing";
+import { normalizeEmail, normalizePhone } from "@/lib/utils";
 import { lookupZip } from "@/lib/zip";
 import {
   contactSchema,
@@ -140,10 +141,24 @@ export async function submitQuoteRequest(_prev: FormResult | null, formData: For
   return withRedirect(result, "request");
 }
 
+/** Website requests still waiting on the owner, each holding a time, with who asked. */
+async function openRequests(store: LeadStore) {
+  const now = new Date().toISOString();
+  const holds = (await store.listAppointments({ from: now })).filter(
+    (a) => a.status === "held" && a.source === "online" && a.depositStatus === "none" && (!a.holdExpiresAt || a.holdExpiresAt > now),
+  );
+  const leads = await store.getLeads([...new Set(holds.map((h) => h.leadId))]);
+  return { holds, leads };
+}
+
 /**
  * Calendar request (deposits off): the customer picks an open time, which is
  * held for the owner to confirm or decline in the app. No payment. Emails go
  * out after the hold exists, so they can name the requested time.
+ *
+ * A hold costs the visitor nothing and takes the time off the calendar, so holds
+ * are rationed: a couple per customer and a ceiling overall. Past the ceiling the
+ * request is still saved and the owner is told, but no time is held.
  */
 export async function submitCalendarRequest(_prev: FormResult | null, formData: FormData): Promise<FormResult> {
   if (!calendarRequestsEnabled()) {
@@ -160,19 +175,30 @@ export async function submitCalendarRequest(_prev: FormResult | null, formData: 
     if (!free) return SLOT_TAKEN;
   }
 
+  const open = await openRequests(store);
+  const email = normalizeEmail(String(formData.get("email") ?? ""));
+  const phone = normalizePhone(String(formData.get("phone") ?? ""));
+  const formKey = String(formData.get("idempotencyKey") ?? "");
+  const theirs = new Set(
+    open.leads.filter((l) => l.idempotencyKey !== formKey && (l.email === email || (phone !== null && l.phone === phone))).map((l) => l.id),
+  );
+  if (open.holds.filter((h) => theirs.has(h.leadId)).length >= business.booking.maxOpenRequestsPerCustomer) return TOO_MANY_REQUESTS;
+  const canHold = open.holds.length < business.booking.maxOpenRequests;
+
   let input: CalendarRequestInput | null = null;
   const result = await intake({
     leadType: "quote_request",
     schema: calendarRequestSchema,
     formData,
-    notify: false,
+    // Without a held time this is an ordinary request: the usual emails go out now.
+    notify: !canHold,
     build: (d) => {
       input = d;
       return { ...buildQuoteLead(d), preferredDate: todayEastern(new Date(d.slotStart)) };
     },
     afterSave: savePhotos,
   });
-  if (result.status !== "ok" || !input) return withRedirect(result, "request");
+  if (result.status !== "ok" || !input || !canHold) return withRedirect(result, "request");
   const d: CalendarRequestInput = input;
   const lead = await store.getLead(result.leadId);
   if (!lead) return { status: "error", message: "Something went wrong saving your request. Please try again." };
@@ -193,7 +219,8 @@ export async function submitCalendarRequest(_prev: FormResult | null, formData: 
       startsAt: startsAt.toISOString(),
       endsAt: new Date(startsAt.getTime() + minutes * 60_000).toISOString(),
       status: "held",
-      quotedPriceCents: Math.round((lead.estimate?.total ?? 0) * 100),
+      // Priced from the package on this submission, so a replayed form key can't pair one package with another's price.
+      quotedPriceCents: quotedCents(d),
       customerAgreed: false,
       completedRevenueCents: null,
       notes: null,
@@ -225,18 +252,31 @@ export async function submitCalendarRequest(_prev: FormResult | null, formData: 
   return withRedirect(result, "request");
 }
 
+function quotedCents(d: Pick<QuoteRequestInput, "serviceId" | "condition" | "conditionFlags">): number {
+  const estimate = computeEstimate({ serviceId: d.serviceId, condition: d.condition, conditionFlags: d.conditionFlags });
+  return Math.round((estimate?.total ?? 0) * 100);
+}
+
+const TOO_MANY_REQUESTS: FormResult = {
+  status: "invalid",
+  fieldErrors: { slotStart: "You already have requests waiting for us to confirm. We'll reply about those first." },
+  message: "You already have requests waiting for us to confirm. To change one, reply to our email or send us a message.",
+};
+
 const SLOT_TAKEN: FormResult = {
   status: "invalid",
   fieldErrors: { slotStart: "That time was just booked by someone else. Please choose another." },
   message: "That time is no longer available.",
 };
 
-/** Absolute origin of the current request, for Stripe's return URLs. */
+/**
+ * Origin for Stripe's return URLs: the site's own address. The request's Host
+ * header is only used for a local test server, never to build a link elsewhere.
+ */
 async function requestOrigin(): Promise<string> {
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") || host?.startsWith("127.") ? "http" : "https");
-  return host ? `${proto}://${host}` : business.brand.canonicalDomain;
+  const host = (await headers()).get("host") ?? "";
+  if (/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)) return `http://${host}`;
+  return business.brand.canonicalDomain.replace(/\/$/, "");
 }
 
 /**
@@ -303,7 +343,7 @@ export async function submitBooking(_prev: FormResult | null, formData: FormData
       serviceId,
       startsAt: startsAt.toISOString(),
       endsAt: endsAt.toISOString(),
-      quotedPriceCents: Math.round((lead.estimate?.total ?? 0) * 100),
+      quotedPriceCents: quotedCents(d),
       depositCents,
       holdMinutes: business.booking.holdMinutes,
       bufferMinutes: business.scheduling.travelBufferMinutes,
@@ -312,16 +352,6 @@ export async function submitBooking(_prev: FormResult | null, formData: FormData
     if (err instanceof SlotTakenError) return SLOT_TAKEN;
     throw err;
   }
-
-  await store.addAppointmentEvent({
-    appointmentId: appt.id,
-    type: "created",
-    fromStatus: null,
-    toStatus: "held",
-    note: "Booked online; waiting for the deposit",
-    actor: "website",
-    requestId: null,
-  });
 
   await store.addAppointmentEvent({
     appointmentId: appt.id,

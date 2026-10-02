@@ -487,6 +487,12 @@ export const business = {
     holdMinutes: 40,
     /** No-deposit calendar requests: the picked time is held this long for the owner to confirm (never past the start time). */
     requestHoldHours: 48,
+    /**
+     * Unpaid requests cost nothing to send, so the times they hold are rationed. Past
+     * either limit a request is still saved for the owner, just without a held time.
+     */
+    maxOpenRequests: 6,
+    maxOpenRequestsPerCustomer: 2,
     checkoutMinutes: 30,
     cancellationHours: 48,
     policyTextVersion: "2026-09-v1",

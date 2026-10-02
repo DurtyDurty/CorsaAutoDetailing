@@ -1,6 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 
 const unique = () => `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+/** Names on the public forms are letters only, so the unique part of a test name is too. */
+const word = () => Array.from({ length: 10 }, () => "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)]).join("");
+/** A customer may hold two unconfirmed times, matched by email or phone: each test customer gets their own number. */
+const phone = () => `904-555-${String(1000 + Math.floor(Math.random() * 9000))}`;
 
 /**
  * LIVE mode (built by playwright.live.config.ts) with the demo payment
@@ -41,7 +45,7 @@ async function fillContactAndAgree(page: Page, name: string) {
   await expect(form.getByRole("heading", { name: "Contact & deposit" })).toBeVisible();
   await form.getByLabel("First name").fill(name);
   await form.getByLabel("Email", { exact: true }).fill(`${unique()}@example.com`);
-  await form.getByLabel(/Phone/).fill("904-555-0101");
+  await form.getByLabel(/Phone/).fill(phone());
   await form.getByLabel(/I understand Corsa Auto Detailing will use/).check();
   await form.getByLabel(/deposit, cancellation and weather policy/).check();
   await form.getByLabel(/displayed price is an estimate/).check();
@@ -81,7 +85,7 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     await expect(form.getByText(/deposit/i)).toHaveCount(0);
     await form.getByLabel("First name").fill("Riley");
     await form.getByLabel("Email", { exact: true }).fill(`${unique()}@example.com`);
-    await form.getByLabel(/Phone/).fill("904-555-0101");
+    await form.getByLabel(/Phone/).fill(phone());
     await form.getByLabel(/I understand Corsa Auto Detailing will use/).check();
     await form.getByLabel(/displayed price is an estimate/).check();
     await form.getByRole("button", { name: "Request this time" }).click();
@@ -104,7 +108,7 @@ test.describe("owner dashboard laid out like the app (LIVE mode)", () => {
     await page.getByRole("link", { name: "+ New appointment" }).click();
     await expect(page).toHaveURL(/\/admin\/book/);
     await page.getByRole("radio", { name: "New customer" }).click();
-    const name = `Dash ${unique()}`;
+    const name = `Dash ${word()}`;
     await page.getByLabel("First name").fill(name);
     await page.getByLabel(/^Email/).fill(`${unique()}@example.com`);
     await page.getByLabel("Service address").fill("45 Oak Ln");
@@ -144,7 +148,7 @@ test.describe.skip("online booking with deposits (LIVE mode, demo payments)", ()
   test("book a time, pay the deposit, get confirmed; the slot disappears; owner can refund", async ({ page }) => {
     await fillVehicleAndCondition(page, "platinum-full");
     const slot = await pickFirstSlot(page);
-    const name = `Booker ${unique()}`;
+    const name = `Booker ${word()}`;
     const form = await fillContactAndAgree(page, name);
     await expect(form.getByText("Deposit due today")).toBeVisible();
     await form.getByRole("button", { name: "Pay $50 deposit & book" }).click();
@@ -175,7 +179,7 @@ test.describe.skip("online booking with deposits (LIVE mode, demo payments)", ()
   test("backing out of payment releases the held time immediately", async ({ page }) => {
     await fillVehicleAndCondition(page, "signature-full");
     const slot = await pickFirstSlot(page);
-    const form = await fillContactAndAgree(page, `Backout ${unique()}`);
+    const form = await fillContactAndAgree(page, `Backout ${word()}`);
     await form.getByRole("button", { name: "Pay $25 deposit & book" }).click();
     await expect(page).toHaveURL(/\/booking\/demo-checkout\?session=/);
     // While paying, the slot is held for everyone else.
@@ -218,13 +222,13 @@ test.describe.skip("online booking with deposits (LIVE mode, demo payments)", ()
     const pageB = await other.newPage();
     await fillVehicleAndCondition(pageB, "signature-full");
     const slotB = await pickFirstSlot(pageB);
-    await fillContactAndAgree(pageB, `Racer B ${unique()}`);
+    await fillContactAndAgree(pageB, `Racer B ${word()}`);
 
     // Customer A books the same (first) time and pays.
     await fillVehicleAndCondition(page, "signature-full");
     const slotA = await pickFirstSlot(page);
     expect(slotA).toBe(slotB);
-    const formA = await fillContactAndAgree(page, `Racer A ${unique()}`);
+    const formA = await fillContactAndAgree(page, `Racer A ${word()}`);
     await formA.getByRole("button", { name: "Pay $25 deposit & book" }).click();
     await page.getByRole("button", { name: "Pay test deposit" }).click();
     await expect(page.getByRole("heading", { level: 1 })).toContainText(/You.re booked/);

@@ -81,8 +81,9 @@ export function BusinessJsonLd({ withOffers = true }: { withOffers?: boolean }) 
   return (
     <script
       type="application/ld+json"
-      // Static, server-generated content from configuration — no user input.
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      // Static, server-generated content from configuration — no user input. "<" is escaped anyway,
+      // so a value can never close the script tag.
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, "\\u003c") }}
     />
   );
 }

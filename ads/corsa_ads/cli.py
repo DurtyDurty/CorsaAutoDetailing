@@ -43,8 +43,12 @@ def out(msg: str = "") -> None:
     print(msg)
 
 
+# The values loaded from ads/.env, so error text can have them stripped by exact match.
+_ENV: dict[str, str] = {}
+
+
 def err(msg: str) -> None:
-    print(redact(msg), file=sys.stderr)
+    print(redact(msg, _ENV or None), file=sys.stderr)
 
 
 def customer_id(args, env) -> str:
@@ -52,6 +56,14 @@ def customer_id(args, env) -> str:
     if len(cid) != 10:
         raise g.ConfigError("Set GOOGLE_ADS_CUSTOMER_ID (10 digits) in ads/.env or pass --customer-id")
     return cid
+
+
+def require_home_account(cid: str, env) -> None:
+    """Writes go only to the account named in ads/.env; --customer-id elsewhere is for read-only commands."""
+    home = g.digits(env.get("GOOGLE_ADS_CUSTOMER_ID"))
+    if cid != home:
+        raise g.ConfigError("This command changes the account, so it only runs against GOOGLE_ADS_CUSTOMER_ID from ads/.env. "
+                            "--customer-id is for read-only commands.")
 
 
 def load_cfg(args) -> config_mod.Config:
@@ -220,14 +232,21 @@ def cmd_create(args, env) -> int:
         out(f"\nGoogle validated {len(ops)} operations (validate_only). Nothing was created.")
         return 0
 
-    if not confirm(f"\nCreate these in account {cid}? The campaign will be PAUSED and won't spend until you enable it in Google Ads.",
-                   cfg.campaign["name"] if not ex.campaign else "add", args.yes):
+    require_home_account(cid, env)
+    # A campaign the owner has already enabled serves anything added to it straight away.
+    live = bool(ex.campaign) and ex.campaign_status != "PAUSED"
+    prompt = (f"\nAdd these to account {cid}? The campaign is {ex.campaign_status}: they start serving right away, within its current budget."
+              if live else
+              f"\nCreate these in account {cid}? The campaign will be PAUSED and won't spend until you enable it in Google Ads.")
+    if live:
+        out("NOTE  The campaign is live. These additions are not held back as paused.")
+    if not confirm(prompt, "add live" if live else (cfg.campaign["name"] if not ex.campaign else "add"), args.yes):
         out("Cancelled. Nothing was created.")
         return 1
     resp = g.mutate(client, cid, ops, validate_only=False)
     names = g.created_names(resp)
     p = state_mod.record_create(cid, cfg.campaign["name"], names)
-    out(f"Created {len(names)} resources. Recorded in {p.relative_to(config_mod.ADS_DIR)}.")
+    out(f"Created {len(names)} resources. Recorded in {p.parent.name}\\{p.name}.")
 
     after = g.discover(client, cid, cfg)
     out(f"Campaign status now: {after.campaign_status}" + ("" if after.campaign_status == "PAUSED" else "  !! not PAUSED; check Google Ads"))
@@ -333,7 +352,9 @@ def cmd_pause(args, env) -> int:
     if not confirm(f"Pause {cfg.campaign['name']!r} (currently {row.campaign.status.name})?", "pause", args.yes):
         out("Cancelled.")
         return 1
+    require_home_account(cid, env)
     g.pause(client, cid, row.campaign.resource_name)
+    state_mod.record_pause(cid, cfg.campaign["name"])
     out("Campaign PAUSED.")
     return 0
 
@@ -406,6 +427,8 @@ COMMANDS = {
 def main(argv: list[str] | None = None, env: dict[str, str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     env = load_env() if env is None else env
+    _ENV.clear()
+    _ENV.update(env)
     try:
         return COMMANDS[args.cmd](args, env)
     except g.ConfigError as ex:

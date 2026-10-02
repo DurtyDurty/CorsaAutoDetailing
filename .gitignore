@@ -49,3 +49,5 @@ next-env.d.ts
 test-results/
 playwright-report/
 
+# security audit report: lists open weaknesses, so it stays out of the (public) repository
+SECURITY_AUDIT.md

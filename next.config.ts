@@ -32,8 +32,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: { formats: ["image/avif", "image/webp"] },
   experimental: {
-    // Up to 5 × 10MB vehicle photos in a single server-action submission.
-    serverActions: { bodySizeLimit: "55mb" },
+    // Photo uploads (up to 5 × 10MB) need a large limit; without them the forms are a few KB of text.
+    serverActions: { bodySizeLimit: process.env.SUPABASE_STORAGE_BUCKET ? "55mb" : "1mb" },
   },
   async headers() {
     return [

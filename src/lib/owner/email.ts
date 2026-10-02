@@ -78,7 +78,7 @@ export async function sendOwnerEmail(
 
   const body = composeOwnerEmail(input.message);
   const base = { leadId, sendKey: input.sendKey, toEmail: lead.email, subject: input.subject, body, providerMessageId: null, error: null };
-  let record: OutboundEmailRecord | null;
+  let providerMessageId: string;
   try {
     const { id } = await email.send({
       to: lead.email,
@@ -88,12 +88,17 @@ export async function sendOwnerEmail(
       replyTo: replyAddressFor(leadId) ?? business.contact.email ?? undefined,
       idempotencyKey: `owner-email-${input.sendKey}`,
     });
-    record = await store.recordOutboundEmail({ ...base, status: "sent", providerMessageId: id });
+    providerMessageId = id;
   } catch (err) {
     const reason = err instanceof Error ? err.message.slice(0, 500) : "Unknown error";
     await store.recordOutboundEmail({ ...base, status: "failed", error: reason }).catch(() => null);
     return { status: "failed", reason };
   }
+  // The email has gone out. If logging it fails, still report it as sent, so a retry can't email the customer twice.
+  const record = await store.recordOutboundEmail({ ...base, status: "sent", providerMessageId }).catch((err) => {
+    console.error("[owner-email] sent but not logged:", err instanceof Error ? err.message : err);
+    return null;
+  });
   if (lead.stage === "new") await store.updateLead(leadId, { stage: "contacted" });
   return { status: "sent", record, alreadySent: false };
 }

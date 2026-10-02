@@ -6,7 +6,8 @@ Google Ads from the website through the Data Manager API.
 
 **Safety rules built into the tool**
 - Campaigns are only ever created **PAUSED**. There is no command to enable a campaign or change a budget or bids.
-- `create-campaign` checks the account first and only adds what's missing, so it's safe to rerun.
+- `create-campaign` checks the account first and only adds what's missing, so it's safe to rerun. **Once a campaign is enabled, anything added to it serves straight away** (within its existing budget); the tool says so and asks you to type `add live`.
+- Commands that change the account only run against `GOOGLE_ADS_CUSTOMER_ID` from `ads/.env`. `--customer-id` is for read-only commands.
 - Every write asks Google to validate first (`validate_only`). `--dry-run` stops there.
 - Secrets stay in `ads/.env` (git-ignored) and the Vercel environment. Output is redacted.
 
@@ -112,7 +113,7 @@ If Google Ads isn't connected, spend shows "not connected". It is never estimate
 3. The ad schedule matches your availability. The phone number is added if you want calls.
 4. Billing is set up in Google Ads, and the budget is confirmed: $5/day English and $5/day Spanish to start (owner decision 2026-10-02; raise both in Google Ads once the trailer arrives).
 5. Enable the campaign yourself in Google Ads. Watch `report` and `search-terms` daily for the first week. Add negatives you agree with to `campaign.yaml` and run `create-campaign --paused` to add them.
-6. To stop at any time, run `pause-campaign`.
+6. To stop at any time, pause **both** campaigns: `pause-campaign` (English) and `--config campaign-es.yaml pause-campaign` (Spanish). Each pause is recorded in `ads/.state`. You can also pause from Google Ads on your phone.
 
 ## Tests
 ```

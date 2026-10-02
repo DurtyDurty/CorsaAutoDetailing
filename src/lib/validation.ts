@@ -2,7 +2,7 @@ import { z } from "zod";
 import { business } from "@/config/business";
 import { CONDITION_FLAGS } from "@/lib/pricing";
 import { earliestPreferenceDate, isIsoDate, isPastEasternDate } from "@/lib/time";
-import { cleanText, normalizeEmail, normalizePhone } from "@/lib/utils";
+import { cleanLine, cleanText, normalizeEmail, normalizePhone } from "@/lib/utils";
 
 const serviceIds = business.services.map((s) => s.id) as [string, ...string[]];
 const vehicleIds = business.vehicleCategories.map((v) => v.id) as [string, ...string[]];
@@ -16,6 +16,23 @@ const optionalText = (max: number) =>
     .optional()
     .transform((v) => (v ? cleanText(v, max) : ""))
     .transform((v) => (v === "" ? null : v));
+/** One-line fields (names, make, address). They end up in email subjects and "Key: value" lines, so no line breaks. */
+const line = (max: number) => z.string().transform((v) => cleanLine(v, max));
+const optionalLine = (max: number) =>
+  z
+    .string()
+    .optional()
+    .transform((v) => (v ? cleanLine(v, max) : ""))
+    .transform((v) => (v === "" ? null : v));
+
+/**
+ * Names open the acknowledgement email ("Hi <name>,") that goes to whatever
+ * address was typed in. Letters, spaces, apostrophes and hyphens only, plus a
+ * period that ends an initial ("J. R."), so the form can't be used to mail
+ * someone a link, a web address or a phone number.
+ */
+const NAME = /^[\p{L}\p{M}](?:[\p{L}\p{M}'’ -]|\.(?![\p{L}\p{M}]))*$/u;
+const NAME_MESSAGE = "Use letters only for the name.";
 
 export const emailSchema = z
   .string()
@@ -43,7 +60,7 @@ export const zipSchema = z
   .trim()
   .regex(/^\d{5}$/, "Enter a 5-digit ZIP code.");
 
-const firstName = text(80).pipe(z.string().min(1, "Enter your first name."));
+const firstName = line(50).pipe(z.string().min(1, "Enter your first name.").regex(NAME, NAME_MESSAGE));
 const contactMethod = z.enum(["email", "phone", "text"]);
 
 /** Shared hidden/meta fields. */
@@ -105,8 +122,15 @@ export const membershipInterestSchema = z.object({
   notes: optionalText(1000),
 });
 
+/** Checkbox groups: a handful of known values, stored once each. */
 function arrayField<T extends z.ZodTypeAny>(schema: T) {
-  return z.preprocess((v) => (v === undefined || v === null ? [] : Array.isArray(v) ? v : [v]), z.array(schema));
+  return z.preprocess(
+    (v) => (v === undefined || v === null ? [] : Array.isArray(v) ? v : [v]),
+    z
+      .array(schema)
+      .max(30)
+      .transform((items) => [...new Set(items)]),
+  );
 }
 
 const currentYear = new Date().getFullYear();
@@ -128,16 +152,16 @@ const quoteRequestFields = z
         }
         return n;
       }),
-    vehicleMake: text(60).pipe(z.string().min(1, "Enter the vehicle make.")),
-    vehicleModel: text(60).pipe(z.string().min(1, "Enter the vehicle model.")),
+    vehicleMake: line(60).pipe(z.string().min(1, "Enter the vehicle make.")),
+    vehicleModel: line(60).pipe(z.string().min(1, "Enter the vehicle model.")),
     // Step 2
     condition: z.enum(["normal", "deeper", "unsure"], { message: "Tell us about the vehicle's condition." }),
     conditionFlags: arrayField(z.enum(CONDITION_FLAGS as [string, ...string[]])).default([]),
     concerns: optionalText(1000),
     // Step 3
-    serviceAddress: text(200).pipe(z.string().min(5, "Enter the street address where the vehicle will be.")),
+    serviceAddress: line(200).pipe(z.string().min(5, "Enter the street address where the vehicle will be.")),
     zip: zipSchema,
-    city: optionalText(80),
+    city: optionalLine(80),
     locationType: z.enum(["home", "work", "other"], { message: "Where would the vehicle be?" }),
     timeWindows: arrayField(z.enum(windowIds)).default([]),
     preferredDate: z
@@ -171,7 +195,7 @@ const quoteRequestFields = z
     notes: optionalText(1500),
     // Step 4
     firstName,
-    lastName: optionalText(80),
+    lastName: optionalLine(50).pipe(z.string().regex(NAME, NAME_MESSAGE).nullable()),
     email: emailSchema,
     phone: phoneSchema.optional().transform((v) => v ?? null),
     preferredContact: contactMethod,
@@ -222,17 +246,24 @@ export function fieldErrors(error: z.ZodError): FieldErrors {
   return out;
 }
 
-/** Convert FormData into a plain object; repeated keys become arrays. */
+/** The largest real form sends about 40 fields. Anything far beyond that isn't one of ours. */
+const MAX_FORM_FIELDS = 200;
+
+/**
+ * Convert FormData into a plain object; repeated keys become arrays. A request
+ * with more text fields than any form has is treated as empty, so it fails
+ * validation instead of being processed.
+ */
 export function formDataToObject(fd: FormData): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
+  const out = new Map<string, string | string[]>();
+  let fields = 0;
   for (const [key, value] of fd.entries()) {
     if (typeof value !== "string") continue; // files handled separately
-    if (key in out) {
-      const existing = out[key];
-      out[key] = Array.isArray(existing) ? [...existing, value] : [existing, value];
-    } else {
-      out[key] = value;
-    }
+    if (++fields > MAX_FORM_FIELDS) return {};
+    const existing = out.get(key);
+    if (existing === undefined) out.set(key, value);
+    else if (Array.isArray(existing)) existing.push(value);
+    else out.set(key, [existing, value]);
   }
-  return out;
+  return Object.fromEntries(out);
 }

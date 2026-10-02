@@ -20,6 +20,9 @@ export function MessageThread({ messages }: { messages: ConversationMessage[] })
           ) : m.type === "received" ? (
             <article className="border border-line border-l-[3px] border-l-apex-deep bg-white rounded-md px-4 py-3 mr-8">
               <p className="text-[0.68rem] uppercase tracking-[0.14em] text-apex-deep">Reply · {stamp(m.at)}</p>
+              {m.fromOtherAddress && (
+                <p className="mt-1 text-sm text-error">Sent from {m.from}, not the address on file. Check it&rsquo;s really them.</p>
+              )}
               {m.subject && <p className="mt-1 font-medium">{m.subject}</p>}
               <p className="mt-1 text-sm whitespace-pre-line">{m.body}</p>
             </article>

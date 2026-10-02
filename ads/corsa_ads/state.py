@@ -17,13 +17,14 @@ from .config import ADS_DIR
 STATE_DIR = ADS_DIR / ".state"
 
 
-def path_for(customer_id: str, base: Path = STATE_DIR) -> Path:
+def path_for(customer_id: str, base: Path | None = None) -> Path:
     if not customer_id.isdigit():
         raise ValueError("customer id must be digits only")
-    return base / f"{customer_id}.json"
+    # Resolved per call, so tests that point STATE_DIR elsewhere never write into the real history.
+    return (base or STATE_DIR) / f"{customer_id}.json"
 
 
-def load(customer_id: str, base: Path = STATE_DIR) -> dict:
+def load(customer_id: str, base: Path | None = None) -> dict:
     p = path_for(customer_id, base)
     if not p.exists():
         return {}
@@ -33,7 +34,7 @@ def load(customer_id: str, base: Path = STATE_DIR) -> dict:
         return {}
 
 
-def save(customer_id: str, data: dict, base: Path = STATE_DIR) -> Path:
+def save(customer_id: str, data: dict, base: Path | None = None) -> Path:
     p = path_for(customer_id, base)
     p.parent.mkdir(parents=True, exist_ok=True)
     tmp = p.with_suffix(".tmp")
@@ -42,7 +43,7 @@ def save(customer_id: str, data: dict, base: Path = STATE_DIR) -> Path:
     return p
 
 
-def record_create(customer_id: str, campaign_name: str, resource_names: list[str], base: Path = STATE_DIR) -> Path:
+def record_create(customer_id: str, campaign_name: str, resource_names: list[str], base: Path | None = None) -> Path:
     data = load(customer_id, base)
     camp = data.setdefault("campaigns", {}).setdefault(campaign_name, {"created": []})
     for rn in resource_names:
@@ -51,4 +52,12 @@ def record_create(customer_id: str, campaign_name: str, resource_names: list[str
         if "/campaignBudgets/" in rn:
             camp["budget"] = rn
     camp["created"].append({"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "resources": resource_names})
+    return save(customer_id, data, base)
+
+
+def record_pause(customer_id: str, campaign_name: str, base: Path | None = None) -> Path:
+    """Keep a history of pauses made with this tool, next to what it created."""
+    data = load(customer_id, base)
+    camp = data.setdefault("campaigns", {}).setdefault(campaign_name, {"created": []})
+    camp.setdefault("paused", []).append(datetime.now(timezone.utc).isoformat(timespec="seconds"))
     return save(customer_id, data, base)

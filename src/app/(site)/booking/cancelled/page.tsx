@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
-import { releaseHold, releaseToken } from "@/lib/booking";
+import { bookingEnabled, releaseHold, releaseToken } from "@/lib/booking";
 import { getLeadStore } from "@/lib/leads/store";
+import { safeEqual } from "@/lib/safe-equal";
 import { Container } from "@/components/ui/Section";
 import { ButtonLink } from "@/components/ui/Button";
 
 export const metadata: Metadata = { title: "Payment not completed", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * The customer backed out of the deposit checkout. Release their hold right
@@ -16,11 +19,12 @@ export default async function BookingCancelledPage({ searchParams }: PageProps<"
   const { appointment, t } = await searchParams;
   let serviceId: string | null = null;
 
-  const store = await getLeadStore();
-  if (store && typeof appointment === "string" && typeof t === "string") {
-    const appt = (await store.listAppointments()).find((a) => a.id === appointment);
+  // Only deposit checkouts link here; with deposits off there is nothing to look up.
+  const store = bookingEnabled() ? await getLeadStore() : null;
+  if (store && typeof appointment === "string" && UUID.test(appointment) && typeof t === "string" && t.length <= 64) {
+    const appt = await store.getAppointment(appointment);
     const lead = appt ? await store.getLead(appt.leadId) : null;
-    if (appt && lead && releaseToken(appt.id, lead) === t) {
+    if (appt && lead && safeEqual(releaseToken(appt.id, lead), t)) {
       await releaseHold(appt);
       serviceId = appt.serviceId;
     }

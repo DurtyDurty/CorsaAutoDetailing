@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 const unique = () => `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+/** Names on the public forms are letters only, so the unique part of a test name is too. */
+const word = () => Array.from({ length: 10 }, () => "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)]).join("");
 
 // PRELAUNCH mode (the default build). Booking-request tests live in tests/e2e-live.
 test.describe("lead forms (demo store)", () => {
@@ -51,7 +53,7 @@ test.describe("lead forms (demo store)", () => {
   test("dashboard inbox: open a conversation, email with a template, see it sent, archive it", async ({ page }) => {
     await page.goto("/request?service=signature-full");
     const form = page.getByRole("form", { name: "Launch list signup" });
-    const name = `Inbox ${unique()}`;
+    const name = `Inbox ${word()}`;
     await form.getByLabel("First name").fill(name);
     await form.getByLabel("ZIP code").fill("32068");
     await form.getByLabel("Email", { exact: true }).fill(`${unique()}@example.com`);
@@ -85,7 +87,7 @@ test.describe("lead forms (demo store)", () => {
     // Create a lead of our own so this test does not depend on the others.
     await page.goto("/request?service=signature-full");
     const form = page.getByRole("form", { name: "Launch list signup" });
-    const name = `Admin ${unique()}`;
+    const name = `Admin ${word()}`;
     await form.getByLabel("First name").fill(name);
     await form.getByLabel("ZIP code").fill("32068");
     await form.getByLabel("Email", { exact: true }).fill(`${unique()}@example.com`);

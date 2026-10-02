@@ -1,13 +1,20 @@
 import { redirect } from "next/navigation";
-import { authMode, getOwnerSession, signInWithPassword } from "@/lib/auth/owner";
+import { authMode, getOwnerSession, signInThrottled } from "@/lib/auth/owner";
 import { Button } from "@/components/ui/Button";
+
+/** Fixed wording per code, so a crafted link can't put its own text on this page. */
+const ERRORS: Record<string, string> = {
+  failed: "Sign-in failed. Check your email and password.",
+  rate_limited: "Too many attempts. Wait a few minutes and try again.",
+  unavailable: "Admin sign-in is not configured.",
+};
 
 async function loginAction(formData: FormData) {
   "use server";
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const password = String(formData.get("password") ?? "");
-  const { error } = await signInWithPassword(email, password);
-  if (error) redirect(`/admin/login?error=${encodeURIComponent(error)}`);
+  const email = String(formData.get("email") ?? "").trim().toLowerCase().slice(0, 254);
+  const password = String(formData.get("password") ?? "").slice(0, 1024);
+  const { error } = await signInThrottled(email, password);
+  if (error) redirect(`/admin/login?error=${error}`);
   redirect("/admin");
 }
 
@@ -15,6 +22,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/admin/logi
   if (await getOwnerSession()) redirect("/admin");
   const mode = authMode();
   const { error } = await searchParams;
+  const message = typeof error === "string" ? ERRORS[error] : undefined;
 
   if (mode === "unavailable") {
     return (
@@ -49,9 +57,9 @@ export default async function LoginPage({ searchParams }: PageProps<"/admin/logi
           </label>
           <input id="password" name="password" type="password" autoComplete="current-password" required className="field" />
         </div>
-        {typeof error === "string" && (
+        {message && (
           <p role="alert" className="text-sm text-error">
-            {error}
+            {message}
           </p>
         )}
         <Button type="submit">Sign in</Button>

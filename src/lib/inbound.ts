@@ -3,6 +3,8 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { business } from "@/config/business";
 import { getEmailAdapter } from "@/lib/email";
 import type { InboundEmailRecord, LeadRecord, LeadStore } from "@/lib/leads/types";
+import { cleanLine } from "@/lib/utils";
+import { emailSchema } from "@/lib/validation";
 
 /**
  * Customer replies by email, received through Resend.
@@ -18,6 +20,16 @@ import type { InboundEmailRecord, LeadRecord, LeadStore } from "@/lib/leads/type
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 /** Accept webhook timestamps up to 5 minutes away from our clock (replay protection). */
 const TOLERANCE_SECONDS = 5 * 60;
+/**
+ * The reply domain accepts mail from anyone, so what one sender (or a flood of
+ * new ones) can cause is capped. Counted from stored rows, so the limits hold
+ * across server instances.
+ */
+const MAX_NEW_SENDERS_PER_DAY = 25;
+const MAX_MESSAGES_PER_SENDER_PER_HOUR = 20;
+const MAX_OWNER_COPIES_PER_SENDER_PER_HOUR = 5;
+/** HTML-only emails are cut to this before conversion; the stored text is capped again afterwards. */
+const MAX_HTML_CHARS = 200_000;
 
 export function inboundDomain(): string | null {
   const d = process.env.INBOUND_REPLY_DOMAIN?.trim().toLowerCase();
@@ -59,6 +71,8 @@ export function verifyWebhook(
   const ts = Number(headers.timestamp);
   if (!Number.isInteger(ts) || Math.abs(nowSeconds - ts) > TOLERANCE_SECONDS) return false;
   const key = Buffer.from(secret.replace(/^whsec_/, ""), "base64");
+  // A truncated or mistyped secret must not turn into a guessable key.
+  if (key.length < 16) return false;
   const expected = createHmac("sha256", key).update(`${headers.id}.${headers.timestamp}.${rawBody}`).digest();
   return headers.signature.split(" ").some((part) => {
     const [version, sig] = part.split(",");
@@ -131,7 +145,7 @@ async function findOrCreateLead(
   emailId: string,
   from: { email: string; name: string | null },
   toAddresses: string[],
-): Promise<LeadRecord> {
+): Promise<LeadRecord | null> {
   const tagged = leadIdFromAddresses(toAddresses);
   if (tagged) {
     const lead = await store.getLead(tagged);
@@ -139,14 +153,19 @@ async function findOrCreateLead(
   }
   const [recent] = await store.listLeads({ search: from.email, includeArchived: true, limit: 20 }).then((ls) => ls.filter((l) => l.email.toLowerCase() === from.email));
   if (recent) return recent;
-  // Someone new emailed the reply address: start a conversation for them.
+  // Someone new emailed the reply address: start a conversation for them, up to a daily ceiling.
+  const dayAgo = Date.now() - 86_400_000;
+  const newToday = (await store.listLeads({ leadType: "contact", includeArchived: true, limit: 200 })).filter(
+    (l) => l.source.landingPath === "email-reply" && Date.parse(l.createdAt) > dayAgo && l.idempotencyKey !== stableUuid(emailId),
+  );
+  if (newToday.length >= MAX_NEW_SENDERS_PER_DAY) return null;
   const [first, ...rest] = (from.name ?? from.email.split("@")[0] ?? "Customer").split(/\s+/);
   const { lead } = await store.createLead({
     leadType: "contact",
     businessMode: business.mode,
     idempotencyKey: stableUuid(emailId),
-    firstName: first || "Customer",
-    lastName: rest.join(" ") || null,
+    firstName: (first || "Customer").slice(0, 80),
+    lastName: rest.join(" ").slice(0, 80) || null,
     email: from.email,
     phone: null,
     preferredContact: "email",
@@ -184,11 +203,17 @@ async function notifyOwner(lead: LeadRecord, rec: InboundEmailRecord) {
   const email = getEmailAdapter();
   if (!to || email.kind === "disabled") return;
   const name = [lead.firstName, lead.lastName].filter(Boolean).join(" ");
+  // Filed by the reply address, but sent from somewhere else: say so, since anyone can write to that address.
+  const otherAddress = rec.fromEmail !== lead.email.toLowerCase();
+  const sender = otherAddress ? rec.fromEmail : name;
+  const warning = otherAddress
+    ? `Check before acting on this: it was filed under ${name}, but came from ${rec.fromEmail}, not the address on file (${lead.email}).\n\n`
+    : "";
   await email
     .send({
       to,
-      subject: `[${business.brand.shortName}] Reply from ${name}: ${rec.subject || "(no subject)"}`,
-      text: `${name} <${rec.fromEmail}> replied:\n\n${visibleReply(rec.body)}\n\nAnswer it from the Inbox in the Corsa Owner app.`,
+      subject: `[${business.brand.shortName}] Reply from ${sender}: ${rec.subject || "(no subject)"}`,
+      text: `${warning}${name} <${rec.fromEmail}> replied:\n\n${visibleReply(rec.body)}\n\nAnswer it from the Inbox in the Corsa Owner app.`,
       replyTo: rec.fromEmail,
       idempotencyKey: `inbound-copy-${rec.providerEmailId}`,
     })
@@ -200,14 +225,25 @@ export type InboundResult = { status: "stored"; leadId: string } | { status: "du
 /** Handle one `email.received` event: fetch, file under the right customer, store once, copy the owner. */
 export async function handleReceivedEmail(store: LeadStore, emailId: string): Promise<InboundResult> {
   const email = await fetchReceivedEmail(emailId);
-  const from = parseAddress(email.from);
-  if (!from.email.includes("@")) return { status: "ignored", reason: "No sender address." };
+  const parsedFrom = parseAddress(email.from);
+  // The sender address becomes a customer's email, a Reply-To and a mailto link: it has to be a plain address.
+  const address = emailSchema.safeParse(parsedFrom.email);
+  if (!address.success) return { status: "ignored", reason: "No valid sender address." };
+  const from = { email: address.data, name: parsedFrom.name ? cleanLine(parsedFrom.name, 200) || null : null };
   // Never file the business's own sending address as a customer (e.g. a bounce or auto-reply loop).
   // The owner's personal address is allowed: owner copies never go to the reply domain.
   const sender = process.env.EMAIL_FROM ? parseAddress(process.env.EMAIL_FROM).email : null;
   if (sender && from.email === sender) return { status: "ignored", reason: "Sent from the business address." };
 
   const lead = await findOrCreateLead(store, emailId, from, email.to ?? []);
+  if (!lead) return { status: "ignored", reason: "Too many new senders today." };
+  if (lead.stage === "spam") return { status: "ignored", reason: "Sender is marked as spam." };
+  const hourAgo = Date.now() - 3_600_000;
+  const lastHour = (await store.listInboundEmailsForLeads([lead.id])).filter(
+    (m) => m.providerEmailId !== emailId && Date.parse(m.receivedAt) > hourAgo,
+  ).length;
+  if (lastHour >= MAX_MESSAGES_PER_SENDER_PER_HOUR) return { status: "ignored", reason: "Too many messages from this sender." };
+
   const rec = await store.recordInboundEmail({
     providerEmailId: emailId,
     leadId: lead.id,
@@ -215,13 +251,14 @@ export async function handleReceivedEmail(store: LeadStore, emailId: string): Pr
     fromName: from.name,
     toEmail: email.to?.[0] ? parseAddress(email.to[0]).email : null,
     subject: (email.subject ?? "").slice(0, 500),
-    body: (email.text?.trim() || (email.html ? htmlToText(email.html) : "")).slice(0, 50_000),
+    body: (email.text?.trim() || (email.html ? htmlToText(email.html.slice(0, MAX_HTML_CHARS)) : "")).slice(0, 50_000),
     messageId: email.message_id,
     receivedAt: email.created_at,
   });
   if (!rec) return { status: "duplicate" };
   // A new reply brings an archived conversation back to the Inbox.
   if (lead.archivedAt) await store.updateLead(lead.id, { archivedAt: null });
-  await notifyOwner(lead, rec);
+  // Past a few an hour the owner already knows; the rest wait in the Inbox.
+  if (lastHour < MAX_OWNER_COPIES_PER_SENDER_PER_HOUR) await notifyOwner(lead, rec);
   return { status: "stored", leadId: lead.id };
 }

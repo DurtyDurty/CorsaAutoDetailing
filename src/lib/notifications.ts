@@ -191,14 +191,17 @@ async function attempt(store: LeadStore, record: NotificationRecord, lead: LeadR
     const appts = lead.leadType === "quote_request" ? await store.listAppointments({ leadId: lead.id }) : [];
     const booking = appts.find((a) => a.source === "online" && a.depositStatus === "paid");
     const requested = booking ? undefined : appts.find((a) => a.source === "online" && a.status === "held" && a.depositStatus === "none");
+    // One send per attempt: two overlapping retries of the same row reach the customer once.
+    const idempotencyKey = `notification-${record.id}-${record.attempts}`;
     const { id } = await adapter.send(
       record.kind === "owner_notify"
-        ? { to, subject: ownerSubject(lead, booking, requested), text: ownerBody(lead, booking, requested), replyTo: lead.email }
+        ? { to, subject: ownerSubject(lead, booking, requested), text: ownerBody(lead, booking, requested), replyTo: lead.email, idempotencyKey }
         : {
             to,
             subject: customerSubject(lead, booking, requested),
             text: booking ? bookingBody(lead, booking) : customerBody(lead, requested),
             replyTo: replyAddressFor(lead.id) ?? business.contact.email ?? undefined,
+            idempotencyKey,
           },
     );
     await store.updateNotification(record.id, {
@@ -217,14 +220,39 @@ async function attempt(store: LeadStore, record: NotificationRecord, lead: LeadR
 }
 
 /**
+ * The forms accept any email address, so the acknowledgement must not become a
+ * way to mail one address over and over. Counted from saved leads, so the limit
+ * holds across server instances.
+ */
+const ACKS_PER_HOUR = 3;
+const ACKS_PER_DAY = 5;
+
+async function ackLimitReached(store: LeadStore, lead: LeadRecord): Promise<boolean> {
+  const others = (await store.listLeads({ search: lead.email, includeArchived: true, limit: 50 })).filter(
+    (l) => l.id !== lead.id && l.email === lead.email,
+  );
+  const within = (ms: number) => others.filter((l) => Date.now() - Date.parse(l.createdAt) < ms).length;
+  return within(3_600_000) >= ACKS_PER_HOUR || within(86_400_000) >= ACKS_PER_DAY;
+}
+
+/**
  * Create and attempt both notifications for a freshly saved lead. Swallows all
  * errors — the caller already has a durable lead and must not fail.
+ * `throttleAck: false` is for emails the customer is owed whatever came before
+ * (a paid booking's confirmation).
  */
-export async function notifyForLead(store: LeadStore, lead: LeadRecord): Promise<void> {
+export async function notifyForLead(store: LeadStore, lead: LeadRecord, opts: { throttleAck?: boolean } = {}): Promise<void> {
   const kinds: NotificationKind[] = ["owner_notify", "customer_ack"];
   for (const kind of kinds) {
     try {
       const record = await store.createNotification(lead.id, kind);
+      if (kind === "customer_ack" && opts.throttleAck !== false && (await ackLimitReached(store, lead))) {
+        await store.updateNotification(record.id, {
+          status: "skipped",
+          lastError: "This address was already sent recent acknowledgements; not sent again.",
+        });
+        continue;
+      }
       await attempt(store, record, lead);
     } catch (err) {
       console.error(`[notifications] ${kind} for lead ${lead.id} failed to record:`, err instanceof Error ? err.message : err);
@@ -232,11 +260,15 @@ export async function notifyForLead(store: LeadStore, lead: LeadRecord): Promise
   }
 }
 
+const MAX_ATTEMPTS = 5;
+
 /** Retry every failed notification. Used by the admin action and the cron endpoint. */
 export async function retryFailedNotifications(store: LeadStore, leadId?: string): Promise<number> {
   const failed = await store.listNotifications({ status: "failed", leadId });
   let retried = 0;
   for (const n of failed) {
+    // A send that keeps failing (bad address, provider rejection) stops being retried.
+    if (n.attempts >= MAX_ATTEMPTS) continue;
     const lead = await store.getLead(n.leadId);
     if (!lead) continue;
     await attempt(store, n, lead);

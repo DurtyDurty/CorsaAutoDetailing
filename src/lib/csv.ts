@@ -17,7 +17,8 @@ export function csvCell(value: unknown): string {
   }
   // Also neutralise formula-ish content after leading whitespace.
   if (/^\s+[=+\-@]/.test(text)) text = `'${text}`;
-  const needsQuotes = /[",\r\n]/.test(text);
+  // Semicolons and tabs are quoted too: some spreadsheet locales split cells on them.
+  const needsQuotes = /[",;\t\r\n]/.test(text);
   const escaped = text.replace(/"/g, '""');
   return needsQuotes ? `"${escaped}"` : escaped;
 }

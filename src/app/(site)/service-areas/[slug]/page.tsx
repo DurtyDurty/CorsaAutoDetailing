@@ -66,7 +66,7 @@ export default async function TownPage({ params }: PageProps<"/service-areas/[sl
       <script
         type="application/ld+json"
         // Static, server-generated content from configuration — no user input.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
       <PageHero eyebrow={`Service area · ${town.county} County`} title={`Mobile auto detailing in ${town.name}, FL`} lede={town.intro} />
 

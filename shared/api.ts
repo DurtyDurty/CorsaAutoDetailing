@@ -232,7 +232,16 @@ export interface ConversationSummary {
 export type ConversationMessage =
   | { id: string; type: "website"; at: string; title: string; text: string }
   | { id: string; type: "sent"; at: string; subject: string; body: string; status: "sent" | "failed"; error: string | null }
-  | { id: string; type: "received"; at: string; from: string; subject: string; body: string };
+  | {
+      id: string;
+      type: "received";
+      at: string;
+      from: string;
+      /** Sent from an address other than the customer's own; anyone can write to a reply address. */
+      fromOtherAddress?: boolean;
+      subject: string;
+      body: string;
+    };
 
 export interface ConversationDetail {
   leadId: string;

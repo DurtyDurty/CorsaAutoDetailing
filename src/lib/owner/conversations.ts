@@ -147,6 +147,7 @@ export async function getConversation(store: LeadStore, leadId: string): Promise
       type: "received" as const,
       at: r.receivedAt,
       from: r.fromName ? `${r.fromName} <${r.fromEmail}>` : r.fromEmail,
+      fromOtherAddress: r.fromEmail.toLowerCase() !== lead.email.toLowerCase(),
       subject: r.subject,
       body: visibleReply(r.body),
     })),

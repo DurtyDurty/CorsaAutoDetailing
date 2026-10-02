@@ -17,8 +17,8 @@ See `.env.example` for the full list with comments. Summary of how the app choos
 ## Supabase
 
 1. Create a project. Run `supabase/migrations/0001_init.sql`.
-2. **Authorization model.** The app uses the service-role key from server code only (`src/lib/leads/supabase-store.ts`, `src/lib/photos.ts`). Tables have RLS enabled with no policies and explicit `REVOKE` for `anon`/`authenticated`, so the public anon key cannot read or write leads even though it ships to the browser for Auth.
-3. **Owner auth.** Supabase Auth email+password. Authorization is *not* "any signed-in user": `src/lib/auth/owner.ts` checks the user's email against `ADMIN_EMAILS`. Disable signups in Supabase → Authentication → Providers → Email.
+2. **Authorization model.** The app uses the service-role key from server code only (`src/lib/leads/supabase-store.ts`, `src/lib/photos.ts`, sign-out in `src/lib/auth/api-session.ts`). Tables have RLS enabled with no policies and explicit `REVOKE` for `anon`/`authenticated` (run every file in `supabase/migrations/` in order, including `0009_harden_grants.sql`), so the public anon key cannot read or write leads. The anon key is only used by server code for sign-in; it is still a public value, not a secret.
+3. **Owner auth.** Supabase Auth email+password. Authorization is *not* "any signed-in user": `src/lib/auth/owner.ts` checks the user's email against `ADMIN_EMAILS` and, when `ADMIN_USER_IDS` is set, the account id too. **Signups must be off** (Supabase → Authentication → Sign In / Providers → "Allow new users to sign up"), with "Confirm email" on: otherwise anyone could create an account for an allowed address that has none yet. `supabase/config.toml` carries the same settings so a `supabase config push` can't undo them. Sign-in attempts are throttled per client and per account, but only in memory per server instance: use a long unique password and turn on MFA for the Supabase, Vercel, GitHub, Google and Expo accounts.
 4. **Photos.** The migration creates a private bucket `lead-photos`. Set `SUPABASE_STORAGE_BUCKET=lead-photos` to show the upload control. Uploads are content-sniffed (JPEG/PNG/WebP only), decoded and re-encoded with `sharp` (strips EXIF/GPS, caps at 2000px), and stored under `leads/<lead-id>/<n>.jpg`. The dashboard opens them via 5-minute signed URLs through `/admin/photos?ref=…`, which re-checks the owner session.
 
 ## Resend
@@ -34,7 +34,7 @@ See `.env.example` for the full list with comments. Summary of how the app choos
 
 ## Rate limiting
 
-`src/lib/rate-limit.ts` keeps a sliding window (6 submissions / 10 min) per hashed IP **in process memory**. On a single always-on Node host this is a true limit; on serverless it is per warm instance. Two further layers exist regardless: the unique `idempotency_key` (prevents duplicate rows from retries) and honeypot rejection. If abuse becomes real, swap the map for Upstash Redis or a Postgres table — the function signature is designed for that.
+`src/lib/rate-limit.ts` keeps a sliding window (6 submissions / 10 min) per hashed IP **in process memory**. On a single always-on Node host this is a true limit; on serverless it is per warm instance. Limits that matter are therefore counted from saved rows instead, so they hold across instances: at most 3 acknowledgement emails per address per hour (5 per day), at most 2 unconfirmed calendar holds per customer and 6 overall (`business.booking.maxOpenRequests`), and caps on what mail to the reply domain can create (`src/lib/inbound.ts`). The unique `idempotency_key` (prevents duplicate rows from retries) and honeypot rejection apply as well. If abuse becomes real, swap the map for Upstash Redis or a Postgres table — the function signature is designed for that.
 
 ## Analytics
 
@@ -67,5 +67,5 @@ Both are `NEXT_PUBLIC_` so server and client render identically. Rules: date pre
 
 - Set `NEXT_PUBLIC_SITE_URL` to the canonical https URL — it drives metadata, sitemap and links in emails.
 - Preview/staging: `NEXT_PUBLIC_SITE_ENV=staging` → `noindex`, empty sitemap, robots disallow all.
-- Server actions accept up to 55 MB bodies (`experimental.serverActions.bodySizeLimit`) to allow photo uploads; lower it if you disable photos.
+- Server actions accept 1 MB bodies, or 55 MB when `SUPABASE_STORAGE_BUCKET` is set at build time (photo uploads). Vercel itself rejects request bodies over 4.5 MB, so photo uploads there need client-side resizing first.
 - `sharp` is a native dependency; most hosts (Vercel, Docker with glibc) handle it. On Alpine images use `sharp`'s musl build.

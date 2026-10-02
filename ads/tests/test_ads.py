@@ -434,6 +434,40 @@ class CliTests(unittest.TestCase):
         self.assertIn("Nothing to create", text)
         self.assertEqual(fake.mutates, [True, False], "rerun sent nothing")
 
+    def test_additions_to_a_live_campaign_need_their_own_confirmation(self):
+        cfg = config.load()
+        live = full_existing(cfg)
+        live.campaign_status = "ENABLED"
+        live.keywords.discard(("Mobile Detailing", "mobile car detailing", "PHRASE"))
+        fake = FakeGoogle(cfg, live)
+        with contextlib_all(fake.patches()):
+            # The usual word for a paused campaign isn't enough once it is serving.
+            code, text = run(["create-campaign", "--paused"], ENV, stdin="add")
+            self.assertEqual(code, 1, text)
+            self.assertIn("campaign is live", text)
+            self.assertEqual(fake.mutates, [True], "validated only; nothing created")
+            code, text = run(["create-campaign", "--paused"], ENV, stdin="add live")
+        self.assertEqual(code, 0, text)
+        self.assertEqual(fake.mutates, [True, True, False])
+
+    def test_writes_only_go_to_the_account_in_env(self):
+        fake = FakeGoogle(config.load())
+        with contextlib_all(fake.patches()):
+            code, text = run(["--customer-id", "999-999-9999", "create-campaign", "--paused", "--yes"], ENV)
+            self.assertEqual(code, 2, text)
+            self.assertIn("only runs against GOOGLE_ADS_CUSTOMER_ID", text)
+            self.assertNotIn(False, fake.mutates, "nothing was created in the other account")
+            # Read-only and validate-only commands may still look at another account.
+            code, text = run(["--customer-id", "999-999-9999", "create-campaign", "--dry-run"], ENV)
+        self.assertEqual(code, 0, text)
+
+    def test_error_text_hides_values_loaded_from_env(self):
+        secret = "tok-unlabelled-value-123"
+        with mock.patch.object(g, "load_client", side_effect=RuntimeError(f"request failed for {secret}")):
+            code, text = run(["auth-check"], {**ENV, "GOOGLE_ADS_DEVELOPER_TOKEN": secret})
+        self.assertEqual(code, 1, text)
+        self.assertNotIn(secret, text)
+
     def test_declined_confirmation_creates_nothing(self):
         fake = FakeGoogle(config.load())
         with contextlib_all(fake.patches()):

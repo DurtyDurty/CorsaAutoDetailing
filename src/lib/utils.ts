@@ -12,6 +12,16 @@ export function cleanText(value: unknown, max = 2000): string {
   return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim().slice(0, max);
 }
 
+/** Single-line text: like cleanText, but line breaks and tabs collapse to one space. */
+export function cleanLine(value: unknown, max = 200): string {
+  if (typeof value !== "string") return "";
+  return value
+    .replace(/[\u0000-\u001F\u007F\u2028\u2029]+/g, " ")
+    .replace(/ {2,}/g, " ")
+    .trim()
+    .slice(0, max);
+}
+
 export function normalizeEmail(value: string): string {
   return value.trim().toLowerCase();
 }

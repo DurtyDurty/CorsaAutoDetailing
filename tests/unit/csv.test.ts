@@ -15,7 +15,7 @@ describe("csv", () => {
   });
   it("handles nulls, arrays and objects", () => {
     expect(csvCell(null)).toBe("");
-    expect(csvCell(["a", "b"])).toBe("a; b");
+    expect(csvCell(["a", "b"])).toBe('"a; b"');
     expect(csvCell({ a: 1 })).toBe('"{""a"":1}"');
   });
   it("builds rows with CRLF", () => {

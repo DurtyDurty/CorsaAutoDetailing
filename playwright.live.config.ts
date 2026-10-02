@@ -17,6 +17,8 @@ const env = {
 
 export default defineConfig({
   testDir: "tests/e2e-live",
+  // Only a few unconfirmed requests may hold a time at once; release the ones earlier runs left behind.
+  globalSetup: "./tests/e2e-live/global-setup.ts",
   timeout: 60_000,
   fullyParallel: false,
   workers: 1,

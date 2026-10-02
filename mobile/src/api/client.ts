@@ -81,7 +81,15 @@ async function refreshSession(current: SessionTokens): Promise<SessionTokens | n
   return refreshing;
 }
 
+/**
+ * Ids in a path come from navigation, and so possibly from a `corsaowner://`
+ * link someone else wrote. Only plain segments are sent, so a crafted id can't
+ * steer a signed-in request to a different endpoint.
+ */
+const SAFE_PATH = /^(\/[A-Za-z0-9_-]+)+(\?[A-Za-z0-9_=&%.~+:|,!'()*-]*)?$/;
+
 export async function apiRequest<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+  if (!SAFE_PATH.test(path)) throw new ApiClientError("not_found", "That item couldn't be found.", 404);
   const needsAuth = opts.auth !== false;
   let session = needsAuth ? useSession.getState().session : null;
   if (needsAuth && !session) throw new ApiClientError("unauthorized", "Sign in to continue.", 401);

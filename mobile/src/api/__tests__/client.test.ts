@@ -93,6 +93,17 @@ describe("apiRequest", () => {
     expect(useSession.getState().status).toBe("signedIn");
   });
 
+  it("never sends a request for an id that isn't a plain path segment", async () => {
+    // Ids come from navigation, so possibly from a link someone else wrote.
+    for (const id of ["../customers", "..%2Fcustomers", "x/../../session", "a b", "x?confirm=delete#"]) {
+      await expect(apiRequest(`/appointments/${id}`)).rejects.toMatchObject({ code: "not_found" });
+      await expect(apiRequest(`/conversations/${id}?confirm=delete`, { method: "DELETE" })).rejects.toMatchObject({ code: "not_found" });
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+    fetchMock.mockResolvedValueOnce(json(200, { ok: true }));
+    await expect(apiRequest("/conversations/3fa85f64-5717-4562-b3fc-2c963f66afa6?confirm=delete", { method: "DELETE" })).resolves.toEqual({ ok: true });
+  });
+
   it("refuses to call protected endpoints when signed out", async () => {
     await useSession.getState().signOutLocally();
     await expect(apiRequest("/me")).rejects.toMatchObject({ code: "unauthorized" });

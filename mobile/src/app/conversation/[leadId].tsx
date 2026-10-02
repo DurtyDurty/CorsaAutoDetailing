@@ -39,6 +39,7 @@ function Message({ m }: { m: ConversationMessage }) {
         <Text variant="label" style={styles.replyLabel}>
           Reply · {formatShortDay(m.at)} {formatTime(m.at)}
         </Text>
+        {m.fromOtherAddress ? <Text style={styles.failedText}>Sent from {m.from}, not the address on file. Check it&apos;s really them.</Text> : null}
         {m.subject ? <Text variant="bodyStrong">{m.subject}</Text> : null}
         <Text variant="body">{m.body}</Text>
       </Card>

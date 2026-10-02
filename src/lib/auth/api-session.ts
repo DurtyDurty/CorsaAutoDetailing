@@ -1,8 +1,9 @@
 import "server-only";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import type { Role, SessionTokens } from "@shared/api";
-import { adminEmails, authMode, type AuthMode } from "./owner";
+import { safeEqual } from "@/lib/safe-equal";
+import { adminEmails, authMode, ownerEmailOf, type AuthMode } from "./owner";
 
 /**
  * Bearer-token sessions for the owner app (`/api/owner/v1`).
@@ -71,8 +72,7 @@ function demoVerify(kind: "access" | "refresh", token: string): boolean {
   if (prefix !== `demo-${kind}` || !expRaw || !mac) return false;
   const exp = Number(expRaw);
   if (!Number.isInteger(exp) || exp < Date.now() / 1000) return false;
-  const expected = demoSign(kind, exp);
-  return token.length === expected.length && timingSafeEqual(Buffer.from(token), Buffer.from(expected));
+  return safeEqual(token, demoSign(kind, exp));
 }
 
 function demoTokens(): SessionTokens {
@@ -95,8 +95,8 @@ export async function signInForApi(email: string, password: string): Promise<Ses
     if (!adminEmails().includes(email)) throw new SessionError("unauthorized", GENERIC_SIGN_IN_ERROR);
     const { data, error } = await anonClient().auth.signInWithPassword({ email, password });
     const session = data.session;
-    const signedIn = session?.user.email?.toLowerCase();
-    if (error || !session || !signedIn || !adminEmails().includes(signedIn)) {
+    const signedIn = ownerEmailOf(session?.user);
+    if (error || !session || !signedIn) {
       throw new SessionError("unauthorized", GENERIC_SIGN_IN_ERROR);
     }
     return {
@@ -108,9 +108,7 @@ export async function signInForApi(email: string, password: string): Promise<Ses
     };
   }
   if (mode === "demo") {
-    const expected = process.env.DEMO_ADMIN_PASSWORD!;
-    const ok = password.length === expected.length && timingSafeEqual(Buffer.from(password), Buffer.from(expected));
-    if (!ok) throw new SessionError("unauthorized", GENERIC_SIGN_IN_ERROR);
+    if (!safeEqual(password, process.env.DEMO_ADMIN_PASSWORD!)) throw new SessionError("unauthorized", GENERIC_SIGN_IN_ERROR);
     return demoTokens();
   }
   throw new SessionError("unavailable", "Owner sign-in is not configured on the server.");
@@ -121,10 +119,10 @@ export async function refreshForApi(refreshToken: string): Promise<SessionTokens
   if (mode === "supabase") {
     const { data, error } = await anonClient().auth.refreshSession({ refresh_token: refreshToken });
     const session = data.session;
-    const email = session?.user.email?.toLowerCase();
-    if (error || !session || !email) throw new SessionError("unauthorized", "Your session has ended. Sign in again.");
-    // Removed from ADMIN_EMAILS since the last sign-in: stop here.
-    if (!adminEmails().includes(email)) throw new SessionError("forbidden", "This account no longer has access.");
+    if (error || !session?.user.email) throw new SessionError("unauthorized", "Your session has ended. Sign in again.");
+    // Removed from the allow-list since the last sign-in: stop here.
+    const email = ownerEmailOf(session.user);
+    if (!email) throw new SessionError("forbidden", "This account no longer has access.");
     return {
       accessToken: session.access_token,
       refreshToken: session.refresh_token,
@@ -150,9 +148,9 @@ export async function ownerFromRequest(req: Request): Promise<ApiOwner> {
   const mode = authMode();
   if (mode === "supabase") {
     const { data, error } = await anonClient().auth.getUser(token);
-    const email = data.user?.email?.toLowerCase();
-    if (error || !email) throw new SessionError("unauthorized", "Your session has ended. Sign in again.");
-    if (!adminEmails().includes(email)) throw new SessionError("forbidden", "This account doesn't have access.");
+    if (error || !data.user?.email) throw new SessionError("unauthorized", "Your session has ended. Sign in again.");
+    const email = ownerEmailOf(data.user);
+    if (!email) throw new SessionError("forbidden", "This account doesn't have access.");
     return { mode, email, role: roleFor(), token };
   }
   if (mode === "demo") {

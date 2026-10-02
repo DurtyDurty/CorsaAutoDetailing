@@ -98,7 +98,7 @@ export async function confirmBookingFromCheckout(sessionId: string): Promise<Con
         requestId: null,
       });
       await store.updateLead(lead.id, { stage: "scheduled" });
-      await notifyForLead(store, lead);
+      await notifyForLead(store, lead, { throttleAck: false });
       return { state: "confirmed", appointment: won, lead };
     }
     // Another caller confirmed it a moment ago.
@@ -109,7 +109,8 @@ export async function confirmBookingFromCheckout(sessionId: string): Promise<Con
   // Paid after the hold was released: reinstate if the slot is still free, otherwise refund in full.
   if (appt.status === "cancelled" && appt.depositStatus === "released") {
     try {
-      const reinstated = await store.updateAppointment(appt.id, {
+      // Conditional on the row still being released, so the webhook and the return page can't both reinstate it.
+      const reinstated = await store.updateAppointmentIfStatus(appt.id, "cancelled", {
         status: "confirmed",
         depositStatus: "paid",
         paymentIntentId: checkout.paymentIntentId,
@@ -117,9 +118,12 @@ export async function confirmBookingFromCheckout(sessionId: string): Promise<Con
       });
       if (reinstated) {
         await store.updateLead(lead.id, { stage: "scheduled" });
-        await notifyForLead(store, lead);
+        await notifyForLead(store, lead, { throttleAck: false });
         return { state: "confirmed", appointment: reinstated, lead };
       }
+      // The other caller reinstated it a moment ago.
+      const fresh = await store.findAppointmentByCheckoutSession(sessionId);
+      if (fresh?.status === "confirmed") return { state: "confirmed", appointment: fresh, lead };
     } catch (err) {
       if (!(err instanceof SlotTakenError)) throw err;
       if (checkout.paymentIntentId && appt.depositCents) {
@@ -136,8 +140,9 @@ export async function confirmBookingFromCheckout(sessionId: string): Promise<Con
 export async function releaseHold(appt: AppointmentRecord): Promise<void> {
   const store = await getLeadStore();
   if (!store || appt.status !== "held") return;
-  await store.updateAppointment(appt.id, { status: "cancelled", depositStatus: "released" });
-  if (appt.checkoutSessionId) await getPaymentAdapter().expireCheckout(appt.checkoutSessionId).catch(() => undefined);
+  // Only if it is still held: a payment that landed a moment ago must not be undone.
+  const released = await store.updateAppointmentIfStatus(appt.id, "held", { status: "cancelled", depositStatus: "released" });
+  if (released && appt.checkoutSessionId) await getPaymentAdapter().expireCheckout(appt.checkoutSessionId).catch(() => undefined);
 }
 
 export async function releaseHoldForCheckout(sessionId: string): Promise<void> {
