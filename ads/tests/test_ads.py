@@ -289,6 +289,23 @@ class QueryTests(unittest.TestCase):
         self.assertEqual(g.with_filter_fields("SELECT a FROM b"), "SELECT a FROM b")
 
 
+class PauseTests(unittest.TestCase):
+    def test_pause_only_sets_status(self):
+        client = g.offline_client()
+        sent = {}
+
+        class FakeService:
+            def mutate_campaigns(self, request):
+                sent.update(request)
+
+        with mock.patch.object(client, "get_service", lambda name: FakeService()):
+            g.pause(client, "1234567890", "customers/1234567890/campaigns/5", validate_only=True)
+        (op,) = sent["operations"]
+        self.assertTrue(sent["validate_only"])
+        self.assertEqual(list(op.update_mask.paths), ["status"])
+        self.assertEqual(op.update.status, client.enums.CampaignStatusEnum.PAUSED)
+
+
 class NegativeSuggestionTests(unittest.TestCase):
     def row(self, term, clicks=1, status="NONE", conv=0.0):
         return negatives.TermRow(term, "Mobile Detailing", status, 10, clicks, clicks * 1_500_000, conv)

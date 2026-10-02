@@ -36,11 +36,13 @@ Errors show Google's request ID and error codes. Read calls retry quota and tran
 1. **Google Ads account** for Corsa:
    - Set the time zone to **America/New_York** and the currency to **USD**. Neither can be changed later, and the ad schedule uses the account time zone.
    - Turn on auto-tagging: Admin → Account settings.
-2. **Developer token**: create a Google Ads manager account, then API Center.
-   - Explorer access can create the campaign.
-   - Keyword Planner estimates need Basic access.
+2. **API access.** Developer tokens were retired on 2026-09-09. Access now belongs to the Google Cloud project. Upgrade it at Cloud Console → APIs & Services → Google Ads API → **Upgrade access level**.
+   - The project (My First Project) has **Explorer** access, which allows creating campaigns and reports.
+   - Keyword Planner needs **Basic** access, which first requires brand verification of the Cloud project.
+   - The manager account Corsa Manager (791-475-0444) is linked.
 3. **Google Cloud project**:
    - Enable the **Google Ads API** and the **Data Manager API**.
+   - Set the OAuth consent screen to **External** and **In production**, so refresh tokens don't expire after 7 days.
    - Create an OAuth client of type *Desktop app*.
 4. Set up the tool:
    ```

@@ -402,5 +402,7 @@ def pause(client, customer_id: str, campaign_rn: str, validate_only: bool = Fals
     o = client.get_type("CampaignOperation")
     o.update.resource_name = campaign_rn
     o.update.status = client.enums.CampaignStatusEnum.PAUSED
-    client.copy_from(o.update_mask, client.get_type("FieldMask")(paths=["status"]))
-    return svc.mutate_campaigns(customer_id=customer_id, operations=[o], validate_only=validate_only)
+    from google.protobuf.field_mask_pb2 import FieldMask
+
+    client.copy_from(o.update_mask, FieldMask(paths=["status"]))
+    return svc.mutate_campaigns(request={"customer_id": customer_id, "operations": [o], "validate_only": validate_only})

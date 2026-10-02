@@ -18,7 +18,8 @@ export interface AdSpend {
 const digits = (v: string | undefined) => (v ?? "").replace(/\D/g, "");
 
 export function spendConfigured(env: Record<string, string | undefined> = process.env): boolean {
-  return Boolean(env.GOOGLE_ADS_DEVELOPER_TOKEN && digits(env.GOOGLE_ADS_CUSTOMER_ID) && env.GOOGLE_ADS_CLIENT_ID && env.GOOGLE_ADS_CLIENT_SECRET && env.GOOGLE_ADS_REFRESH_TOKEN);
+  // Developer tokens were retired on 2026-09-09 (access now belongs to the Cloud project); one is sent only if set.
+  return Boolean(digits(env.GOOGLE_ADS_CUSTOMER_ID) && env.GOOGLE_ADS_CLIENT_ID && env.GOOGLE_ADS_CLIENT_SECRET && env.GOOGLE_ADS_REFRESH_TOKEN);
 }
 
 /** from/to are Eastern dates (YYYY-MM-DD), inclusive; the account's own time zone applies to the report. */
@@ -35,7 +36,7 @@ export async function fetchAdSpend(from: string, to: string, env: Record<string,
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
-        "developer-token": env.GOOGLE_ADS_DEVELOPER_TOKEN!,
+        ...(env.GOOGLE_ADS_DEVELOPER_TOKEN ? { "developer-token": env.GOOGLE_ADS_DEVELOPER_TOKEN } : {}),
         ...(login ? { "login-customer-id": login } : {}),
         "Content-Type": "application/json",
       },
