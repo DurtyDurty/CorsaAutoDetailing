@@ -95,7 +95,7 @@ If Google Ads isn't connected, spend shows "not connected". It is never estimate
 ## Decisions for the owner
 - **Ad schedule.** The proposed schedule is 8am–7pm every day; confirm real availability.
 - **Business phone number.** It adds the call asset and Call/Text on the site.
-- **Start date.** None is set. The campaign runs once you enable it. Bookings open Oct 8, 2026.
+- **Start date.** None is set. The campaign runs once you enable it. Bookings open Oct 12, 2026 (moved from Oct 8 on 2026-10-05).
 - **Max CPC.** None is set. Add `max_cpc_usd` after a week of real CPC data.
 - **Developer token level.** Apply for Basic if you want Keyword Planner estimates through the API.
 
