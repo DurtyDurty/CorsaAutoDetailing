@@ -60,6 +60,13 @@ negative_keywords:
   - { text: self serve, match: PHRASE }  # variant
   - { text: car wash tunnel, match: PHRASE }
   - { text: tunnel car wash, match: PHRASE }  # word-order variant
+  # Added 2026-10-05 with the broader keywords below: vehicles and shopping intents we don't serve.
+  - { text: boat, match: BROAD }
+  - { text: boats, match: BROAD }
+  - { text: motorcycle, match: BROAD }
+  - { text: kit, match: BROAD }
+  - { text: kits, match: BROAD }
+  - { text: products, match: BROAD }
 
 ad_groups:
   - name: Mobile Detailing
@@ -72,6 +79,10 @@ ad_groups:
       - { text: mobile detailing green cove springs, match: PHRASE, final_url: /service-areas/green-cove-springs }
       - { text: mobile detailing fleming island, match: PHRASE, final_url: /service-areas/fleming-island }
       - { text: mobile auto detailing near me, match: EXACT }
+      # 2026-10-05: no impressions in the first 3 days. Most local searches don't say "mobile" or a town name.
+      - { text: car detailing near me, match: PHRASE }
+      - { text: auto detailing near me, match: PHRASE }
+      - { text: detailing near me, match: PHRASE }
     ad:
       path1: Mobile
       path2: Detailing
@@ -105,6 +116,8 @@ ad_groups:
       - { text: car detailing middleburg, match: PHRASE, final_url: /service-areas/middleburg }
       - { text: car detailing green cove springs, match: PHRASE, final_url: /service-areas/green-cove-springs }
       - { text: car detailing fleming island, match: PHRASE, final_url: /service-areas/fleming-island }
+      - { text: car detailing, match: PHRASE }
+      - { text: auto detailing, match: PHRASE }
     ad:
       path1: Detailing
       path2: Packages

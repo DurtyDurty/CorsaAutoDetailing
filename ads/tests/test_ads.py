@@ -140,7 +140,8 @@ class ConfigTests(unittest.TestCase):
         kws = {(k.text, k.match) for grp in c.ad_groups for k in grp.keywords}
         self.assertIn(("mobile auto detailing near me", "EXACT"), kws)
         self.assertIn(("mobile detailing near me", "PHRASE"), kws)
-        self.assertEqual(len(kws), 12)
+        self.assertIn(("car detailing near me", "PHRASE"), kws)
+        self.assertEqual(len(kws), 17)
         self.assertTrue(cfg_with(**{"ad_groups.0.keywords.0.match": "BROAD"}).errors)
         self.assertTrue(cfg_with(**{"ad_groups.0.keywords.0.text": '"mobile detailing"'}).errors)
         dup = cfg_with(**{"ad_groups.1.keywords.0.text": "mobile car detailing", "ad_groups.1.keywords.0.match": "PHRASE"})
@@ -179,7 +180,7 @@ class PlanTests(unittest.TestCase):
         kinds = [s.kind for s in steps]
         self.assertEqual(kinds[:2], ["budget", "campaign"])
         self.assertEqual(kinds.count("location"), 3)
-        self.assertEqual(kinds.count("keyword"), 12)
+        self.assertEqual(kinds.count("keyword"), 17)
         self.assertEqual(kinds.count("call"), 1)
         no_phone = cfg_with(**{"assets.call.phone": None})
         self.assertEqual([s.kind for s in plan.desired(no_phone)].count("call"), 0, "no call asset without a phone number")
@@ -251,11 +252,11 @@ class BuildTests(unittest.TestCase):
         sched = [c.ad_schedule for c in crit if c.ad_schedule.start_hour or c.ad_schedule.end_hour]
         self.assertEqual(len(sched), 7)
         self.assertTrue(all(s.start_hour == 8 and s.end_hour == 19 for s in sched))
-        self.assertEqual(sum(1 for c in crit if c.negative), 17)
+        self.assertEqual(sum(1 for c in crit if c.negative), 23)
 
     def test_keywords_and_ads(self):
         kws = self.kind("ad_group_criterion_operation")
-        self.assertEqual(len(kws), 12)
+        self.assertEqual(len(kws), 17)
         town = next(k for k in kws if k.keyword.text == "mobile detailing middleburg")
         self.assertEqual(list(town.final_urls), ["https://corsaautodetailing.com/service-areas/middleburg"])
         ads = self.kind("ad_group_ad_operation")
