@@ -3,11 +3,12 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { z } from "zod";
-import { noteSchema, OVERRIDABLE, recordPaymentSchema, rescheduleSchema, statusChangeSchema } from "@shared/api";
+import { noteSchema, OVERRIDABLE, recordPaymentSchema, rescheduleSchema, sendQuoteSchema, statusChangeSchema } from "@shared/api";
 import { requireOwner } from "@/lib/auth/owner";
 import { ApiError } from "@/lib/api/http";
 import { getLeadStore } from "@/lib/leads/store";
-import { changeAppointmentStatus } from "@/lib/owner/appointments";
+import { changeAppointmentStatus, getAppointmentDetail } from "@/lib/owner/appointments";
+import { sendQuote } from "@/lib/quotes/service";
 import { addNote, recordPayment, rescheduleAppointment, sendReceipt } from "@/lib/owner/work";
 
 /**
@@ -127,4 +128,38 @@ export async function noteAction(formData: FormData) {
   const input = parse(formData, id, noteSchema, { requestId: str(formData, "requestId"), note: str(formData, "note") });
   await attempt(formData, id, async () => addNote(await store(), owner.email, id, input.requestId, input.note));
   backTo(formData, id, { ok: "Note saved." });
+}
+
+/** Dollars typed in a form field, as cents (blank = 0, junk = NaN so validation rejects it). */
+function cents(v: FormDataEntryValue | null): number {
+  const s = String(v ?? "").replace(/[$,\s]/g, "");
+  return s === "" ? 0 : Math.round(Number(s) * 100);
+}
+
+export async function sendQuoteAction(formData: FormData) {
+  const owner = await requireOwner();
+  const id = jobId(formData);
+  const rows = Math.min(Number(formData.get("rows")) || 0, 60);
+  const lines: { label: string; amountCents: number }[] = [];
+  for (let i = 0; i < rows; i++) {
+    const label = String(formData.get(`label_${i}`) ?? "").trim();
+    // Ticked rows (the package, earlier lines, extras), plus any blank row the owner filled in.
+    const include = formData.get(`on_${i}`) === "on" || (formData.get(`custom_${i}`) === "1" && label !== "");
+    if (include) lines.push({ label, amountCents: cents(formData.get(`amount_${i}`)) });
+  }
+  const input = parse(formData, id, sendQuoteSchema, {
+    requestId: str(formData, "requestId"),
+    lines,
+    discountCents: cents(formData.get("discount")),
+    notes: str(formData, "notes"),
+    expiresInDays: str(formData, "expiresInDays"),
+  });
+  const res = await attempt(formData, id, async () => sendQuote(await store(), owner.email, id, input, getAppointmentDetail));
+  backTo(
+    formData,
+    id,
+    res.customerEmail.status === "failed"
+      ? { error: `Quote ${res.quote.number} saved, but the email didn't send: ${res.customerEmail.error}` }
+      : { ok: res.unchanged ? "Already sent." : `Quote ${res.quote.number} sent to the customer.` },
+  );
 }

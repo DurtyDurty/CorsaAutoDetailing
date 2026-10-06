@@ -174,6 +174,8 @@ export type AppointmentPatch = Partial<
     | "cancelReason"
     | "cancelledBy"
     | "discountCents"
+    | "quotedPriceCents"
+    | "customerAgreed"
   >
 >;
 
@@ -261,6 +263,48 @@ export interface InboundEmailRecord {
 }
 
 export type NewInboundEmail = Omit<InboundEmailRecord, "id" | "createdAt" | "readAt">;
+
+export interface QuoteLine {
+  label: string;
+  amountCents: number;
+}
+
+export type QuoteStatus = "sent" | "accepted" | "declined" | "withdrawn";
+
+/** An invoice-style price for a requested time, accepted or declined by the customer through a private link. */
+export interface QuoteRecord {
+  id: string;
+  appointmentId: string;
+  leadId: string;
+  /** Shown to the customer, e.g. "Q-3F9A2C". */
+  number: string;
+  /** sha256 of the link token; the token itself is never stored. */
+  tokenHash: string;
+  status: QuoteStatus;
+  lines: QuoteLine[];
+  subtotalCents: number;
+  discountCents: number;
+  totalCents: number;
+  notes: string | null;
+  expiresAt: string;
+  createdBy: string;
+  requestId: string | null;
+  respondedAt: string | null;
+  responseNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type NewQuote = Omit<QuoteRecord, "id" | "status" | "respondedAt" | "responseNote" | "createdAt" | "updatedAt">;
+export type QuotePatch = Partial<Pick<QuoteRecord, "status" | "respondedAt" | "responseNote">>;
+
+/** Thrown when another live quote for the same appointment was created at the same moment. */
+export class QuoteConflictError extends Error {
+  constructor() {
+    super("QUOTE_CONFLICT");
+    this.name = "QuoteConflictError";
+  }
+}
 
 /** A conversion reported (or attempted) to Google Ads. No personal data. */
 export interface AdConversionRecord {
@@ -401,6 +445,15 @@ export interface LeadStore {
   /** Lead ids with at least one unread reply. */
   leadsWithUnreadInbound(): Promise<string[]>;
   markInboundRead(leadId: string): Promise<void>;
+
+  /** Returns null when a quote with the same requestId already exists (retried send). */
+  createQuote(input: NewQuote): Promise<QuoteRecord | null>;
+  findQuoteByRequestId(requestId: string): Promise<QuoteRecord | null>;
+  getQuoteByTokenHash(tokenHash: string): Promise<QuoteRecord | null>;
+  /** Newest first. */
+  listQuotesForAppointments(appointmentIds: string[]): Promise<QuoteRecord[]>;
+  /** Change a quote only if its status is still `expected` (accept/decline/withdraw race safely). */
+  updateQuoteIfStatus(id: string, expected: QuoteStatus, patch: QuotePatch): Promise<QuoteRecord | null>;
 
   listAdConversions(): Promise<AdConversionRecord[]>;
   /** Insert or replace by transactionId. */

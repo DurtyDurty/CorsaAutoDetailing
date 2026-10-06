@@ -25,9 +25,13 @@ import type {
   NotificationKind,
   NotificationRecord,
   NotificationStatus,
+  NewQuote,
+  QuotePatch,
+  QuoteRecord,
+  QuoteStatus,
   StoreHealth,
 } from "./types";
-import { SlotTakenError } from "./types";
+import { QuoteConflictError, SlotTakenError } from "./types";
 import { computeCounts } from "./shared";
 
 /**
@@ -218,6 +222,29 @@ function notifFromRow(r: Row): NotificationRecord {
     attempts: r.attempts as number,
     lastError: (r.last_error as string | null) ?? null,
     providerMessageId: (r.provider_message_id as string | null) ?? null,
+    createdAt: r.created_at as string,
+    updatedAt: r.updated_at as string,
+  };
+}
+
+function quoteFromRow(r: Row): QuoteRecord {
+  return {
+    id: r.id as string,
+    appointmentId: r.appointment_id as string,
+    leadId: r.lead_id as string,
+    number: r.number as string,
+    tokenHash: r.token_hash as string,
+    status: r.status as QuoteStatus,
+    lines: (r.lines as QuoteRecord["lines"]) ?? [],
+    subtotalCents: r.subtotal_cents as number,
+    discountCents: (r.discount_cents as number | null) ?? 0,
+    totalCents: r.total_cents as number,
+    notes: (r.notes as string | null) ?? null,
+    expiresAt: r.expires_at as string,
+    createdBy: r.created_by as string,
+    requestId: (r.request_id as string | null) ?? null,
+    respondedAt: (r.responded_at as string | null) ?? null,
+    responseNote: (r.response_note as string | null) ?? null,
     createdAt: r.created_at as string,
     updatedAt: r.updated_at as string,
   };
@@ -518,6 +545,57 @@ export class SupabaseLeadStore implements LeadStore {
       .maybeSingle();
     if (error) throw new Error(error.message);
     return data ? apptFromRow(data) : null;
+  }
+
+  async createQuote(input: NewQuote) {
+    const { data, error } = await this.client.from("quotes").insert(snake({ ...input })).select("*").single();
+    if (error?.code === "23505") {
+      // Same requestId: this send was already made. Otherwise another live quote won a race.
+      if (input.requestId && (await this.findQuoteByRequestId(input.requestId))) return null;
+      throw new QuoteConflictError();
+    }
+    if (error) throw new Error(error.message);
+    return quoteFromRow(data);
+  }
+
+  async findQuoteByRequestId(requestId: string) {
+    const { data, error } = await this.client.from("quotes").select("*").eq("request_id", requestId).maybeSingle();
+    if (error) throw new Error(error.message);
+    return data ? quoteFromRow(data) : null;
+  }
+
+  async getQuoteByTokenHash(tokenHash: string) {
+    const { data, error } = await this.client.from("quotes").select("*").eq("token_hash", tokenHash).maybeSingle();
+    if (error) throw new Error(error.message);
+    return data ? quoteFromRow(data) : null;
+  }
+
+  async listQuotesForAppointments(appointmentIds: string[]) {
+    const results = await Promise.all(
+      batchesOf(appointmentIds).map(async (batch) => {
+        const { data, error } = await this.client.from("quotes").select("*").in("appointment_id", batch);
+        // Table not created yet (code deployed before migration 0010): show jobs without quotes rather than failing them.
+        if (error && (error.code === "42P01" || error.code === "PGRST205")) {
+          console.warn("[quotes] quotes table missing; apply supabase/migrations/0010_quotes.sql");
+          return [];
+        }
+        if (error) throw new Error(error.message);
+        return (data ?? []).map(quoteFromRow);
+      }),
+    );
+    return results.flat().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async updateQuoteIfStatus(id: string, expected: QuoteStatus, patch: QuotePatch) {
+    const { data, error } = await this.client
+      .from("quotes")
+      .update({ ...snake(patch), updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("status", expected)
+      .select("*")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data ? quoteFromRow(data) : null;
   }
 
   async listAdConversions() {

@@ -29,8 +29,12 @@ import type {
   StoreHealth,
   TimeOffRecord,
   AdConversionRecord,
+  NewQuote,
+  QuotePatch,
+  QuoteRecord,
+  QuoteStatus,
 } from "./types";
-import { SlotTakenError } from "./types";
+import { QuoteConflictError, SlotTakenError } from "./types";
 import { matchesFilter, computeCounts } from "./shared";
 import { todayEastern } from "@/lib/time";
 import { isBlocking } from "@shared/appointment-status";
@@ -73,6 +77,7 @@ interface DemoData {
   payments: PaymentRecord[];
   inboundEmails: InboundEmailRecord[];
   adConversions: AdConversionRecord[];
+  quotes: QuoteRecord[];
 }
 
 // Resolved per call so the working directory can be swapped in tests.
@@ -116,9 +121,10 @@ async function load(): Promise<DemoData> {
       payments: parsed.payments ?? [],
       inboundEmails: parsed.inboundEmails ?? [],
       adConversions: parsed.adConversions ?? [],
+      quotes: parsed.quotes ?? [],
     };
   } catch {
-    return { leads: [], appointments: [], notifications: [], timeOff: [], outboundEmails: [], appointmentEvents: [], payments: [], inboundEmails: [], adConversions: [] };
+    return { leads: [], appointments: [], notifications: [], timeOff: [], outboundEmails: [], appointmentEvents: [], payments: [], inboundEmails: [], adConversions: [], quotes: [] };
   }
 }
 
@@ -407,6 +413,44 @@ export class DemoLeadStore implements LeadStore {
   async findAppointmentByCheckoutSession(sessionId: string) {
     const data = await load();
     return data.appointments.find((a) => a.checkoutSessionId === sessionId) ?? null;
+  }
+
+  createQuote(input: NewQuote) {
+    return serialized(async () => {
+      const data = await load();
+      if (input.requestId && data.quotes.some((q) => q.requestId === input.requestId)) return null;
+      // Mirrors the one-live-quote-per-appointment index.
+      if (data.quotes.some((q) => q.appointmentId === input.appointmentId && q.status === "sent")) throw new QuoteConflictError();
+      const ts = now();
+      const quote: QuoteRecord = { ...input, id: randomUUID(), status: "sent", respondedAt: null, responseNote: null, createdAt: ts, updatedAt: ts };
+      data.quotes.push(quote);
+      await save(data);
+      return quote;
+    });
+  }
+
+  async findQuoteByRequestId(requestId: string) {
+    return (await load()).quotes.find((q) => q.requestId === requestId) ?? null;
+  }
+
+  async getQuoteByTokenHash(tokenHash: string) {
+    return (await load()).quotes.find((q) => q.tokenHash === tokenHash) ?? null;
+  }
+
+  async listQuotesForAppointments(appointmentIds: string[]) {
+    const wanted = new Set(appointmentIds);
+    return (await load()).quotes.filter((q) => wanted.has(q.appointmentId)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  updateQuoteIfStatus(id: string, expected: QuoteStatus, patch: QuotePatch) {
+    return serialized(async () => {
+      const data = await load();
+      const quote = data.quotes.find((q) => q.id === id && q.status === expected);
+      if (!quote) return null;
+      Object.assign(quote, patch, { updatedAt: now() });
+      await save(data);
+      return quote;
+    });
   }
 
   async listAdConversions() {

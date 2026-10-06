@@ -97,6 +97,72 @@ test.describe("after launch without deposits (LIVE mode, current production setu
   });
 });
 
+test.describe("quotes: request, quote, accept (LIVE mode)", () => {
+  test("the owner quotes a website request; the customer accepts it and the job is confirmed", async ({ page, browser }, testInfo) => {
+    // A customer requests a time on the website.
+    const form = await fillVehicleAndCondition(page, "monthly-maintenance");
+    await pickFirstSlot(page);
+    await form.getByRole("button", { name: "Continue" }).click();
+    const name = `Quote ${word()}`;
+    const email = `${unique()}@example.com`;
+    await form.getByLabel("First name").fill(name);
+    await form.getByLabel("Email", { exact: true }).fill(email);
+    await form.getByLabel(/Phone/).fill(phone());
+    await form.getByLabel(/I understand Corsa Auto Detailing will use/).check();
+    await form.getByLabel(/displayed price is an estimate/).check();
+    await form.getByRole("button", { name: "Request this time" }).click();
+    await expect(page).toHaveURL(/\/thanks\/request\?ref=/);
+
+    // The owner sends a quote from the dashboard, adding an extra and a discount.
+    await page.goto("/admin/login");
+    await page.getByLabel("Password").fill("corsa-demo");
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(page).toHaveURL(/\/admin$/);
+    const card = page.locator("article", { hasText: name });
+    await card.getByRole("link", { name: "Send quote" }).click();
+    await expect(page).toHaveURL(/\/admin\/jobs\/[0-9a-f-]{36}#quote$/);
+    const quote = page.getByRole("region", { name: "Quote" });
+    await quote.getByLabel("Include Excessive pet-hair removal").check();
+    await quote.getByLabel("Discount ($)").fill("10");
+    await quote.getByLabel(/Note to the customer/).fill("Thanks for choosing Corsa!");
+    page.once("dialog", (d) => void d.accept());
+    await quote.getByRole("button", { name: "Send quote" }).click();
+    await expect(page.getByRole("status")).toContainText(/Quote Q-[A-Z0-9]{6} sent/);
+    await expect(quote).toContainText("Quote sent, waiting for the customer");
+
+    // The customer opens the link from the email.
+    const { readFile } = await import("node:fs/promises");
+    const outbox = JSON.parse(await readFile(".data/demo-outbox.json", "utf8")) as { to: string; subject: string; text: string }[];
+    const mail = outbox.filter((m) => m.to === email && m.subject.startsWith("Your quote")).at(-1)!;
+    const link = /\/quote\/[A-Za-z0-9_-]{43}/.exec(mail.text)![0];
+    const customer = await (await browser.newContext({ viewport: page.viewportSize() ?? undefined })).newPage();
+    await customer.goto(link);
+    await expect(customer.getByRole("article", { name: /Quote Q-/ })).toBeVisible();
+    await expect(customer.getByText("Excessive pet-hair removal")).toBeVisible();
+    await expect(customer.getByText("-$10")).toBeVisible();
+    if (process.env.QUOTE_SHOTS) await customer.screenshot({ path: `${process.env.QUOTE_SHOTS}/quote-${testInfo.project.name}.png`, fullPage: true });
+
+    // The PDF is there too.
+    const pdf = await customer.request.get(`${link}/pdf`);
+    expect(pdf.status()).toBe(200);
+    expect(pdf.headers()["content-type"]).toBe("application/pdf");
+
+    // Accepting needs the box ticked, then confirms the appointment.
+    await customer.getByRole("button", { name: /Accept & confirm/ }).click();
+    await expect(customer.getByRole("article", { name: /Quote Q-/ })).toBeVisible();
+    await customer.getByLabel(/I accept this quote/).check();
+    await customer.getByRole("button", { name: /Accept & confirm/ }).click();
+    await expect(customer.getByRole("status")).toContainText("You're booked.");
+    if (process.env.QUOTE_SHOTS) await customer.screenshot({ path: `${process.env.QUOTE_SHOTS}/accepted-${testInfo.project.name}.png`, fullPage: true });
+
+    // The owner sees a confirmed job at the quoted price.
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Quote" })).toContainText("Quote accepted");
+    await expect(page.locator("header").filter({ hasText: name })).toContainText("Confirmed");
+    await customer.context().close();
+  });
+});
+
 test.describe("owner dashboard laid out like the app (LIVE mode)", () => {
   test("book from the dashboard, work the job through to closed out", async ({ page }, testInfo) => {
     await page.goto("/admin/login");

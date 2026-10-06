@@ -3,7 +3,7 @@ import { Alert, KeyboardAvoidingView, Platform, RefreshControl, ScrollView, Styl
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { SafeAreaView } from "react-native-safe-area-context";
-import type { AppointmentDetail } from "@shared/api";
+import { QUOTE_STATUS_LABELS, type AppointmentDetail } from "@shared/api";
 import { APPOINTMENT_STATUS_LABELS, type AppointmentStatus } from "@shared/appointment-status";
 import { formatCents, PAYMENT_METHOD_LABELS } from "@shared/money";
 import { ApiClientError } from "@/api/client";
@@ -18,6 +18,7 @@ import { Text } from "@/design/Text";
 import { colors, space } from "@/design/theme";
 import { nextStep } from "@/features/appointments/next-step";
 import { PaymentSheet } from "@/features/appointments/PaymentSheet";
+import { QuoteSheet } from "@/features/appointments/QuoteSheet";
 import { RescheduleSheet } from "@/features/appointments/RescheduleSheet";
 import { addressLine, formatShortDay, formatTime, formatTimeRange, vehicleLine } from "@/lib/format";
 import { callPhone, navigateTo, sendEmail, textPhone } from "@/lib/native";
@@ -75,12 +76,14 @@ function askReason(title: string, onReason: (reason: string) => void) {
   }
 }
 
-function Body({ a }: { a: AppointmentDetail }) {
+function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
   const status = useStatusAction(a);
   const receipt = useSendReceipt(a.id);
   const addNote = useAddNote(a.id);
   const [paying, setPaying] = useState(false);
   const [moving, setMoving] = useState(false);
+  // Arriving from Today's "Send quote" opens the quote straight away.
+  const [quoting, setQuoting] = useState(openQuote && a.quoteDraft !== null);
   const [note, setNote] = useState("");
   const noteId = useRef(newRequestId());
   const receiptId = useRef(newRequestId());
@@ -170,6 +173,28 @@ function Body({ a }: { a: AppointmentDetail }) {
       </View>
 
       {step && <Button label={step.label} haptic="medium" loading={status.busy} onPress={onStep} fullWidth />}
+      {(a.quote || a.quoteDraft) && (
+        <Card style={[styles.card, a.quoteDraft ? styles.quoteOpen : null]}>
+          <Text variant="label">Quote</Text>
+          {a.quote ? (
+            <>
+              <Text variant="bodyStrong">
+                {QUOTE_STATUS_LABELS[a.quote.status]} · {formatCents(a.quote.totalCents)}
+              </Text>
+              <Text variant="caption">
+                {a.quote.number} · sent {formatShortDay(a.quote.sentAt)}
+                {a.quote.status === "sent" ? ` · valid until ${formatShortDay(a.quote.expiresAt)} ${formatTime(a.quote.expiresAt)}` : ""}
+              </Text>
+              {a.quote.status === "declined" && a.quote.responseNote && <Text variant="body">Their reason: {a.quote.responseNote}</Text>}
+            </>
+          ) : (
+            <Text variant="caption">Price this request and send it. The job is confirmed when the customer accepts.</Text>
+          )}
+          {a.quoteDraft && (
+            <Button label={a.quote ? "Revise & resend quote" : "Send quote"} haptic="medium" onPress={() => setQuoting(true)} fullWidth />
+          )}
+        </Card>
+      )}
       {a.status === "completed" && b.balanceDueCents > 0 && (
         <Button label={`Collect ${formatCents(b.balanceDueCents)}`} haptic="medium" onPress={() => setPaying(true)} fullWidth />
       )}
@@ -282,12 +307,13 @@ function Body({ a }: { a: AppointmentDetail }) {
 
       {paying && <PaymentSheet appt={a} visible={paying} onClose={() => setPaying(false)} />}
       {moving && <RescheduleSheet appt={a} visible={moving} onClose={() => setMoving(false)} />}
+      {quoting && a.quoteDraft && <QuoteSheet appt={a} draft={a.quoteDraft} visible={quoting} onClose={() => setQuoting(false)} />}
     </>
   );
 }
 
 export default function AppointmentScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, quote } = useLocalSearchParams<{ id: string; quote?: string }>();
   const { data, error, isPending, refetch, isRefetching } = useAppointment(id);
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
@@ -306,7 +332,7 @@ export default function AppointmentScreen() {
           ) : !data ? (
             <ErrorState message={error?.message ?? "Couldn't load this job."} onRetry={() => void refetch()} retrying={isRefetching} />
           ) : (
-            <Body a={data} />
+            <Body a={data} openQuote={quote === "1"} />
           )}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -326,5 +352,6 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", gap: space.sm, marginTop: space.xs },
   action: { flex: 1 },
   done: { borderColor: colors.success },
+  quoteOpen: { borderColor: colors.warning },
   doneText: { color: colors.success },
 });

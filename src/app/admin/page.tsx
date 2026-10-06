@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import type { AppointmentSummary } from "@shared/api";
+import { QUOTE_STATUS_LABELS, type AppointmentSummary } from "@shared/api";
 import { formatCents } from "@shared/money";
 import { requireOwner } from "@/lib/auth/owner";
 import { getLeadStore } from "@/lib/leads/store";
@@ -95,9 +95,13 @@ export default async function TodayPage({ searchParams }: PageProps<"/admin">) {
                     reason="Requested time not available"
                     confirm="Decline this request? The customer gets an email asking them to pick another time."
                   />
-                  <StepButton id={a.id} to="confirmed" label="Confirm" back="/admin" size="sm" />
+                  <ButtonLink href={`/admin/jobs/${a.id}#quote`} size="sm">
+                    {a.quoteStatus === "sent" ? "View quote" : "Send quote"}
+                  </ButtonLink>
                 </div>
-                <p className="text-xs text-ink-muted">Confirming emails the customer a confirmation from your business address.</p>
+                <p className="text-xs text-ink-muted">
+                  {a.quoteStatus ? QUOTE_STATUS_LABELS[a.quoteStatus] : "Send a quote: the job is confirmed when the customer accepts it."}
+                </p>
               </article>
             ))}
           </div>

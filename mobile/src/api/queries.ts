@@ -18,6 +18,8 @@ import type {
   Page,
   SendMessageInput,
   SendMessageResponse,
+  SendQuoteInput,
+  SendQuoteResponse,
   SessionTokens,
   SignInInput,
   StatusChangeResponse,
@@ -264,3 +266,11 @@ export const useReschedule = (id: string) => useWork<RescheduleInput>(() => `/ap
 export const useRecordPayment = (id: string) => useWork<RecordPaymentInput>(() => `/appointments/${id}/payments`, (v) => v);
 export const useSendReceipt = (id: string) => useWork<{ requestId: string }>(() => `/appointments/${id}/receipt`, (v) => v);
 export const useAddNote = (id: string) => useWork<{ requestId: string; note: string }>(() => `/appointments/${id}/notes`, (v) => v);
+
+export function useSendQuote(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: SendQuoteInput) => apiRequest<SendQuoteResponse>(`/appointments/${id}/quote`, { method: "POST", body: v }),
+    onSuccess: (data) => refreshJob(qc, data.appointment),
+  });
+}

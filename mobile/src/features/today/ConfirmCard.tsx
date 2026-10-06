@@ -1,7 +1,8 @@
 import { useRef } from "react";
 import { Alert, StyleSheet, View } from "react-native";
+import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import type { AppointmentSummary, StatusChangeResponse } from "@shared/api";
+import { QUOTE_STATUS_LABELS, type AppointmentSummary, type StatusChangeResponse } from "@shared/api";
 import { formatCents } from "@shared/money";
 import { ApiClientError } from "@/api/client";
 import { newRequestId, useChangeStatus } from "@/api/queries";
@@ -12,7 +13,7 @@ import { colors, space } from "@/design/theme";
 import { addressLine, formatShortDay, formatTimeRange, vehicleLine } from "@/lib/format";
 import { callPhone } from "@/lib/native";
 
-type Decision = "confirmed" | "declined";
+type Decision = "declined";
 
 function emailNote(res: StatusChangeResponse): string {
   const e = res.customerEmail;
@@ -40,7 +41,7 @@ export function ConfirmCard({ appt }: { appt: AppointmentSummary }) {
         onSuccess: (res) => {
           pending.current = null;
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          Alert.alert(to === "confirmed" ? "Confirmed" : "Declined", `${appt.customerName}.${emailNote(res)}`);
+          Alert.alert("Declined", `${appt.customerName}.${emailNote(res)}`);
         },
         onError: (err) => {
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -79,9 +80,15 @@ export function ConfirmCard({ appt }: { appt: AppointmentSummary }) {
           style={styles.action}
         />
         {appt.phone && <Button label="Call" variant="secondary" onPress={() => void callPhone(appt.phone!)} style={styles.action} />}
-        <Button label="Confirm" haptic="medium" loading={change.isPending} onPress={() => decide("confirmed")} style={styles.action} />
+        <Button
+          label={appt.quoteStatus === "sent" ? "View quote" : "Send quote"}
+          haptic="medium"
+          disabled={change.isPending}
+          onPress={() => router.push({ pathname: "/appointment/[id]", params: { id: appt.id, quote: appt.quoteStatus === "sent" ? "0" : "1" } })}
+          style={styles.action}
+        />
       </View>
-      <Text variant="caption">Confirming emails the customer a confirmation from your business address.</Text>
+      <Text variant="caption">{appt.quoteStatus ? QUOTE_STATUS_LABELS[appt.quoteStatus] : "Send a quote: the job is confirmed when the customer accepts it."}</Text>
     </Card>
   );
 }

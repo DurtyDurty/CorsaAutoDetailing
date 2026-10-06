@@ -4,11 +4,17 @@ import path from "node:path";
 import { storeKind } from "@/lib/leads/store";
 import { cleanLine } from "@/lib/utils";
 
+export interface EmailAttachment {
+  filename: string;
+  content: Uint8Array;
+}
+
 export interface EmailMessage {
   to: string;
   subject: string;
   text: string;
   replyTo?: string;
+  attachments?: EmailAttachment[];
   /** Resend drops a repeat send with the same key (24h window). */
   idempotencyKey?: string;
 }
@@ -47,6 +53,9 @@ class ResendAdapter implements EmailAdapter {
         subject: message.subject,
         text: message.text,
         reply_to: message.replyTo,
+        ...(message.attachments?.length
+          ? { attachments: message.attachments.map((a) => ({ filename: a.filename, content: Buffer.from(a.content).toString("base64") })) }
+          : {}),
       }),
     });
     if (!res.ok) {
@@ -72,7 +81,14 @@ class DemoOutboxAdapter implements EmailAdapter {
       outbox = [];
     }
     const id = `demo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    outbox.push({ id, sentAt: new Date().toISOString(), ...message });
+    // Attachments are listed by name and size, so the outbox stays readable.
+    const { attachments, ...rest } = message;
+    outbox.push({
+      id,
+      sentAt: new Date().toISOString(),
+      ...rest,
+      ...(attachments ? { attachments: attachments.map((a) => ({ filename: a.filename, bytes: a.content.length })) } : {}),
+    });
     await fs.writeFile(file, JSON.stringify(outbox, null, 2), "utf8");
     if (process.env.NODE_ENV !== "test") {
       console.info(`[demo email] → ${message.to}: ${message.subject}`);

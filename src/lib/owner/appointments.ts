@@ -17,6 +17,7 @@ import {
 import { computeBalance } from "@shared/money";
 import { ApiError } from "@/lib/api/http";
 import { appointmentConfirmationEmail, requestDeclinedEmail, sendOwnerEmail } from "./email";
+import { effectiveStatus, isQuotable, quoteDraft, toQuoteSummary, withdrawOpenQuotes } from "@/lib/quotes/service";
 import type {
   AppointmentEventRecord,
   AppointmentPatch,
@@ -24,11 +25,12 @@ import type {
   LeadRecord,
   LeadStore,
   PaymentRecord,
+  QuoteRecord,
 } from "@/lib/leads/types";
 
 /* ---------- Mapping ---------- */
 
-export function toSummary(a: AppointmentRecord, lead: LeadRecord | null, payments: PaymentRecord[]): AppointmentSummary {
+export function toSummary(a: AppointmentRecord, lead: LeadRecord | null, payments: PaymentRecord[], latestQuote: QuoteRecord | null = null): AppointmentSummary {
   const serviceId = a.serviceId ?? lead?.serviceId ?? null;
   return {
     id: a.id,
@@ -66,6 +68,7 @@ export function toSummary(a: AppointmentRecord, lead: LeadRecord | null, payment
     cancelReason: a.cancelReason,
     cancelledBy: a.cancelledBy,
     updatedAt: a.updatedAt,
+    quoteStatus: latestQuote ? effectiveStatus(latestQuote) : null,
   };
 }
 
@@ -96,16 +99,21 @@ function toPayment(p: PaymentRecord): Payment {
 /** Summaries for many appointments with one lead query and one payments query. */
 export async function summarize(store: LeadStore, appts: AppointmentRecord[]): Promise<AppointmentSummary[]> {
   if (appts.length === 0) return [];
-  const [leads, payments] = await Promise.all([
+  const [leads, payments, quotes] = await Promise.all([
     store.getLeads(appts.map((a) => a.leadId)),
     store.listPayments({ appointmentIds: appts.map((a) => a.id) }),
+    store.listQuotesForAppointments(appts.filter((a) => a.source === "online").map((a) => a.id)),
   ]);
   const leadById = new Map(leads.map((l) => [l.id, l]));
+  // Newest first, so the first one seen per appointment is its latest.
+  const latestQuote = new Map<string, QuoteRecord>();
+  for (const q of quotes) if (!latestQuote.has(q.appointmentId)) latestQuote.set(q.appointmentId, q);
   return appts.map((a) =>
     toSummary(
       a,
       leadById.get(a.leadId) ?? null,
       payments.filter((p) => p.appointmentId === a.id),
+      latestQuote.get(a.id) ?? null,
     ),
   );
 }
@@ -113,13 +121,15 @@ export async function summarize(store: LeadStore, appts: AppointmentRecord[]): P
 export async function getAppointmentDetail(store: LeadStore, id: string): Promise<AppointmentDetail> {
   const a = await store.getAppointment(id);
   if (!a) throw new ApiError("not_found", "That appointment doesn't exist.");
-  const [lead, events, payments] = await Promise.all([
+  const [lead, events, payments, quotes] = await Promise.all([
     store.getLead(a.leadId),
     store.listAppointmentEvents(a.id),
     store.listPayments({ appointmentIds: [a.id] }),
+    store.listQuotesForAppointments([a.id]),
   ]);
+  const latest = quotes[0] ?? null;
   return {
-    ...toSummary(a, lead, payments),
+    ...toSummary(a, lead, payments, latest),
     customer: {
       firstName: lead?.firstName ?? "Unknown",
       lastName: lead?.lastName ?? null,
@@ -138,6 +148,8 @@ export async function getAppointmentDetail(store: LeadStore, id: string): Promis
     events: events.map(toEvent),
     payments: payments.map(toPayment),
     allowedTransitions: [...allowedTransitions(a.status)],
+    quote: latest ? toQuoteSummary(latest) : null,
+    quoteDraft: isQuotable(a) ? quoteDraft(a, lead) : null,
   };
 }
 
@@ -237,6 +249,9 @@ export async function changeAppointmentStatus(
     actor,
     requestId: input.requestId,
   });
+
+  // Decided without the quote (or the job ended): an open quote can no longer be accepted.
+  if (appt.status === "held") await withdrawOpenQuotes(store, id, `Request ${input.to} by ${actor}`);
 
   let customerEmail: StatusChangeResult["customerEmail"] = null;
   if (acceptingRequest || decliningRequest) {

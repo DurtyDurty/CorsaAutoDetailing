@@ -10,8 +10,9 @@ export interface NextStep {
 /** The single most likely next action for a job: the big button on Today (app and dashboard). */
 export function nextStep(status: AppointmentStatus): NextStep | null {
   switch (status) {
+    // A website request is answered with a quote; the customer accepting it confirms the job.
     case "held":
-      return { to: "confirmed", label: "Confirm booking" };
+      return null;
     case "confirmed":
       return { to: "en_route", label: "Mark en route" };
     case "en_route":

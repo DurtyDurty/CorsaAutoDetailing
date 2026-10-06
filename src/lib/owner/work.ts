@@ -8,6 +8,7 @@ import { formatEastern } from "@/lib/time";
 import { getAppointmentDetail, logAppointmentEvent } from "./appointments";
 import { sendOwnerEmail } from "./email";
 import { assertCanSchedule, overlapMessage } from "./schedule";
+import { withdrawOpenQuotes } from "@/lib/quotes/service";
 
 /**
  * Working a job from the app: move it, record what was paid, send a receipt,
@@ -54,6 +55,8 @@ export async function rescheduleAppointment(store: LeadStore, actor: string, id:
     throw err;
   }
   if (!updated) throw new ApiError("conflict", "This appointment was just changed on another device. Pull to refresh and try again.");
+  // A quote names the old time: it can't be accepted any more. Send a new one for the new time.
+  if (appt.status === "held") await withdrawOpenQuotes(store, id, "Appointment moved");
 
   await store.addAppointmentEvent({
     appointmentId: id,

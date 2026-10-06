@@ -92,6 +92,8 @@ export interface AppointmentSummary {
   cancelReason: string | null;
   cancelledBy: CancelledBy | null;
   updatedAt: string;
+  /** Latest quote for a website request, if one was sent. */
+  quoteStatus: QuoteViewStatus | null;
 }
 
 export type AppointmentEventType = "created" | "status" | "rescheduled" | "note" | "payment";
@@ -131,6 +133,10 @@ export interface AppointmentDetail extends AppointmentSummary {
   events: AppointmentEvent[];
   payments: Payment[];
   allowedTransitions: AppointmentStatus[];
+  /** The latest quote, if any. */
+  quote: QuoteSummary | null;
+  /** Starting point for a new quote; only for a website request still waiting on you. */
+  quoteDraft: QuoteDraft | null;
 }
 
 export interface Page<T> {
@@ -405,4 +411,80 @@ export interface WorkResponse {
   customerEmail: { status: "sent" | "failed" | "skipped"; error: string | null };
   /** True when this requestId was already applied (double tap or retry). */
   unchanged: boolean;
+}
+
+/* ---------- Quotes ---------- */
+
+/** "expired" is a sent quote past its valid-until time. */
+export type QuoteViewStatus = "sent" | "accepted" | "declined" | "withdrawn" | "expired";
+
+export const QUOTE_STATUS_LABELS: Record<QuoteViewStatus, string> = {
+  sent: "Quote sent, waiting for the customer",
+  accepted: "Quote accepted",
+  declined: "Quote declined",
+  withdrawn: "Quote replaced or withdrawn",
+  expired: "Quote expired",
+};
+
+export interface QuoteLineDto {
+  label: string;
+  amountCents: number;
+}
+
+export interface QuoteSummary {
+  id: string;
+  number: string;
+  status: QuoteViewStatus;
+  lines: QuoteLineDto[];
+  subtotalCents: number;
+  discountCents: number;
+  totalCents: number;
+  notes: string | null;
+  sentAt: string;
+  expiresAt: string;
+  respondedAt: string | null;
+  /** The customer's reason when they declined. */
+  responseNote: string | null;
+}
+
+/** What a new quote starts from: the requested package, plus common extras to add in one tap. */
+export interface QuoteDraft {
+  lines: QuoteLineDto[];
+  discountCents: number;
+  extras: { label: string; minCents: number; maxCents: number }[];
+  defaultExpiresInDays: number;
+  /** A quote can't stay open past the appointment's start. */
+  latestExpiry: string;
+}
+
+export const QUOTE_MAX_LINES = 20;
+
+export const sendQuoteSchema = z
+  .object({
+    requestId: z.string().uuid(),
+    lines: z
+      .array(
+        z.object({
+          label: z
+            .string()
+            .transform((s) => s.replace(/\s+/g, " ").trim())
+            .pipe(z.string().min(1, "Describe each line.").max(80, "Keep each line under 80 characters.")),
+          amountCents: z.coerce.number().int().min(0, "Amounts can't be negative.").max(1_000_000, "That amount looks too large."),
+        }),
+      )
+      .min(1, "Add at least one line.")
+      .max(QUOTE_MAX_LINES, `Up to ${QUOTE_MAX_LINES} lines.`),
+    discountCents: z.coerce.number().int().min(0).max(1_000_000).default(0),
+    notes: z.string().trim().max(1000).optional(),
+    expiresInDays: z.coerce.number().int().min(1).max(14).default(3),
+  })
+  .superRefine((v, ctx) => {
+    const subtotal = v.lines.reduce((s, l) => s + l.amountCents, 0);
+    if (v.discountCents > subtotal) ctx.addIssue({ code: "custom", path: ["discountCents"], message: "The discount can't be more than the subtotal." });
+    if (subtotal - v.discountCents <= 0) ctx.addIssue({ code: "custom", path: ["lines"], message: "The total must be more than $0." });
+  });
+export type SendQuoteInput = z.infer<typeof sendQuoteSchema>;
+
+export interface SendQuoteResponse extends WorkResponse {
+  quote: QuoteSummary;
 }

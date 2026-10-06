@@ -1,6 +1,6 @@
 import "server-only";
 import { business } from "@/config/business";
-import { getEmailAdapter } from "@/lib/email";
+import { getEmailAdapter, type EmailAttachment } from "@/lib/email";
 import { replyAddressFor } from "@/lib/inbound";
 import type { LeadStore, OutboundEmailRecord } from "@/lib/leads/types";
 import { composeOwnerEmail } from "@/lib/owner-email";
@@ -61,7 +61,14 @@ export type SendOwnerEmailResult =
 export async function sendOwnerEmail(
   store: LeadStore,
   leadId: string,
-  input: { subject: string; message: string; sendKey: string },
+  input: {
+    subject: string;
+    message: string;
+    sendKey: string;
+    attachments?: EmailAttachment[];
+    /** What the email log keeps, when the sent text holds something that mustn't be stored (a private link). */
+    loggedMessage?: string;
+  },
 ): Promise<SendOwnerEmailResult> {
   const lead = await store.getLead(leadId);
   if (!lead) return { status: "not_found" };
@@ -77,7 +84,8 @@ export async function sendOwnerEmail(
   if (email.kind === "disabled") return { status: "unavailable", reason: "Email isn't configured on the server (Resend)." };
 
   const body = composeOwnerEmail(input.message);
-  const base = { leadId, sendKey: input.sendKey, toEmail: lead.email, subject: input.subject, body, providerMessageId: null, error: null };
+  const logged = input.loggedMessage === undefined ? body : composeOwnerEmail(input.loggedMessage);
+  const base = { leadId, sendKey: input.sendKey, toEmail: lead.email, subject: input.subject, body: logged, providerMessageId: null, error: null };
   let providerMessageId: string;
   try {
     const { id } = await email.send({
@@ -87,6 +95,7 @@ export async function sendOwnerEmail(
       // Replies come back into the app when receiving is set up; otherwise to the contact inbox.
       replyTo: replyAddressFor(leadId) ?? business.contact.email ?? undefined,
       idempotencyKey: `owner-email-${input.sendKey}`,
+      attachments: input.attachments,
     });
     providerMessageId = id;
   } catch (err) {

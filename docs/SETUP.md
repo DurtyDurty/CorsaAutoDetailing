@@ -28,6 +28,15 @@ See `.env.example` for the full list with comments. Summary of how the app choos
 3. Two messages per lead: owner alert (reply-to = customer) and customer acknowledgement (reply-to = public contact email). Internal notes are never included. The acknowledgement never confirms an appointment.
 4. Failures are recorded in `notification_log` with the error message; retry from the lead page or via cron.
 
+## Quotes
+
+Website requests are answered with a quote (dashboard job page, or the owner app). Needs `supabase/migrations/0010_quotes.sql`.
+
+- The customer gets an email with the quote as a PDF (`src/lib/quotes/pdf.ts`, drawn with pdf-lib: no HTML, nothing fetched) and a private link, `/quote/<token>`. Accepting confirms the job at the quoted price; declining releases the time.
+- The token is 256 random bits. The database keeps only its sha256, and the email log keeps the message with the link removed.
+- While a quote is open the requested time stays held, until the quote expires (never past the start time). Sending a revised quote, declining the request, or moving it withdraws the open quote.
+- `/quote/*` is outside the site layout (no analytics), `no-store`, `noindex`, and sends no referrer.
+
 ## Cron: notification retries
 
 `POST /api/cron/retry-notifications` with header `Authorization: Bearer <CRON_SECRET>`. Returns `{ retried: n }`. Disabled when `CRON_SECRET` is unset. Vercel Cron, GitHub Actions, or any scheduler works.

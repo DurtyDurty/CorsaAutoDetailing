@@ -17,6 +17,7 @@ import { ConfirmSubmit } from "@/components/admin/work/ConfirmSubmit";
 import { Flash } from "@/components/admin/work/Flash";
 import { StatusBadge } from "@/components/admin/work/StatusBadge";
 import { StepButton } from "@/components/admin/work/StepButton";
+import { QuoteCard } from "@/components/admin/work/QuoteCard";
 import { nextStepFor } from "@/components/admin/work/next-step";
 import { noteAction, receiptAction, recordPaymentAction, rescheduleAction, changeStatusAction } from "../actions";
 
@@ -107,6 +108,8 @@ export default async function JobPage({ params, searchParams }: PageProps<"/admi
       {a.status === "completed" && b.balanceDueCents === 0 && (
         <p className="border border-success/40 bg-[#eef6ef] text-success font-medium rounded-md px-4 py-3">✓ Closed out: completed and paid in full</p>
       )}
+
+      <QuoteCard a={a} back={back} />
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card title="Customer">

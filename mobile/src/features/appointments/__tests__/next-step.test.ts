@@ -21,6 +21,10 @@ describe("nextStep", () => {
     }
   });
 
+  it("answers a website request with a quote, not a status button", () => {
+    expect(nextStep("held")).toBeNull();
+  });
+
   it("offers nothing for finished jobs", () => {
     for (const s of ["completed", "cancelled", "no_show", "declined"] as const) expect(nextStep(s)).toBeNull();
   });
