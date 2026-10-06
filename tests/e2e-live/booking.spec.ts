@@ -78,9 +78,10 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     await form.getByRole("button", { name: "Continue" }).click();
     await expect(form.getByRole("heading", { name: /^Location & tim(e|ing)$/ })).toBeVisible();
     await expect(form.getByRole("checkbox", { name: /Flexible/ })).toHaveCount(0);
-    // At most a morning and an afternoon arrival a day.
+    // Morning or afternoon first, then a preferred arrival time inside it.
+    await expect(form.getByRole("group", { name: "Part of the day" })).toBeVisible();
     await expect(form.locator('input[name="slotStart"]').first()).toBeAttached();
-    expect(await form.locator('input[name="slotStart"]').count()).toBeLessThanOrEqual(2);
+    expect(await form.locator('input[name="slotStart"]').count()).toBeLessThanOrEqual(7);
     const slot = await pickFirstSlot(page);
     if (process.env.QUOTE_SHOTS) await form.locator('[data-field="slotStart"]').screenshot({ path: `${process.env.QUOTE_SHOTS}/slots-${test.info().project.name}.png` });
     await form.getByRole("button", { name: "Continue" }).click();
@@ -138,7 +139,8 @@ test.describe("quotes: request, quote, accept (LIVE mode)", () => {
     const { readFile } = await import("node:fs/promises");
     const outbox = JSON.parse(await readFile(".data/demo-outbox.json", "utf8")) as { to: string; subject: string; text: string }[];
     const mail = outbox.filter((m) => m.to === email && m.subject.startsWith("Your quote")).at(-1)!;
-    const link = /\/quote\/[A-Za-z0-9_-]{43}/.exec(mail.text)![0];
+    // The email carries the short link, which forwards to the quote page.
+    const link = /\/q\/[A-Za-z0-9]{12}/.exec(mail.text)![0];
     const customer = await (await browser.newContext({ viewport: page.viewportSize() ?? undefined })).newPage();
     await customer.goto(link);
     await expect(customer.getByRole("article", { name: /Quote Q-/ })).toBeVisible();
@@ -147,7 +149,8 @@ test.describe("quotes: request, quote, accept (LIVE mode)", () => {
     if (process.env.QUOTE_SHOTS) await customer.screenshot({ path: `${process.env.QUOTE_SHOTS}/quote-${testInfo.project.name}.png`, fullPage: true });
 
     // The PDF is there too.
-    const pdf = await customer.request.get(`${link}/pdf`);
+    await expect(customer).toHaveURL(/\/quote\/[A-Za-z0-9]{12}$/);
+    const pdf = await customer.request.get(`${customer.url()}/pdf`);
     expect(pdf.status()).toBe(200);
     expect(pdf.headers()["content-type"]).toBe("application/pdf");
 

@@ -119,7 +119,7 @@ async function sendQuote(apptId: string, body: Record<string, unknown> = {}, tok
 /** The private link from the most recent quote email to that customer. */
 async function linkTokenFor(email: string): Promise<string> {
   const mail = (await outbox()).filter((m) => m.to === email && m.subject.startsWith("Your quote")).at(-1)!;
-  return /\/quote\/([A-Za-z0-9_-]{43})\b/.exec(mail.text)![1]!;
+  return /\/q\/([A-Za-z0-9]{12})\b/.exec(mail.text)![1]!;
 }
 
 describe("sending a quote", () => {
@@ -166,9 +166,31 @@ describe("sending a quote", () => {
     expect(res.headers.get("cache-control")).toContain("no-store");
     expect(Buffer.from(await res.arrayBuffer()).subarray(0, 5).toString()).toBe("%PDF-");
 
-    for (const bad of ["x".repeat(43), "not-a-token", `${token.slice(0, -1)}A`]) {
+    for (const bad of ["x".repeat(43), "x".repeat(12), "not-a-token", `${token.slice(0, -1)}`]) {
       expect((await GET(new NextRequest(`http://localhost/quote/${bad}/pdf`), params({ token: bad }))).status).toBe(404);
     }
+  });
+
+  it("sends a short link that forwards to the quote, and links sent before short links still work", async () => {
+    const appt = await request("dana@example.com");
+    await sendQuote(appt.id);
+    const code = await linkTokenFor("dana@example.com");
+    const { GET } = await import("@/app/q/[code]/route");
+    const { NextRequest } = await import("next/server");
+    const res = await GET(new NextRequest(`http://localhost/q/${code}`), params({ code }));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toBe(`http://localhost/quote/${code}`);
+    expect(res.headers.get("cache-control")).toContain("no-store");
+    expect((await GET(new NextRequest("http://localhost/q/nope"), params({ code: "nope" }))).status).toBe(404);
+
+    // A quote emailed with the earlier 43-character link.
+    const { hashToken, loadQuoteByToken } = await import("@/lib/quotes/service");
+    const s = await store();
+    const [current] = await s.listQuotesForAppointments([appt.id]);
+    await s.updateQuoteIfStatus(current!.id, "sent", { status: "withdrawn" });
+    const legacy = "L".repeat(43);
+    await s.createQuote({ ...current!, number: "Q-LEGACY", tokenHash: hashToken(legacy), requestId: crypto.randomUUID() });
+    expect((await loadQuoteByToken(s, legacy))?.quote.number).toBe("Q-LEGACY");
   });
 
   it("refuses anyone but the owner, and checks the numbers", async () => {

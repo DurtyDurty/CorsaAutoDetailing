@@ -23,30 +23,41 @@ const timeLabel = (iso: string) =>
 /** "08:00" for a slot, in Eastern time, to match it to an arrival window. */
 const hhmm = (iso: string) =>
   new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: TZ }).format(new Date(iso));
+/** "8:00" / "11:00 AM" for a window's range. */
+const clock = (t: string, withPeriod: boolean) => {
+  const [h, m] = t.split(":").map(Number);
+  const s = `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")}`;
+  return withPeriod ? `${s} ${h < 12 ? "AM" : "PM"}` : s;
+};
 const WINDOWS = business.booking.arrivalWindows;
 
-/** The arrival windows of a day, each with its slot when it's still open. */
+/** The arrival windows of a day, each with its open preferred times. */
 function windowsOf(day: Day | undefined) {
-  return WINDOWS.map((w) => ({ ...w, slot: day?.slots.find((s) => hhmm(s) === w.start) ?? null }));
+  return WINDOWS.map((w) => ({ ...w, slots: day?.slots.filter((s) => hhmm(s) >= w.from && hhmm(s) <= w.to) ?? [] }));
 }
 
 /** "AM · PM", "AM only", "PM only" or "Full" for the day strip. */
 function openLabel(day: Day): string {
   if (!WINDOWS.length) return day.slots.length ? `${day.slots.length} open` : "Full";
-  const open = windowsOf(day).filter((w) => w.slot).map((w) => (w.id === "morning" ? "AM" : w.id === "afternoon" ? "PM" : w.label));
+  const open = windowsOf(day)
+    .filter((w) => w.slots.length)
+    .map((w) => (w.id === "morning" ? "AM" : w.id === "afternoon" ? "PM" : w.label));
   return open.length === 0 ? "Full" : open.length === WINDOWS.length ? open.join(" · ") : `${open.join(" · ")} only`;
 }
 
 /**
- * Pick a day, then an open start time. The chosen slot is submitted as
- * `slotStart` (ISO) via a required radio group, so native validation blocks
- * "Continue" until a time is picked. Open times come from /api/availability.
+ * Pick a day, then Morning or Afternoon, then a preferred arrival time in it
+ * (the owner confirms the exact time with the quote). The chosen time is
+ * submitted as `slotStart` (ISO) via a required radio group, so native
+ * validation blocks "Continue" until one is picked. Open times come from
+ * /api/availability.
  */
 export function SlotPicker({ serviceId, required, error }: { serviceId: string; required: boolean; error?: string }) {
   const id = useId();
   // Keyed by service so switching packages refetches without a synchronous loading flag.
   const [data, setData] = useState<{ service: string; days: Day[] | null; failed: boolean } | null>(null);
   const [day, setDay] = useState<string | null>(null);
+  const [part, setPart] = useState<string | null>(null);
   const [slot, setSlot] = useState<string | null>(null);
 
   useEffect(() => {
@@ -65,8 +76,10 @@ export function SlotPicker({ serviceId, required, error }: { serviceId: string; 
   const days = current?.days ?? [];
   const firstOpen = days.find((d) => d.slots.length > 0)?.date ?? null;
   const activeDay = day && days.some((d) => d.date === day) ? day : firstOpen;
-  const activeSlots = days.find((d) => d.date === activeDay)?.slots ?? [];
-  const duration = business.booking.durationMinutes[serviceId as keyof typeof business.booking.durationMinutes] ?? business.scheduling.defaultDurationMinutes;
+  const today = days.find((d) => d.date === activeDay);
+  const activeSlots = today?.slots ?? [];
+  const parts = windowsOf(today);
+  const activePart = parts.find((w) => w.id === part && w.slots.length) ?? parts.find((w) => w.slots.length) ?? null;
 
   if (!serviceId) return <p className="text-sm text-ink-muted">Choose a package first to see open times.</p>;
   if (!current) return <p className="text-sm text-ink-muted" aria-live="polite">Loading open times…</p>;
@@ -82,6 +95,13 @@ export function SlotPicker({ serviceId, required, error }: { serviceId: string; 
         We&rsquo;re fully booked for the next {business.booking.maxDaysAhead} days. Please send us a message and we&rsquo;ll find a time.
       </p>
     );
+
+  const timeOption = (iso: string) => (
+    <label key={iso} className={cn("choice justify-center py-2.5 text-sm font-medium", slot === iso && "!border-asphalt")}>
+      <input type="radio" name="slotStart" value={iso} required={required} checked={slot === iso} onChange={() => setSlot(iso)} className="sr-only" />
+      {timeLabel(iso)}
+    </label>
+  );
 
   return (
     // min-w-0: fieldsets default to min-content width, which would let the scrolling day strip widen the page.
@@ -111,69 +131,69 @@ export function SlotPicker({ serviceId, required, error }: { serviceId: string; 
             >
               <span className="font-mono text-[0.65rem] uppercase tracking-[0.14em]">{weekday}</span>
               <span className="font-semibold">{label}</span>
-              <span className={cn("text-[0.7rem]", selected ? "text-chalk/70" : "text-ink-muted")}>
-                {openLabel(d)}
-              </span>
+              <span className={cn("text-[0.7rem]", selected ? "text-chalk/70" : "text-ink-muted")}>{openLabel(d)}</span>
             </button>
           );
         })}
       </div>
 
-      <p className="text-sm font-medium" id={`${id}-times`}>
-        {WINDOWS.length ? "Arrival" : "Start time"} <span className="font-normal text-ink-muted">(Eastern time)</span>
-      </p>
       {WINDOWS.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-labelledby={`${id}-times`}>
-          {windowsOf(days.find((d) => d.date === activeDay)).map((w) =>
-            w.slot ? (
-              <label
-                key={w.id}
-                className={cn("choice flex-col !items-start gap-0.5 px-4 py-3.5", slot === w.slot && "!border-asphalt bg-chalk")}
-              >
-                <input
-                  type="radio"
-                  name="slotStart"
-                  value={w.slot}
-                  required={required}
-                  checked={slot === w.slot}
-                  onChange={() => setSlot(w.slot)}
-                  className="sr-only"
-                />
-                <span className="font-display text-xl leading-tight">{w.label}</span>
-                <span className="text-sm font-medium">Arrive {timeLabel(w.slot)}</span>
-                <span className="text-xs text-ink-muted">Done around {timeLabel(new Date(Date.parse(w.slot) + duration * 60_000).toISOString())}</span>
-              </label>
-            ) : (
-              <div key={w.id} className="flex flex-col gap-0.5 border border-dashed border-line px-4 py-3.5 text-ink-muted" aria-disabled="true">
-                <span className="font-display text-xl leading-tight">{w.label}</span>
-                <span className="text-sm">Booked</span>
+        <>
+          <p className="text-sm font-medium">Morning or afternoon?</p>
+          <div className="grid grid-cols-2 gap-3" role="group" aria-label="Part of the day">
+            {parts.map((w) =>
+              w.slots.length ? (
+                <button
+                  key={w.id}
+                  type="button"
+                  aria-pressed={activePart?.id === w.id}
+                  onClick={() => {
+                    setPart(w.id);
+                    setSlot(null);
+                  }}
+                  className={cn(
+                    "flex flex-col items-start gap-0.5 border px-4 py-3.5 text-left transition-colors",
+                    activePart?.id === w.id ? "border-asphalt bg-asphalt text-chalk" : "border-line bg-white hover:border-ink-muted",
+                  )}
+                >
+                  <span className="font-display text-xl leading-tight">{w.label}</span>
+                  <span className={cn("text-sm", activePart?.id === w.id ? "text-chalk/75" : "text-ink-muted")}>
+                    Arrive {clock(w.from, false)}–{clock(w.to, true)}
+                  </span>
+                </button>
+              ) : (
+                <div key={w.id} className="flex flex-col gap-0.5 border border-dashed border-line px-4 py-3.5 text-ink-muted" aria-disabled="true">
+                  <span className="font-display text-xl leading-tight">{w.label}</span>
+                  <span className="text-sm">Booked</span>
+                </div>
+              ),
+            )}
+          </div>
+          {activePart && (
+            <>
+              <p className="text-sm font-medium" id={`${id}-times`}>
+                Preferred arrival <span className="font-normal text-ink-muted">(Eastern time)</span>
+              </p>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4" role="radiogroup" aria-labelledby={`${id}-times`}>
+                {activePart.slots.map(timeOption)}
               </div>
-            ),
+            </>
           )}
-        </div>
+          <p className="text-sm text-ink-muted">
+            We take one morning and one afternoon visit a day. Pick the time that suits you best, and we&rsquo;ll confirm the exact time with your quote.
+          </p>
+        </>
       ) : (
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4" role="radiogroup" aria-labelledby={`${id}-times`}>
-        {activeSlots.map((iso) => (
-          <label key={iso} className={cn("choice justify-center py-2.5 text-sm font-medium", slot === iso && "!border-asphalt")}>
-            <input
-              type="radio"
-              name="slotStart"
-              value={iso}
-              required={required}
-              checked={slot === iso}
-              onChange={() => setSlot(iso)}
-              className="sr-only"
-            />
-            {timeLabel(iso)}
-          </label>
-        ))}
-      </div>
+        <>
+          <p className="text-sm font-medium" id={`${id}-times`}>
+            Start time <span className="font-normal text-ink-muted">(Eastern time)</span>
+          </p>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4" role="radiogroup" aria-labelledby={`${id}-times`}>
+            {activeSlots.map(timeOption)}
+          </div>
+          <p className="text-sm text-ink-muted">Times are arrival times. Each visit is blocked for the full service plus travel, so we&rsquo;re never rushed.</p>
+        </>
       )}
-      <p className="text-sm text-ink-muted">
-        {WINDOWS.length
-          ? "We take at most one morning and one afternoon visit a day, and block the whole service plus travel, so we're never rushed."
-          : "Times are arrival times. Each visit is blocked for the full service plus travel, so we're never rushed."}
-      </p>
       {error && (
         <p id={`${id}-err`} className="text-sm text-error" role="alert">
           {error}

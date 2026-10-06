@@ -1,5 +1,5 @@
 import "server-only";
-import { createHash, randomBytes, randomInt } from "node:crypto";
+import { createHash, randomInt } from "node:crypto";
 import { business, getService } from "@/config/business";
 import type { QuoteDraft, QuoteSummary, QuoteViewStatus, SendQuoteInput, SendQuoteResponse } from "@shared/api";
 import { formatCents } from "@shared/money";
@@ -15,19 +15,30 @@ import { renderQuotePdf, type QuoteDocument } from "./pdf";
  * note), the customer gets it by email with a PDF and a private link, and
  * accepting it confirms the booking.
  *
- * The link token is 256 random bits. Only its sha256 is stored, so a database
- * read can't be turned into a working link. While a quote is open, the
+ * The link code is 12 characters from a 56-letter alphabet without look-alikes
+ * (about 70 random bits: short enough to type from a printout, far too many to
+ * guess). Only its sha256 is stored, so a database read can't be turned into a
+ * working link. Quotes sent before short links used a 43-character token; those
+ * still work. While a quote is open, the
  * requested time stays held until the quote expires.
  */
 
-const TOKEN = /^[A-Za-z0-9_-]{43}$/;
+const TOKEN = /^(?:[A-Za-z0-9]{12}|[A-Za-z0-9_-]{43})$/;
+const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
 const NUMBER_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
 export const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
 export const isQuoteToken = (token: string) => TOKEN.test(token);
 
+/** The short link printed on the PDF and sent by email: /q/<code> forwards to the quote page. */
 export function quoteUrl(token: string): string {
-  return `${business.brand.canonicalDomain.replace(/\/$/, "")}/quote/${token}`;
+  return `${business.brand.canonicalDomain.replace(/\/$/, "")}/q/${token}`;
+}
+
+function newCode(): string {
+  let s = "";
+  for (let i = 0; i < 12; i++) s += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
+  return s;
 }
 
 export function effectiveStatus(q: QuoteRecord, now = Date.now()): QuoteViewStatus {
@@ -146,7 +157,7 @@ export async function sendQuote(
   const expiresAt = new Date(Math.min(Date.now() + input.expiresInDays * 86_400_000, Date.parse(appt.startsAt))).toISOString();
 
   await withdrawOpenQuotes(store, appt.id, "Replaced by a newer quote");
-  const token = randomBytes(32).toString("base64url");
+  const token = newCode();
   let quote: QuoteRecord | null;
   try {
     quote = await store.createQuote({

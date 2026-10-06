@@ -42,13 +42,23 @@ function weekdayOf(date: string): number {
   return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 }
 
-/** Start times offered in a day: the configured arrival windows, or every interval within work hours. */
-function startMinutes(dayStart: number, dayEnd: number, interval: number): number[] {
-  const windows = business.booking.arrivalWindows;
-  if (windows.length) return windows.map((w) => toMin(w.start)).filter((t) => t >= dayStart && t < dayEnd);
-  const out: number[] = [];
-  for (let t = dayStart; t < dayEnd; t += interval) out.push(t);
-  return out;
+/**
+ * The day's groups of start times: each arrival window with the part of the day
+ * it occupies (from its start to the next window's start), or the whole day as
+ * one group when no windows are set.
+ */
+function dayGroups(dayStart: number, dayEnd: number, interval: number): { times: number[]; occupies: [number, number] | null }[] {
+  const steps = (from: number, to: number) => {
+    const out: number[] = [];
+    for (let t = from; t <= to; t += interval) out.push(t);
+    return out;
+  };
+  const windows = [...business.booking.arrivalWindows].sort((a, b) => toMin(a.from) - toMin(b.from));
+  if (!windows.length) return [{ times: steps(dayStart, dayEnd - interval), occupies: null }];
+  return windows.map((w, i) => ({
+    times: steps(Math.max(dayStart, toMin(w.from)), Math.min(dayEnd, toMin(w.to))),
+    occupies: [i === 0 ? dayStart : toMin(w.from), i + 1 < windows.length ? toMin(windows[i + 1]!.from) : dayEnd],
+  }));
 }
 
 /** First bookable calendar day: today + minDaysAhead, and never before the launch date. */
@@ -75,15 +85,23 @@ export function computeAvailability({ serviceId, busy, daysOff = [], now = new D
   for (let date = firstBookableDate(now); date <= last; date = addDays(date, 1)) {
     if (!(workDays as readonly number[]).includes(weekdayOf(date)) || off.has(date)) continue;
     const slots: string[] = [];
-    for (const t of startMinutes(dayStart, dayEnd, slotIntervalMinutes)) {
-      if (t + duration > dayEnd) continue;
-      const start = easternToUtc(date, hhmm(t)).getTime();
-      const end = start + duration * 60_000;
-      const busyUntil = end + travelBufferMinutes * 60_000;
-      if (start <= now.getTime()) continue;
-      // Same test as the exclusion constraint: [start, busyUntil) must not touch any active window.
-      if (windows.some((w) => w.s < busyUntil && start < w.e)) continue;
-      slots.push(new Date(start).toISOString());
+    for (const group of dayGroups(dayStart, dayEnd, slotIntervalMinutes)) {
+      // One visit per window: anything already starting in it takes the whole window.
+      if (group.occupies) {
+        const from = easternToUtc(date, hhmm(group.occupies[0])).getTime();
+        const to = easternToUtc(date, hhmm(group.occupies[1])).getTime();
+        if (windows.some((w) => w.s >= from && w.s < to)) continue;
+      }
+      for (const t of group.times) {
+        if (t + duration > dayEnd) continue;
+        const start = easternToUtc(date, hhmm(t)).getTime();
+        const end = start + duration * 60_000;
+        const busyUntil = end + travelBufferMinutes * 60_000;
+        if (start <= now.getTime()) continue;
+        // Same test as the exclusion constraint: [start, busyUntil) must not touch any active window.
+        if (windows.some((w) => w.s < busyUntil && start < w.e)) continue;
+        slots.push(new Date(start).toISOString());
+      }
     }
     days.push({ date, slots });
   }

@@ -239,25 +239,31 @@ export async function renderQuotePdf(q: QuoteDocument): Promise<Uint8Array> {
 
   /* ---- How to accept ---- */
   if (q.acceptUrl) {
-    ensure(52);
+    ensure(78);
     label("How to accept", M, y);
-    text("Review and accept this quote online to confirm your appointment:", M, y - 16, { size: 10 });
-    const url = q.acceptUrl;
-    const urlRows = wrap(regular, 10, url, RIGHT - M);
-    urlRows.forEach((r, i) => text(r, M, y - 31 - i * 13, { size: 10, font: bold, color: hex(webColors.apexDeep) }));
-    const linkTop = y - 21;
-    const linkBottom = y - 35 - (urlRows.length - 1) * 13;
+    text("Accepting confirms your appointment. It takes a minute.", M, y - 16, { size: 10, color: C.muted });
+    // A button that opens the quote, with the short address beside it for a printed copy.
+    const btnLabel = "REVIEW & ACCEPT ONLINE";
+    const btnW = bold.widthOfTextAtSize(btnLabel, 10) + 40;
+    const btnTop = y - 26;
+    const btnH = 30;
+    page.drawRectangle({ x: M, y: btnTop - btnH, width: btnW, height: btnH, color: hex(webColors.apexDeep) });
+    text(btnLabel, M + 20, btnTop - 19, { size: 10, font: bold, color: C.bandText });
+    const shortUrl = q.acceptUrl.replace(/^https?:\/\//, "");
+    text("or visit", M + btnW + 16, btnTop - 12, { size: 8.5, color: C.muted });
+    text(shortUrl, M + btnW + 16, btnTop - 25, { size: 10.5, font: bold });
+    const linkRight = Math.min(RIGHT, M + btnW + 16 + bold.widthOfTextAtSize(safeText(bold, shortUrl), 10.5));
     const annot = pdf.context.register(
       pdf.context.obj({
         Type: "Annot",
         Subtype: "Link",
-        Rect: [M, linkBottom, RIGHT, linkTop],
+        Rect: [M, btnTop - btnH, linkRight, btnTop],
         Border: [0, 0, 0],
-        A: { Type: "Action", S: "URI", URI: PDFString.of(url) },
+        A: { Type: "Action", S: "URI", URI: PDFString.of(q.acceptUrl) },
       }),
     );
     page.node.set(PDFName.of("Annots"), pdf.context.obj([annot]));
-    y = linkBottom - 22;
+    y = btnTop - btnH - 26;
   }
 
   /* ---- Terms ---- */
