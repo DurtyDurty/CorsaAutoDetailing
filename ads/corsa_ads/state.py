@@ -55,6 +55,14 @@ def record_create(customer_id: str, campaign_name: str, resource_names: list[str
     return save(customer_id, data, base)
 
 
+def record_ad_text(customer_id: str, campaign_name: str, ad_groups: list[str], base: Path | None = None) -> Path:
+    """History of ad text changes made with this tool."""
+    data = load(customer_id, base)
+    camp = data.setdefault("campaigns", {}).setdefault(campaign_name, {"created": []})
+    camp.setdefault("ad_text_updated", []).append({"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "ad_groups": ad_groups})
+    return save(customer_id, data, base)
+
+
 def record_pause(customer_id: str, campaign_name: str, base: Path | None = None) -> Path:
     """Keep a history of pauses made with this tool, next to what it created."""
     data = load(customer_id, base)

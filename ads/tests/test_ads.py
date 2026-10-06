@@ -469,6 +469,40 @@ class CliTests(unittest.TestCase):
         self.assertEqual(code, 1, text)
         self.assertNotIn(secret, text)
 
+    def test_update_ad_text_changes_only_the_ads_that_differ(self):
+        cfg = config.load()
+        live = {
+            grp.name: {"resource_name": f"customers/1234567890/ads/{i}", "headlines": list(grp.headlines), "descriptions": list(grp.descriptions)}
+            for i, grp in enumerate(cfg.ad_groups, 1)
+        }
+        first = cfg.ad_groups[0]
+        live[first.name]["headlines"][0] = "Old Headline"
+        changes = g.ad_text_operations(g.offline_client(), cfg, live)
+        self.assertEqual([c[0] for c in changes], [first.name])
+        _, removed, added, op = changes[0]
+        self.assertEqual((removed, added), (["Old Headline"], [first.headlines[0]]))
+        self.assertEqual(op.update.resource_name, "customers/1234567890/ads/1")
+        self.assertEqual([h.text for h in op.update.responsive_search_ad.headlines], list(first.headlines))
+        self.assertEqual(sorted(op.update_mask.paths), ["responsive_search_ad.descriptions", "responsive_search_ad.headlines"])
+        self.assertEqual(g.ad_text_operations(g.offline_client(), cfg, {}), [], "groups without a live ad are skipped")
+
+    def test_update_ad_text_validates_first_and_needs_its_own_confirmation(self):
+        cfg = config.load()
+        live = {grp.name: {"resource_name": f"customers/1234567890/ads/{i}", "headlines": ["Old"] + list(grp.headlines[1:]), "descriptions": list(grp.descriptions)}
+                for i, grp in enumerate(cfg.ad_groups, 1)}
+        row = mock.Mock()
+        row.campaign.resource_name, row.campaign.status.name = "customers/1234567890/campaigns/9", "ENABLED"
+        calls: list[bool] = []
+        with mock.patch.object(g, "load_client", lambda env: g.offline_client()), mock.patch.object(g, "find_campaign", lambda c, cid, name: row), \
+                mock.patch.object(g, "ad_texts", lambda c, cid, rn: live), mock.patch.object(g, "update_ads", lambda c, cid, ops, validate_only: calls.append(validate_only)), \
+                mock.patch.object(state, "STATE_DIR", Path(tempfile.mkdtemp())):
+            code, text = run(["update-ad-text"], ENV, stdin="add live")
+            self.assertEqual(code, 1, text)
+            self.assertEqual(calls, [True], "validated only")
+            code, text = run(["update-ad-text"], ENV, stdin="update ads")
+        self.assertEqual(code, 0, text)
+        self.assertEqual(calls, [True, True, False])
+
     def test_declined_confirmation_creates_nothing(self):
         fake = FakeGoogle(config.load())
         with contextlib_all(fake.patches()):

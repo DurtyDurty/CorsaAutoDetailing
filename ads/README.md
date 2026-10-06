@@ -28,6 +28,7 @@ Run these from `ads/`: `.venv\Scripts\python -m corsa_ads <command>`.
 | `report [--days 30]` | No | Actual spend, clicks and conversions by ad group. |
 | `search-terms [--days 30]` | No | Search terms plus **suggested** negatives. Suggestions are never applied. |
 | `create-campaign --paused` | **Yes** | Creates whatever is missing, with the campaign PAUSED. You confirm by typing the campaign name. |
+| `update-ad-text [--dry-run]` | **Yes** | Replaces the live ads' headlines and descriptions with the YAML's. Nothing else on the ad changes. Google reviews the ad again. You confirm by typing `update ads`. |
 | `pause-campaign [--dry-run]` | **Yes** | Sets the campaign to PAUSED. |
 
 Errors show Google's request ID and error codes. Read calls retry quota and transient errors with backoff. Writes are not retried automatically; just rerun, since reruns only add what's missing.

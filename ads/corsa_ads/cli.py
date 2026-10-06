@@ -15,6 +15,7 @@ READ-ONLY (never change the account):
 WRITES (each asks for confirmation; --dry-run sends validate_only and changes nothing):
   create-campaign --dry-run   Google validates every create operation; nothing is created
   create-campaign --paused    creates whatever is missing, with the campaign PAUSED
+  update-ad-text [--dry-run]  replaces live ad headlines/descriptions with the YAML's; Google re-reviews the ad
   pause-campaign              sets the campaign to PAUSED
 
 There is deliberately no command to enable a campaign or change a budget or bids.
@@ -337,6 +338,39 @@ def cmd_search_terms(args, env) -> int:
     return 0
 
 
+def cmd_update_ad_text(args, env) -> int:
+    """Bring live ad text in line with the YAML. Headlines and descriptions only; Google reviews the ad again."""
+    cfg = load_cfg(args)
+    require_valid(cfg)
+    client = g.load_client(env)
+    cid = customer_id(args, env)
+    row = _campaign(client, cid, cfg)
+    changes = g.ad_text_operations(client, cfg, g.ad_texts(client, cid, row.campaign.resource_name))
+    if not changes:
+        out("Ad text already matches the config. Nothing was changed.")
+        return 0
+    for group, removed, added, _ in changes:
+        out(f"{group}:")
+        out("\n".join(f"  - {x}" for x in removed))
+        out("\n".join(f"  + {x}" for x in added))
+    ops = [c[3] for c in changes]
+    g.update_ads(client, cid, ops, validate_only=True)
+    if args.dry_run:
+        out(f"\nGoogle validated {len(ops)} ad update(s) (validate_only). Nothing was changed.")
+        return 0
+    require_home_account(cid, env)
+    live = row.campaign.status.name != "PAUSED"
+    prompt = (f"\nReplace this text in account {cid}? Google reviews each changed ad again"
+              + (", and the campaign is live, so the new text serves as soon as it is approved." if live else "."))
+    if not confirm(prompt, "update ads", args.yes):
+        out("Cancelled. Nothing was changed.")
+        return 1
+    g.update_ads(client, cid, ops, validate_only=False)
+    state_mod.record_ad_text(cid, cfg.campaign["name"], [c[0] for c in changes])
+    out(f"Updated {len(ops)} ad(s). Check approval with campaign-status.")
+    return 0
+
+
 def cmd_pause(args, env) -> int:
     cfg = load_cfg(args)
     client = g.load_client(env)
@@ -403,6 +437,9 @@ def build_parser() -> argparse.ArgumentParser:
     st = sub.add_parser("search-terms")
     st.add_argument("--days", type=int, default=30)
     st.add_argument("--limit", type=int, default=50)
+    ua = sub.add_parser("update-ad-text", help="replace live headlines/descriptions with the YAML's (Google re-reviews)")
+    ua.add_argument("--dry-run", action="store_true")
+    ua.add_argument("--yes", action="store_true")
     pz = sub.add_parser("pause-campaign")
     pz.add_argument("--dry-run", action="store_true")
     pz.add_argument("--yes", action="store_true")
@@ -421,6 +458,7 @@ COMMANDS = {
     "report": cmd_report,
     "search-terms": cmd_search_terms,
     "pause-campaign": cmd_pause,
+    "update-ad-text": cmd_update_ad_text,
 }
 
 

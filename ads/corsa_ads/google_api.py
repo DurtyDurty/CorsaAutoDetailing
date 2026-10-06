@@ -396,6 +396,56 @@ def created_names(response) -> list[str]:
     return out
 
 
+def ad_texts(client, customer_id: str, campaign_rn: str) -> dict[str, dict]:
+    """The live responsive search ad in each ad group: resource name, headlines, descriptions."""
+    out: dict[str, dict] = {}
+    for r in search(
+        client,
+        customer_id,
+        "SELECT ad_group.name, ad_group_ad.ad.resource_name, ad_group_ad.ad.responsive_search_ad.headlines, "
+        f"ad_group_ad.ad.responsive_search_ad.descriptions FROM ad_group_ad WHERE campaign.resource_name = '{campaign_rn}' "
+        "AND ad_group_ad.ad.type = RESPONSIVE_SEARCH_AD AND ad_group_ad.status != 'REMOVED'",
+    ):
+        rsa = r.ad_group_ad.ad.responsive_search_ad
+        out[r.ad_group.name] = {
+            "resource_name": r.ad_group_ad.ad.resource_name,
+            "headlines": [h.text for h in rsa.headlines],
+            "descriptions": [d.text for d in rsa.descriptions],
+        }
+    return out
+
+
+def ad_text_operations(client, cfg: Config, live: dict[str, dict]) -> list[tuple[str, list[str], list[str], object]]:
+    """(ad group, removed lines, added lines, AdOperation) for each live ad whose text differs from the config.
+    Only headlines and descriptions change; final URLs, paths and status are left as they are."""
+    from google.protobuf.field_mask_pb2 import FieldMask
+
+    changes = []
+    for grp in cfg.ad_groups:
+        ad = live.get(grp.name)
+        if not ad or (ad["headlines"] == list(grp.headlines) and ad["descriptions"] == list(grp.descriptions)):
+            continue
+        o = client.get_type("AdOperation")
+        o.update.resource_name = ad["resource_name"]
+        for text, field in [(h, o.update.responsive_search_ad.headlines) for h in grp.headlines] + [
+            (d, o.update.responsive_search_ad.descriptions) for d in grp.descriptions
+        ]:
+            t = client.get_type("AdTextAsset")
+            t.text = text
+            field.append(t)
+        client.copy_from(o.update_mask, FieldMask(paths=["responsive_search_ad.headlines", "responsive_search_ad.descriptions"]))
+        old = set(ad["headlines"]) | set(ad["descriptions"])
+        new = set(grp.headlines) | set(grp.descriptions)
+        changes.append((grp.name, sorted(old - new), sorted(new - old), o))
+    return changes
+
+
+def update_ads(client, customer_id: str, operations: list, validate_only: bool):
+    """Replace ad text. Google reviews the ad again afterwards."""
+    svc = client.get_service("AdService")
+    return svc.mutate_ads(request={"customer_id": customer_id, "operations": operations, "validate_only": validate_only})
+
+
 def pause(client, customer_id: str, campaign_rn: str, validate_only: bool = False):
     """Set status PAUSED. The only status change this tool can make."""
     svc = client.get_service("CampaignService")
