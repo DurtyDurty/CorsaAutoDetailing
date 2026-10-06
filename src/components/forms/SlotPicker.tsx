@@ -20,6 +20,22 @@ const dayLabel = (date: string) => {
 };
 const timeLabel = (iso: string) =>
   new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: TZ }).format(new Date(iso));
+/** "08:00" for a slot, in Eastern time, to match it to an arrival window. */
+const hhmm = (iso: string) =>
+  new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: TZ }).format(new Date(iso));
+const WINDOWS = business.booking.arrivalWindows;
+
+/** The arrival windows of a day, each with its slot when it's still open. */
+function windowsOf(day: Day | undefined) {
+  return WINDOWS.map((w) => ({ ...w, slot: day?.slots.find((s) => hhmm(s) === w.start) ?? null }));
+}
+
+/** "AM · PM", "AM only", "PM only" or "Full" for the day strip. */
+function openLabel(day: Day): string {
+  if (!WINDOWS.length) return day.slots.length ? `${day.slots.length} open` : "Full";
+  const open = windowsOf(day).filter((w) => w.slot).map((w) => (w.id === "morning" ? "AM" : w.id === "afternoon" ? "PM" : w.label));
+  return open.length === 0 ? "Full" : open.length === WINDOWS.length ? open.join(" · ") : `${open.join(" · ")} only`;
+}
 
 /**
  * Pick a day, then an open start time. The chosen slot is submitted as
@@ -50,6 +66,7 @@ export function SlotPicker({ serviceId, required, error }: { serviceId: string; 
   const firstOpen = days.find((d) => d.slots.length > 0)?.date ?? null;
   const activeDay = day && days.some((d) => d.date === day) ? day : firstOpen;
   const activeSlots = days.find((d) => d.date === activeDay)?.slots ?? [];
+  const duration = business.booking.durationMinutes[serviceId as keyof typeof business.booking.durationMinutes] ?? business.scheduling.defaultDurationMinutes;
 
   if (!serviceId) return <p className="text-sm text-ink-muted">Choose a package first to see open times.</p>;
   if (!current) return <p className="text-sm text-ink-muted" aria-live="polite">Loading open times…</p>;
@@ -71,7 +88,8 @@ export function SlotPicker({ serviceId, required, error }: { serviceId: string; 
     <fieldset className="flex min-w-0 flex-col gap-3" aria-describedby={error ? `${id}-err` : undefined} data-field="slotStart">
       <legend className="text-sm font-medium mb-1.5">Choose a day</legend>
       <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2" role="group" aria-label="Days">
-        {days.map((d) => {
+        {/* The strip starts at the first day with an opening; full days before it would only push it out of view. */}
+        {days.slice(days.findIndex((x) => x.date === firstOpen)).map((d) => {
           const { weekday, day: label } = dayLabel(d.date);
           const full = d.slots.length === 0;
           const selected = d.date === activeDay;
@@ -94,7 +112,7 @@ export function SlotPicker({ serviceId, required, error }: { serviceId: string; 
               <span className="font-mono text-[0.65rem] uppercase tracking-[0.14em]">{weekday}</span>
               <span className="font-semibold">{label}</span>
               <span className={cn("text-[0.7rem]", selected ? "text-chalk/70" : "text-ink-muted")}>
-                {full ? "Full" : `${d.slots.length} open`}
+                {openLabel(d)}
               </span>
             </button>
           );
@@ -102,8 +120,38 @@ export function SlotPicker({ serviceId, required, error }: { serviceId: string; 
       </div>
 
       <p className="text-sm font-medium" id={`${id}-times`}>
-        Start time <span className="font-normal text-ink-muted">(Eastern time)</span>
+        {WINDOWS.length ? "Arrival" : "Start time"} <span className="font-normal text-ink-muted">(Eastern time)</span>
       </p>
+      {WINDOWS.length > 0 ? (
+        <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-labelledby={`${id}-times`}>
+          {windowsOf(days.find((d) => d.date === activeDay)).map((w) =>
+            w.slot ? (
+              <label
+                key={w.id}
+                className={cn("choice flex-col !items-start gap-0.5 px-4 py-3.5", slot === w.slot && "!border-asphalt bg-chalk")}
+              >
+                <input
+                  type="radio"
+                  name="slotStart"
+                  value={w.slot}
+                  required={required}
+                  checked={slot === w.slot}
+                  onChange={() => setSlot(w.slot)}
+                  className="sr-only"
+                />
+                <span className="font-display text-xl leading-tight">{w.label}</span>
+                <span className="text-sm font-medium">Arrive {timeLabel(w.slot)}</span>
+                <span className="text-xs text-ink-muted">Done around {timeLabel(new Date(Date.parse(w.slot) + duration * 60_000).toISOString())}</span>
+              </label>
+            ) : (
+              <div key={w.id} className="flex flex-col gap-0.5 border border-dashed border-line px-4 py-3.5 text-ink-muted" aria-disabled="true">
+                <span className="font-display text-xl leading-tight">{w.label}</span>
+                <span className="text-sm">Booked</span>
+              </div>
+            ),
+          )}
+        </div>
+      ) : (
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4" role="radiogroup" aria-labelledby={`${id}-times`}>
         {activeSlots.map((iso) => (
           <label key={iso} className={cn("choice justify-center py-2.5 text-sm font-medium", slot === iso && "!border-asphalt")}>
@@ -120,8 +168,11 @@ export function SlotPicker({ serviceId, required, error }: { serviceId: string; 
           </label>
         ))}
       </div>
+      )}
       <p className="text-sm text-ink-muted">
-        Times are arrival times. Each visit is blocked for the full service plus travel, so we&rsquo;re never rushed.
+        {WINDOWS.length
+          ? "We take at most one morning and one afternoon visit a day, and block the whole service plus travel, so we're never rushed."
+          : "Times are arrival times. Each visit is blocked for the full service plus travel, so we're never rushed."}
       </p>
       {error && (
         <p id={`${id}-err`} className="text-sm text-error" role="alert">

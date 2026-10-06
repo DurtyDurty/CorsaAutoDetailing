@@ -42,6 +42,15 @@ function weekdayOf(date: string): number {
   return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 }
 
+/** Start times offered in a day: the configured arrival windows, or every interval within work hours. */
+function startMinutes(dayStart: number, dayEnd: number, interval: number): number[] {
+  const windows = business.booking.arrivalWindows;
+  if (windows.length) return windows.map((w) => toMin(w.start)).filter((t) => t >= dayStart && t < dayEnd);
+  const out: number[] = [];
+  for (let t = dayStart; t < dayEnd; t += interval) out.push(t);
+  return out;
+}
+
 /** First bookable calendar day: today + minDaysAhead, and never before the launch date. */
 export function firstBookableDate(now: Date = new Date()): string {
   const first = addDays(todayEastern(now), business.booking.minDaysAhead);
@@ -66,7 +75,8 @@ export function computeAvailability({ serviceId, busy, daysOff = [], now = new D
   for (let date = firstBookableDate(now); date <= last; date = addDays(date, 1)) {
     if (!(workDays as readonly number[]).includes(weekdayOf(date)) || off.has(date)) continue;
     const slots: string[] = [];
-    for (let t = dayStart; t + duration <= dayEnd; t += slotIntervalMinutes) {
+    for (const t of startMinutes(dayStart, dayEnd, slotIntervalMinutes)) {
+      if (t + duration > dayEnd) continue;
       const start = easternToUtc(date, hhmm(t)).getTime();
       const end = start + duration * 60_000;
       const busyUntil = end + travelBufferMinutes * 60_000;

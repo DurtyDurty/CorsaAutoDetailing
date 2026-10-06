@@ -480,6 +480,15 @@ export const business = {
       "wax-and-buff": 300, // Signature Exterior Detail
     } as Partial<Record<ServiceId, number>>,
     slotIntervalMinutes: 30,
+    /**
+     * The arrival times customers can pick (Eastern), at most one morning and one
+     * afternoon visit a day. Each visit still blocks its full length plus travel,
+     * so a long morning job closes the afternoon. Empty = every slotIntervalMinutes.
+     */
+    arrivalWindows: [
+      { id: "morning", label: "Morning", start: "08:00" },
+      { id: "afternoon", label: "Afternoon", start: "13:00" },
+    ] as { id: string; label: string; start: string }[],
     /** Earliest bookable day = today + minDaysAhead (Eastern). */
     minDaysAhead: 1,
     maxDaysAhead: 30,

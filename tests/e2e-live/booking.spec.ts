@@ -78,7 +78,11 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     await form.getByRole("button", { name: "Continue" }).click();
     await expect(form.getByRole("heading", { name: /^Location & tim(e|ing)$/ })).toBeVisible();
     await expect(form.getByRole("checkbox", { name: /Flexible/ })).toHaveCount(0);
+    // At most a morning and an afternoon arrival a day.
+    await expect(form.locator('input[name="slotStart"]').first()).toBeAttached();
+    expect(await form.locator('input[name="slotStart"]').count()).toBeLessThanOrEqual(2);
     const slot = await pickFirstSlot(page);
+    if (process.env.QUOTE_SHOTS) await form.locator('[data-field="slotStart"]').screenshot({ path: `${process.env.QUOTE_SHOTS}/slots-${test.info().project.name}.png` });
     await form.getByRole("button", { name: "Continue" }).click();
     await expect(form.getByRole("heading", { name: "Contact & review" })).toBeVisible();
     await expect(form.locator('[data-step="3"]').getByText("$150/mo", { exact: true })).toBeVisible();

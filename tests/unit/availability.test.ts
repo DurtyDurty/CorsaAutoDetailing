@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { business } from "@/config/business";
 import { computeAvailability, isSlotAvailable } from "@/lib/availability";
 import { easternToUtc } from "@/lib/time";
@@ -6,11 +6,15 @@ import { easternToUtc } from "@/lib/time";
 // Wednesday, Oct 21 2026, 3:00 PM Eastern.
 const NOW = easternToUtc("2026-10-21", "15:00");
 const at = (date: string, time: string) => easternToUtc(date, time).toISOString();
+const ARRIVALS = [...business.booking.arrivalWindows];
 
 describe("computeAvailability", () => {
-  // Package durations aren't set yet; give two packages a 3h and a 6h block for these tests.
+  // Give two packages a 3h and a 5h block for these tests (the real durations).
   beforeAll(() => {
-    Object.assign(business.booking.durationMinutes, { "signature-full": 180, "platinum-full": 360 });
+    Object.assign(business.booking.durationMinutes, { "signature-full": 180, "platinum-full": 300 });
+  });
+  afterEach(() => {
+    business.booking.arrivalWindows.splice(0, Infinity, ...ARRIVALS);
   });
 
   it("offers Mon-Sat only, from tomorrow up to 30 days out", () => {
@@ -21,25 +25,27 @@ describe("computeAvailability", () => {
     expect(sundays).toHaveLength(0);
   });
 
-  it("fits each job inside 8am-6pm on a 30-minute grid", () => {
+  it("offers a morning and an afternoon arrival, nothing in between", () => {
     const [first] = computeAvailability({ serviceId: "signature-full", busy: [], now: NOW });
-    // A 3h job: 8:00 ... 15:00 → 15 start times.
-    expect(first.slots).toHaveLength(15);
-    expect(first.slots[0]).toBe(at("2026-10-22", "08:00"));
-    expect(first.slots.at(-1)).toBe(at("2026-10-22", "15:00"));
+    expect(first.slots).toEqual([at("2026-10-22", "08:00"), at("2026-10-22", "13:00")]);
+    // A 5-hour job still fits the afternoon: 1:00-6:00 PM.
     const [sig] = computeAvailability({ serviceId: "platinum-full", busy: [], now: NOW });
-    // A 6h job: 8:00 ... 12:00 → 9 start times.
-    expect(sig.slots).toHaveLength(9);
-    expect(sig.slots.at(-1)).toBe(at("2026-10-22", "12:00"));
+    expect(sig.slots).toEqual([at("2026-10-22", "08:00"), at("2026-10-22", "13:00")]);
   });
 
-  it("keeps an existing job plus the 45-minute travel buffer free", () => {
-    // Existing job 10:00-13:00 → busy until 13:45.
-    const busy = [{ start: at("2026-10-22", "10:00"), busyUntil: at("2026-10-22", "13:45") }];
-    const [day] = computeAvailability({ serviceId: "signature-full", busy, now: NOW });
-    expect(day.slots).toEqual([at("2026-10-22", "14:00"), at("2026-10-22", "14:30"), at("2026-10-22", "15:00")]);
-    // A new 3h job must also end 45 min before the existing one starts: 06:15 or earlier, so no morning slots.
-    expect(day.slots).not.toContain(at("2026-10-22", "08:00"));
+  it("a long morning job closes the afternoon; a short one leaves it open", () => {
+    // 5h morning job 8:00-13:00, plus 45 min travel: busy until 13:45.
+    const long = [{ start: at("2026-10-22", "08:00"), busyUntil: at("2026-10-22", "13:45") }];
+    expect(computeAvailability({ serviceId: "signature-full", busy: long, now: NOW })[0]!.slots).toEqual([]);
+    // 3h morning job 8:00-11:00, plus travel: busy until 11:45.
+    const short = [{ start: at("2026-10-22", "08:00"), busyUntil: at("2026-10-22", "11:45") }];
+    expect(computeAvailability({ serviceId: "platinum-full", busy: short, now: NOW })[0]!.slots).toEqual([at("2026-10-22", "13:00")]);
+  });
+
+  it("a job the owner booked mid-day blocks whichever visits it touches", () => {
+    // Owner's own job 10:00-12:00, busy until 12:45: the 8:00 visit would overlap, 1:00 PM is clear.
+    const busy = [{ start: at("2026-10-22", "10:00"), busyUntil: at("2026-10-22", "12:45") }];
+    expect(computeAvailability({ serviceId: "signature-full", busy, now: NOW })[0]!.slots).toEqual([at("2026-10-22", "13:00")]);
   });
 
   it("marks a fully booked day as having no slots rather than dropping it", () => {
@@ -53,7 +59,7 @@ describe("computeAvailability", () => {
     const days = computeAvailability({ serviceId: "signature-full", busy: [], daysOff: ["2026-10-23"], now: NOW });
     expect(days.map((d) => d.date)).not.toContain("2026-10-23");
     expect(days.map((d) => d.date)).toContain("2026-10-22");
-    const startIso = at("2026-10-23", "09:00");
+    const startIso = at("2026-10-23", "08:00");
     expect(isSlotAvailable({ serviceId: "signature-full", busy: [], daysOff: ["2026-10-23"], now: NOW, startIso })).toBe(false);
   });
 
@@ -65,12 +71,20 @@ describe("computeAvailability", () => {
     expect(mon.slots[0]).toBe("2026-11-02T13:00:00.000Z"); // 8:00 EST
   });
 
-  it("re-checks a single slot server-side", () => {
-    const startIso = at("2026-10-22", "09:00");
+  it("re-checks a single slot server-side, and only accepts the offered arrival times", () => {
+    const startIso = at("2026-10-22", "08:00");
     expect(isSlotAvailable({ serviceId: "signature-full", busy: [], now: NOW, startIso })).toBe(true);
-    const busy = [{ start: at("2026-10-22", "09:00"), busyUntil: at("2026-10-22", "12:45") }];
+    const busy = [{ start: at("2026-10-22", "08:00"), busyUntil: at("2026-10-22", "11:45") }];
     expect(isSlotAvailable({ serviceId: "signature-full", busy, now: NOW, startIso })).toBe(false);
-    // Off-grid times are never accepted, even if free.
-    expect(isSlotAvailable({ serviceId: "signature-full", busy: [], now: NOW, startIso: at("2026-10-22", "09:10") })).toBe(false);
+    // Free but not an arrival time: refused, so a crafted request can't book 9:30.
+    expect(isSlotAvailable({ serviceId: "signature-full", busy: [], now: NOW, startIso: at("2026-10-22", "09:30") })).toBe(false);
+  });
+
+  it("falls back to every 30 minutes when no arrival windows are set", () => {
+    business.booking.arrivalWindows.splice(0, Infinity);
+    const [first] = computeAvailability({ serviceId: "signature-full", busy: [], now: NOW });
+    // A 3h job: 8:00 ... 15:00, every 30 min.
+    expect(first.slots).toHaveLength(15);
+    expect(first.slots.at(-1)).toBe(at("2026-10-22", "15:00"));
   });
 });
