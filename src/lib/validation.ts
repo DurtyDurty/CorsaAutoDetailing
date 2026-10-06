@@ -212,10 +212,16 @@ function requirePhone(data: { phone: string | null }, ctx: z.RefinementCtx) {
 
 export const quoteRequestSchema = quoteRequestFields.superRefine(requirePhone);
 
-/** Calendar request (deposits off) = the request fields + a chosen open time. */
+/**
+ * Calendar request (deposits off) = the request fields + a day and part of the
+ * day. `slotStart` is the placeholder start the form fills in for that part;
+ * the owner sets the exact time with the quote.
+ */
 export const calendarRequestSchema = quoteRequestFields
   .extend({
-    slotStart: z.string({ message: "Choose a date and time." }).datetime({ message: "Choose a date and time." }),
+    slotStart: z.string({ message: "Choose a day." }).datetime({ message: "Choose a day." }),
+    dayPart: z.enum(["morning", "afternoon", "either"], { message: "Choose morning, afternoon or either." }),
+    preferredTime: optionalLine(40),
   })
   .superRefine(requirePhone);
 export type CalendarRequestInput = z.infer<typeof calendarRequestSchema>;

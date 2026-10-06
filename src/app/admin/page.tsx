@@ -79,7 +79,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/admin">) {
                   </Link>
                   <p className="text-sm">{a.serviceName ?? "Service not set"}</p>
                   <p className="text-sm text-ink-muted">
-                    {range(a)}
+                    {a.requested ? `Asked for: ${a.requested}` : range(a)}
                     {vehicle(a) && ` · ${vehicle(a)}`}
                   </p>
                   {address(a) && <p className="text-sm text-ink-muted">{address(a)}</p>}

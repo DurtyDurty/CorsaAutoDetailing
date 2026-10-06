@@ -151,10 +151,23 @@ async function openRequests(store: LeadStore) {
   return { holds, leads };
 }
 
+/** "Morning, around 9:30": what the customer asked for, kept on the held appointment. */
+const PART_LABEL = { morning: "Morning", afternoon: "Afternoon", either: "Morning or afternoon" } as const;
+const requestSummary = (d: Pick<CalendarRequestInput, "dayPart" | "preferredTime">) => `${PART_LABEL[d.dayPart]}${d.preferredTime ? `, ${d.preferredTime}` : ""}`;
+
+/** The placeholder start the form sends must sit inside the part of the day the customer chose. */
+function inPart(slotIso: string, part: string): boolean {
+  const w = business.booking.arrivalWindows.find((x) => x.id === part);
+  if (!w) return part === "either";
+  const t = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: business.timeZone }).format(new Date(slotIso));
+  return t >= w.from && t <= w.to;
+}
+
 /**
- * Calendar request (deposits off): the customer picks an open time, which is
- * held for the owner to confirm or decline in the app. No payment. Emails go
- * out after the hold exists, so they can name the requested time.
+ * Calendar request (deposits off): the customer picks a day and morning,
+ * afternoon or either (plus an optional preferred time). The window is held for
+ * the owner, who sets the exact time with the quote. No payment. Emails go out
+ * after the hold exists, so they can name the day.
  *
  * A hold costs the visitor nothing and takes the time off the calendar, so holds
  * are rationed: a couple per customer and a ceiling overall. Past the ceiling the
@@ -169,6 +182,8 @@ export async function submitCalendarRequest(_prev: FormResult | null, formData: 
 
   const requestedService = String(formData.get("serviceId") ?? "");
   const requestedSlot = String(formData.get("slotStart") ?? "");
+  const requestedPart = formData.get("dayPart");
+  if (requestedSlot && typeof requestedPart === "string" && requestedPart && !inPart(requestedSlot, requestedPart)) return SLOT_TAKEN;
   if (getService(requestedService) && requestedSlot) {
     await store.releaseExpiredHolds();
     const free = isSlotAvailable({ serviceId: requestedService as ServiceId, ...(await calendarState(store)), startIso: requestedSlot });
@@ -223,7 +238,7 @@ export async function submitCalendarRequest(_prev: FormResult | null, formData: 
       quotedPriceCents: quotedCents(d),
       customerAgreed: false,
       completedRevenueCents: null,
-      notes: null,
+      notes: requestSummary(d),
       source: "online",
       serviceId,
       depositCents: null,
@@ -244,7 +259,7 @@ export async function submitCalendarRequest(_prev: FormResult | null, formData: 
     type: "created",
     fromStatus: null,
     toStatus: "held",
-    note: "Requested on the website; waiting for you to confirm",
+    note: `Requested on the website: ${requestSummary(d)}. Send a quote with the exact time`,
     actor: "website",
     requestId: null,
   });
@@ -265,7 +280,7 @@ const TOO_MANY_REQUESTS: FormResult = {
 
 const SLOT_TAKEN: FormResult = {
   status: "invalid",
-  fieldErrors: { slotStart: "That time was just booked by someone else. Please choose another." },
+  fieldErrors: { slotStart: "That time was just booked by someone else. Please choose another day or part of the day." },
   message: "That time is no longer available.",
 };
 

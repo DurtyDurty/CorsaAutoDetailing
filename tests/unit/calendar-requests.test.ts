@@ -75,6 +75,7 @@ function requestForm(slotStart: string, email = "ana@example.com") {
     zip: "32068",
     locationType: "home",
     slotStart,
+    dayPart: "either",
     firstName: "Ana",
     email,
     phone: "904-555-0101",
@@ -131,8 +132,9 @@ describe("calendar requests (deposits off)", () => {
 
     const mail = await outbox();
     expect(mail.map((m) => m.to).sort()).toEqual(["ana@example.com", "owner@example.com"]);
-    expect(mail.find((m) => m.to === "owner@example.com")!.subject).toContain("Time requested");
-    expect(mail.find((m) => m.to === "ana@example.com")!.text).toContain("we're holding that time for you");
+    expect(mail.find((m) => m.to === "owner@example.com")!.subject).toContain("Request: Ana");
+    expect(mail.find((m) => m.to === "ana@example.com")!.text).toContain("morning or afternoon");
+    expect(mail.find((m) => m.to === "ana@example.com")!.text).toContain("quote with the exact time");
 
     // That time is gone from the calendar for the next customer.
     const { isSlotAvailable } = await import("@/lib/availability");

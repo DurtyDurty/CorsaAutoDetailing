@@ -22,10 +22,13 @@ const LEAD_TYPE_LABEL: Record<LeadRecord["leadType"], string> = {
 
 /** "Sat, Nov 7, 2026 at 9:00 AM ET" */
 const whenLabel = (a: AppointmentRecord) => `${formatEastern(a.startsAt, { dateStyle: "full", timeStyle: "short" })} ET`;
+/** A website request: the day, and the part of the day the customer asked for ("Saturday, November 7, 2026, morning, around 9:30"). */
+const requestLabel = (a: AppointmentRecord) =>
+  `${formatEastern(a.startsAt, { dateStyle: "full", timeStyle: undefined })}${a.notes ? `, ${a.notes.charAt(0).toLowerCase()}${a.notes.slice(1)}` : ""}`;
 
 function ownerSubject(lead: LeadRecord, booking?: AppointmentRecord, requested?: AppointmentRecord) {
   if (requested) {
-    return `[${business.brand.shortName}] Time requested: ${lead.firstName}, ${formatEastern(requested.startsAt, { dateStyle: "medium", timeStyle: "short" })}. Confirm in the app (${shortRef(lead.id)})`;
+    return `[${business.brand.shortName}] Request: ${lead.firstName}, ${formatEastern(requested.startsAt, { dateStyle: "medium", timeStyle: undefined })}${requested.notes ? ` (${requested.notes})` : ""}. Send a quote in the app (${shortRef(lead.id)})`;
   }
   if (booking) {
     return `[${business.brand.shortName}] New booking: ${lead.firstName}, ${formatEastern(booking.startsAt, { dateStyle: "medium", timeStyle: "short" })} (${shortRef(lead.id)})`;
@@ -37,7 +40,7 @@ function ownerSubject(lead: LeadRecord, booking?: AppointmentRecord, requested?:
 function ownerBody(lead: LeadRecord, booking?: AppointmentRecord, requested?: AppointmentRecord) {
   const lines = [
     requested
-      ? `Requested time: ${whenLabel(requested)}. It's held until ${formatEastern(requested.holdExpiresAt ?? requested.startsAt)} ET. Confirm or decline it in the Corsa Owner app.`
+      ? `Requested: ${requestLabel(requested)}. That part of the day is held for them until ${formatEastern(requested.holdExpiresAt ?? requested.startsAt)} ET. Send a quote with the exact time from the Corsa Owner app, or call them.`
       : booking
         ? `Online booking for ${whenLabel(booking)}. Deposit ${formatUsd((booking.depositCents ?? 0) / 100)} paid.`
         : `${LEAD_TYPE_LABEL[lead.leadType]} received ${formatEastern(lead.createdAt)} ET`,
@@ -142,7 +145,7 @@ function customerBody(lead: LeadRecord, requested?: AppointmentRecord) {
       lead.businessMode === "PRELAUNCH"
         ? `Thanks for your request. We're not scheduling appointments yet because we're still preparing to launch, but we've saved your details and will reach out with a quote and timing once we open.`
         : requested
-          ? `Thanks for your request. You asked for ${whenLabel(requested)}, and we're holding that time for you. It isn't confirmed yet: ${business.owner.name} will review your vehicle and location details, and you'll get a confirmation email once it is.`
+          ? `Thanks for your request. You asked for ${requestLabel(requested)}. ${business.owner.name} will review your vehicle and location details and send you a quote with the exact time, or call you to set one. Your appointment is confirmed once you accept the quote.`
           : `Thanks for your request. This is not a confirmed appointment yet. ${business.owner.name} will review your vehicle and location details and reply with a quote and available times.`,
     membership_interest: `Thanks for your interest in a maintenance plan. Plans aren't available yet and nothing has been charged. We'll share details once pricing and terms are finalized.`,
     contact: `Thanks for getting in touch. We've received your message and will reply as soon as we can.`,

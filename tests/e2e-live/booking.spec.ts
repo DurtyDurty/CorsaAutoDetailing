@@ -39,6 +39,17 @@ async function pickFirstSlot(page: Page) {
   return iso!;
 }
 
+/** Calendar requests: picks a part of the first open day (no times are shown); returns the placeholder start it holds. */
+async function pickDayPart(page: Page, part: "Morning" | "Afternoon" | "Either" = "Morning") {
+  const form = page.getByRole("form", { name: "Service request" });
+  const group = form.getByRole("radiogroup", { name: "What part of the day?" });
+  await expect(group).toBeVisible();
+  const choice = group.getByRole("radio", { name: part }).or(group.getByRole("radio").first()).first();
+  await choice.locator("xpath=..").click();
+  await expect(choice).toBeChecked();
+  return (await form.locator('input[name="slotStart"]').getAttribute("value"))!;
+}
+
 async function fillContactAndAgree(page: Page, name: string) {
   const form = page.getByRole("form", { name: "Service request" });
   await form.getByRole("button", { name: "Continue" }).click();
@@ -72,17 +83,17 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     if (!isMobile) await expect(page.getByRole("banner").getByRole("link", { name: "Book a detail" })).toBeVisible();
   });
 
-  test("a customer must pick a time from the calendar; it's held for the owner, nothing is paid", async ({ page }) => {
+  test("a customer picks a day and part of the day (no times shown); it's held for the owner, nothing is paid", async ({ page }) => {
     const form = await fillVehicleAndCondition(page, "monthly-maintenance");
     // No time picked yet: can't continue.
     await form.getByRole("button", { name: "Continue" }).click();
     await expect(form.getByRole("heading", { name: /^Location & tim(e|ing)$/ })).toBeVisible();
     await expect(form.getByRole("checkbox", { name: /Flexible/ })).toHaveCount(0);
-    // Morning or afternoon first, then a preferred arrival time inside it.
-    await expect(form.getByRole("group", { name: "Part of the day" })).toBeVisible();
-    await expect(form.locator('input[name="slotStart"]').first()).toBeAttached();
-    expect(await form.locator('input[name="slotStart"]').count()).toBeLessThanOrEqual(7);
-    const slot = await pickFirstSlot(page);
+    // A day, then morning, afternoon or either, and an optional preferred time. No times are listed.
+    await expect(form.getByRole("group", { name: "Days" })).toBeVisible();
+    await expect(form.getByText(/^\d{1,2}:\d{2}/)).toHaveCount(0);
+    const slot = await pickDayPart(page, "Morning");
+    await form.getByLabel(/Preferred time/).fill("around 9:30");
     if (process.env.QUOTE_SHOTS) await form.locator('[data-field="slotStart"]').screenshot({ path: `${process.env.QUOTE_SHOTS}/slots-${test.info().project.name}.png` });
     await form.getByRole("button", { name: "Continue" }).click();
     await expect(form.getByRole("heading", { name: "Contact & review" })).toBeVisible();
@@ -93,9 +104,10 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     await form.getByLabel(/Phone/).fill(phone());
     await form.getByLabel(/I understand Corsa Auto Detailing will use/).check();
     await form.getByLabel(/displayed price is an estimate/).check();
-    await form.getByRole("button", { name: "Request this time" }).click();
+    await form.getByRole("button", { name: "Send my request" }).click();
     await expect(page).toHaveURL(/\/thanks\/request\?ref=/);
-    await expect(page.getByRole("heading", { name: "Time requested." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Request received." })).toBeVisible();
+    await expect(page.getByText("Morning, around 9:30")).toBeVisible();
     await expect(page.getByText("Monthly Maintenance")).toBeVisible();
     // The held time is gone from the calendar.
     expect(await openSlots(page, "monthly-maintenance")).not.toContain(slot);
@@ -106,7 +118,7 @@ test.describe("quotes: request, quote, accept (LIVE mode)", () => {
   test("the owner quotes a website request; the customer accepts it and the job is confirmed", async ({ page, browser }, testInfo) => {
     // A customer requests a time on the website.
     const form = await fillVehicleAndCondition(page, "monthly-maintenance");
-    await pickFirstSlot(page);
+    await pickDayPart(page, "Morning");
     await form.getByRole("button", { name: "Continue" }).click();
     const name = `Quote ${word()}`;
     const email = `${unique()}@example.com`;
@@ -115,7 +127,7 @@ test.describe("quotes: request, quote, accept (LIVE mode)", () => {
     await form.getByLabel(/Phone/).fill(phone());
     await form.getByLabel(/I understand Corsa Auto Detailing will use/).check();
     await form.getByLabel(/displayed price is an estimate/).check();
-    await form.getByRole("button", { name: "Request this time" }).click();
+    await form.getByRole("button", { name: "Send my request" }).click();
     await expect(page).toHaveURL(/\/thanks\/request\?ref=/);
 
     // The owner sends a quote from the dashboard, adding an extra and a discount.
@@ -127,6 +139,10 @@ test.describe("quotes: request, quote, accept (LIVE mode)", () => {
     await card.getByRole("link", { name: "Send quote" }).click();
     await expect(page).toHaveURL(/\/admin\/jobs\/[0-9a-f-]{36}#quote$/);
     const quote = page.getByRole("region", { name: "Quote" });
+    await expect(quote.getByText("Customer asked for:")).toBeVisible();
+    // The arrival time starts at the time held for the request (moving it is covered by unit tests).
+    const arrival = quote.getByLabel("Arrival time (Eastern, same day)");
+    await expect(arrival).toHaveValue(/^\d{2}:\d{2}$/);
     await quote.getByLabel("Include Excessive pet-hair removal").check();
     await quote.getByLabel("Discount ($)").fill("10");
     await quote.getByLabel(/Note to the customer/).fill("Thanks for choosing Corsa!");

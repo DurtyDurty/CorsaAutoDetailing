@@ -85,17 +85,18 @@ export default async function ThanksPage({ params, searchParams }: PageProps<"/t
   return (
     <Container className="py-20 max-w-2xl">
       <p className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-apex-deep">Reference {shortRef(lead.id)}</p>
-      <h1 className="font-display text-4xl sm:text-5xl mt-3 text-balance">{requested ? "Time requested." : copy.title}</h1>
+      <h1 className="font-display text-4xl sm:text-5xl mt-3 text-balance">{requested ? "Request received." : copy.title}</h1>
       <p className="mt-5 text-lg text-ink-muted leading-relaxed">
         {requested
-          ? "We're holding this time for you while we review your request. It isn't confirmed yet: you'll get a confirmation email as soon as it is."
+          ? "We'll review your vehicle and location details and send you a quote with the exact time, or call you to set one. Your appointment is confirmed once you accept the quote."
           : copy.body}
       </p>
 
       {requested && (
         <div className="mt-8 border-l-[3px] border-apex-deep bg-white px-5 py-4">
-          <p className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-apex-deep">Requested time</p>
-          <p className="mt-2 font-display text-2xl">{formatEastern(requested.startsAt, { dateStyle: "full", timeStyle: "short" })} ET</p>
+          <p className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-apex-deep">You asked for</p>
+          <p className="mt-2 font-display text-2xl">{formatEastern(requested.startsAt, { dateStyle: "full", timeStyle: undefined })}</p>
+          {requested.notes && <p className="mt-1 text-ink-muted">{requested.notes}</p>}
         </div>
       )}
 

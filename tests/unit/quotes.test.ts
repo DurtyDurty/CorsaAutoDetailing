@@ -62,7 +62,7 @@ async function openSlot(): Promise<string> {
 }
 
 /** A customer requests the first open time on the website; returns the held appointment. */
-async function request(email = `${crypto.randomUUID()}@example.com`) {
+async function request(email = `${crypto.randomUUID()}@example.com`, extra: Record<string, string> = {}) {
   const f = new FormData();
   const fields: Record<string, string> = {
     idempotencyKey: crypto.randomUUID(),
@@ -75,6 +75,7 @@ async function request(email = `${crypto.randomUUID()}@example.com`) {
     zip: "32068",
     locationType: "home",
     slotStart: await openSlot(),
+    dayPart: "either",
     firstName: "Dana",
     lastName: "Cole",
     email,
@@ -82,6 +83,7 @@ async function request(email = `${crypto.randomUUID()}@example.com`) {
     preferredContact: "email",
     serviceConsent: "on",
     priceAcknowledgment: "on",
+    ...extra,
   };
   for (const [k, v] of Object.entries(fields)) f.append(k, v);
   const { submitCalendarRequest } = await import("@/app/actions/leads");
@@ -191,6 +193,48 @@ describe("sending a quote", () => {
     const legacy = "L".repeat(43);
     await s.createQuote({ ...current!, number: "Q-LEGACY", tokenHash: hashToken(legacy), requestId: crypto.randomUUID() });
     expect((await loadQuoteByToken(s, legacy))?.quote.number).toBe("Q-LEGACY");
+  });
+
+  it("remembers the part of the day the customer asked for, and refuses a time outside it", async () => {
+    const appt = await request("dana@example.com", { dayPart: "morning", preferredTime: "around\n9:30" });
+    expect(appt.notes).toBe("Morning, around 9:30");
+    const { getAppointmentDetail } = await import("@/lib/owner/appointments");
+    const detail = await getAppointmentDetail(await store(), appt.id);
+    expect(detail).toMatchObject({ requested: "Morning, around 9:30", quoteDraft: { requested: "Morning, around 9:30", arrivalTime: "08:00" } });
+    expect(detail.quoteDraft!.arrivalOptions).toContain("09:30");
+    const ack = (await outbox()).find((m) => m.to === "dana@example.com")!;
+    expect(ack.text).toContain("morning, around 9:30");
+
+    // Morning chosen, but the form says 12:00: refused, nothing saved.
+    const { submitCalendarRequest } = await import("@/app/actions/leads");
+    const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(Date.parse(appt.startsAt) + 86_400_000));
+    const { easternToUtc } = await import("@/lib/time");
+    const f = new FormData();
+    const fields: Record<string, string> = { idempotencyKey: crypto.randomUUID(), serviceId: "platinum-full", vehicleYear: "2019", vehicleMake: "Toyota", vehicleModel: "4Runner", condition: "normal", serviceAddress: "45 Oak Ln", zip: "32068", locationType: "home", slotStart: easternToUtc(day, "12:00").toISOString(), dayPart: "morning", firstName: "Ben", email: "ben@example.com", phone: "9045550188", preferredContact: "email", serviceConsent: "on", priceAcknowledgment: "on" };
+    for (const [k, v] of Object.entries(fields)) f.append(k, v);
+    expect((await submitCalendarRequest(null, f)).status).toBe("invalid");
+    expect((await (await store()).listLeads()).some((l) => l.email === "ben@example.com")).toBe(false);
+  });
+
+  it("sets the exact arrival time as the quote goes out, and refuses one that overlaps another job", async () => {
+    const appt = await request("dana@example.com", { dayPart: "morning", preferredTime: "around 9:30" });
+    const t = await ownerToken();
+    const moved = await sendQuote(appt.id, { arrivalTime: "09:30" }, t);
+    expect(moved.status).toBe(200);
+    const job = (await (await store()).getAppointment(appt.id))!;
+    const { formatEastern } = await import("@/lib/time");
+    expect(formatEastern(job.startsAt, { dateStyle: undefined, timeStyle: "short" })).toBe("9:30 AM");
+    expect(Date.parse(job.endsAt) - Date.parse(job.startsAt)).toBe(Date.parse(appt.endsAt) - Date.parse(appt.startsAt));
+    expect(moved.body.appointment.events.some((e) => e.type === "rescheduled" && e.note?.includes("9:30"))).toBe(true);
+
+    // The owner's own job that afternoon; a quote moving the request onto it is refused.
+    const s = await store();
+    const { easternToUtc } = await import("@/lib/time");
+    const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(job.startsAt));
+    await s.createAppointment({ leadId: appt.leadId, startsAt: easternToUtc(day, "16:00").toISOString(), endsAt: easternToUtc(day, "17:00").toISOString(), status: "confirmed", quotedPriceCents: 1000, customerAgreed: true, completedRevenueCents: null, notes: null, source: "owner", serviceId: null, depositCents: null, depositStatus: "none", checkoutSessionId: null, paymentIntentId: null, holdExpiresAt: null, bufferMinutes: 45 });
+    const clash = await sendQuote(appt.id, { arrivalTime: "13:00" }, t);
+    expect(clash.status).toBe(409);
+    expect((await s.getAppointment(appt.id))!.startsAt).toBe(job.startsAt);
   });
 
   it("refuses anyone but the owner, and checks the numbers", async () => {

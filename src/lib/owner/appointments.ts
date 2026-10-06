@@ -69,6 +69,7 @@ export function toSummary(a: AppointmentRecord, lead: LeadRecord | null, payment
     cancelledBy: a.cancelledBy,
     updatedAt: a.updatedAt,
     quoteStatus: latestQuote ? effectiveStatus(latestQuote) : null,
+    requested: a.source === "online" ? a.notes : null,
   };
 }
 

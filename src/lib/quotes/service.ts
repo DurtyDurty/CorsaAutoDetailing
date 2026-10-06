@@ -6,7 +6,7 @@ import { formatCents } from "@shared/money";
 import { ApiError } from "@/lib/api/http";
 import { getEmailAdapter } from "@/lib/email";
 import { QuoteConflictError, SlotTakenError, type AppointmentRecord, type LeadRecord, type LeadStore, type QuoteRecord } from "@/lib/leads/types";
-import { formatEastern } from "@/lib/time";
+import { easternToUtc, formatEastern, todayEastern } from "@/lib/time";
 import { appointmentConfirmationEmail, sendOwnerEmail } from "@/lib/owner/email";
 import { renderQuotePdf, type QuoteDocument } from "./pdf";
 
@@ -68,6 +68,22 @@ const serviceName = (a: AppointmentRecord, lead: LeadRecord | null) =>
 /** A website request still waiting on the owner: the only kind of job a quote is for. */
 export const isQuotable = (a: AppointmentRecord) => a.status === "held" && a.depositStatus === "none" && Date.parse(a.startsAt) > Date.now();
 
+/** "08:00" in Eastern time. */
+const easternHhmm = (iso: string) =>
+  new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: business.timeZone }).format(new Date(iso));
+
+/** Half-hour arrival times in working hours that leave room for the job; the current one is always included. */
+function arrivalOptions(a: AppointmentRecord): string[] {
+  const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3));
+  const minutes = Math.round((Date.parse(a.endsAt) - Date.parse(a.startsAt)) / 60_000);
+  const out = new Set<string>();
+  for (let t = toMin(business.scheduling.workHours.start); t + minutes <= toMin(business.scheduling.workHours.end); t += 30) {
+    out.add(`${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
+  }
+  out.add(easternHhmm(a.startsAt));
+  return [...out].sort();
+}
+
 export function quoteDraft(a: AppointmentRecord, lead: LeadRecord | null): QuoteDraft {
   const service = a.serviceId ? getService(a.serviceId) : undefined;
   const base = a.quotedPriceCents > 0 ? a.quotedPriceCents : service ? Math.round(service.price * 100) : 0;
@@ -79,6 +95,9 @@ export function quoteDraft(a: AppointmentRecord, lead: LeadRecord | null): Quote
     extras: business.additionalServices.map((s) => ({ label: s.name, minCents: s.priceMin * 100, maxCents: s.priceMax * 100 })),
     defaultExpiresInDays: 3,
     latestExpiry: a.startsAt,
+    requested: a.source === "online" ? a.notes : null,
+    arrivalTime: easternHhmm(a.startsAt),
+    arrivalOptions: arrivalOptions(a),
   };
 }
 
@@ -130,6 +149,31 @@ export async function withdrawOpenQuotes(store: LeadStore, appointmentId: string
 const day = (iso: string) => formatEastern(iso, { dateStyle: "full", timeStyle: undefined });
 const time = (iso: string) => formatEastern(iso, { dateStyle: undefined, timeStyle: "short" });
 
+/** Move a requested visit to the exact arrival time the owner picked (same day, same length). */
+async function setArrival(store: LeadStore, actor: string, a: AppointmentRecord, arrival: string): Promise<AppointmentRecord> {
+  const start = easternToUtc(todayEastern(new Date(a.startsAt)), arrival);
+  if (start.getTime() <= Date.now()) throw new ApiError("invalid", "That arrival time has already passed.");
+  const end = new Date(start.getTime() + (Date.parse(a.endsAt) - Date.parse(a.startsAt)));
+  let moved: AppointmentRecord | null;
+  try {
+    moved = await store.updateAppointmentIfStatus(a.id, "held", { startsAt: start.toISOString(), endsAt: end.toISOString() });
+  } catch (err) {
+    if (err instanceof SlotTakenError) throw new ApiError("conflict", "That arrival time overlaps another job that day (with travel time). Pick another time.");
+    throw err;
+  }
+  if (!moved) throw new ApiError("conflict", "This request was just changed on another device. Pull to refresh and try again.");
+  await store.addAppointmentEvent({
+    appointmentId: a.id,
+    type: "rescheduled",
+    fromStatus: null,
+    toStatus: null,
+    note: `Arrival set to ${formatEastern(start, { dateStyle: undefined, timeStyle: "short" })} with the quote`,
+    actor,
+    requestId: null,
+  });
+  return moved;
+}
+
 /**
  * Price a website request and email the customer the quote (PDF attached, plus
  * the private link to accept or decline). Sending again replaces the open
@@ -147,9 +191,10 @@ export async function sendQuote(
     return { appointment: await detail(store, appointmentId), quote: toQuoteSummary(replay), customerEmail: { status: "skipped", error: null }, unchanged: true };
   }
 
-  const appt = await store.getAppointment(appointmentId);
+  let appt = await store.getAppointment(appointmentId);
   if (!appt) throw new ApiError("not_found", "That appointment doesn't exist.");
   if (!isQuotable(appt)) throw new ApiError("conflict", "Quotes are for website requests still waiting on you, before their start time.");
+  if (input.arrivalTime && input.arrivalTime !== easternHhmm(appt.startsAt)) appt = await setArrival(store, actor, appt, input.arrivalTime);
   const lead = await store.getLead(appt.leadId);
   if (!lead) throw new ApiError("not_found", "That customer doesn't exist.");
 

@@ -168,7 +168,7 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
         <Text variant="title">{a.customerName}</Text>
         <Text variant="bodyStrong">{a.serviceName ?? "Service not set"}</Text>
         <Text variant="caption">
-          {formatShortDay(a.startsAt)} · {formatTimeRange(a.startsAt, a.endsAt)}
+          {formatShortDay(a.startsAt)} · {a.status === "held" && a.requested ? `asked for ${a.requested}` : formatTimeRange(a.startsAt, a.endsAt)}
         </Text>
       </View>
 

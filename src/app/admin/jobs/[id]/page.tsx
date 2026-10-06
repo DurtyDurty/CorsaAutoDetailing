@@ -95,6 +95,7 @@ export default async function JobPage({ params, searchParams }: PageProps<"/admi
           {formatEastern(a.startsAt, { dateStyle: "full", timeStyle: undefined })} · {formatEastern(a.startsAt, { dateStyle: undefined, timeStyle: "short" })} –{" "}
           {formatEastern(a.endsAt, { dateStyle: undefined, timeStyle: "short" })}
         </p>
+        {a.status === "held" && a.requested && <p className="text-sm">Customer asked for: <strong>{a.requested}</strong>. Set the exact time with the quote.</p>}
       </header>
 
       <Flash ok={sp.ok} error={sp.error} />

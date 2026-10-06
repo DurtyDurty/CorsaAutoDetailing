@@ -9,6 +9,11 @@ import { sendQuoteAction } from "@/app/admin/jobs/actions";
 export const QUOTE_BLANK_ROWS = 3;
 const EXPIRY_DAYS = [1, 2, 3, 5, 7];
 
+/** "13:30" → "1:30 PM". */
+const clock = (t: string) => {
+  const [h, m] = t.split(":").map(Number);
+  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+};
 const dollars = (cents: number) => (cents / 100).toFixed(2).replace(/\.00$/, "");
 const when = (iso: string) => formatEastern(iso, { dateStyle: "medium", timeStyle: "short" });
 
@@ -65,6 +70,21 @@ export function QuoteCard({ a, back }: { a: AppointmentDetail; back: string }) {
           <input type="hidden" name="back" value={back} />
           <input type="hidden" name="rows" value={rows.length} />
           <p className="text-sm font-medium">{revising ? "Send a revised quote (replaces the one above)" : "Send a quote"}</p>
+          {draft.requested && (
+            <p className="text-sm border-l-[3px] border-[#d9a441] bg-chalk px-3 py-2">
+              Customer asked for: <strong>{draft.requested}</strong>
+            </p>
+          )}
+          <label className="flex flex-col gap-1 text-sm sm:w-64">
+            <span className="font-medium">Arrival time (Eastern, same day)</span>
+            <select name="arrivalTime" defaultValue={draft.arrivalTime} className="field min-h-10 py-2">
+              {draft.arrivalOptions.map((t) => (
+                <option key={t} value={t}>
+                  {clock(t)}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="flex flex-col gap-2">
             {rows.map((r, i) => (
               <div key={i} className="grid grid-cols-[auto_1fr_7rem] items-center gap-2">

@@ -153,6 +153,7 @@ export async function sendQuoteAction(formData: FormData) {
     discountCents: cents(formData.get("discount")),
     notes: str(formData, "notes"),
     expiresInDays: str(formData, "expiresInDays"),
+    arrivalTime: str(formData, "arrivalTime"),
   });
   const res = await attempt(formData, id, async () => sendQuote(await store(), owner.email, id, input, getAppointmentDetail));
   backTo(

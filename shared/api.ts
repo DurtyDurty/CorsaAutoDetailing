@@ -94,6 +94,8 @@ export interface AppointmentSummary {
   updatedAt: string;
   /** Latest quote for a website request, if one was sent. */
   quoteStatus: QuoteViewStatus | null;
+  /** A website request: the part of the day the customer asked for, e.g. "Morning, around 9:30". */
+  requested: string | null;
 }
 
 export type AppointmentEventType = "created" | "status" | "rescheduled" | "note" | "payment";
@@ -455,6 +457,11 @@ export interface QuoteDraft {
   defaultExpiresInDays: number;
   /** A quote can't stay open past the appointment's start. */
   latestExpiry: string;
+  /** What the customer asked for on the website, e.g. "Morning, around 9:30". */
+  requested: string | null;
+  /** The arrival time held now ("08:00", Eastern) and the times you can set with the quote. */
+  arrivalTime: string;
+  arrivalOptions: string[];
 }
 
 export const QUOTE_MAX_LINES = 20;
@@ -477,6 +484,11 @@ export const sendQuoteSchema = z
     discountCents: z.coerce.number().int().min(0).max(1_000_000).default(0),
     notes: z.string().trim().max(1000).optional(),
     expiresInDays: z.coerce.number().int().min(1).max(14).default(3),
+    /** Set the exact arrival time (Eastern, same day) as the quote goes out. */
+    arrivalTime: z
+      .string()
+      .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Pick an arrival time.")
+      .optional(),
   })
   .superRefine((v, ctx) => {
     const subtotal = v.lines.reduce((s, l) => s + l.amountCents, 0);

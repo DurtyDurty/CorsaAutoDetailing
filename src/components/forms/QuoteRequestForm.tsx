@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { InspectionDisclaimer } from "@/components/site/Disclosures";
 import { SlotPicker } from "./SlotPicker";
+import { DayPartPicker } from "./DayPartPicker";
 import { ServiceSelect } from "./ServiceSelect";
 import {
   ChoiceGroup,
@@ -46,6 +47,8 @@ const FIELD_STEP: Record<string, number> = {
   preferredDate: 2,
   notes: 2,
   slotStart: 2,
+  dayPart: 2,
+  preferredTime: 2,
   firstName: 3,
   lastName: 3,
   email: 3,
@@ -326,7 +329,9 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
             { value: "other", label: "Somewhere else" },
           ]}
         />
-        {pickTime ? (
+        {calendar && !booking ? (
+          <DayPartPicker serviceId={serviceId} required={step === 2} error={errors.slotStart ?? errors.dayPart ?? errors.preferredTime} />
+        ) : pickTime ? (
           <SlotPicker serviceId={serviceId} required={step === 2} error={errors.slotStart} />
         ) : (
           <ChoiceGroup
@@ -427,7 +432,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
             {booking && serviceId
               ? `Pay ${formatUsd((business.booking.depositCents[serviceId as ServiceId] ?? 0) / 100)} deposit & book`
               : calendar
-                ? "Request this time"
+                ? "Send my request"
                 : mode === "PRELAUNCH"
                   ? "Send my request"
                   : "Request an appointment"}

@@ -61,7 +61,7 @@ export function ConfirmCard({ appt }: { appt: AppointmentSummary }) {
       <View style={styles.block}>
         <Text variant="heading">{appt.customerName}</Text>
         <Text variant="bodyStrong">{appt.serviceName ?? "Service not set"}</Text>
-        <Text variant="caption">{formatTimeRange(appt.startsAt, appt.endsAt)}</Text>
+        <Text variant="caption">{appt.requested ? `Asked for: ${appt.requested}` : formatTimeRange(appt.startsAt, appt.endsAt)}</Text>
         {vehicle && <Text variant="body">{vehicle}</Text>}
         {address && <Text variant="caption">{address}</Text>}
         {appt.quotedPriceCents > 0 && <Text variant="caption">Starting price {formatCents(appt.quotedPriceCents)}</Text>}

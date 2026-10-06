@@ -15,6 +15,12 @@ import { colors, radius, space } from "@/design/theme";
 type Line = { key: string; label: string; amount: string };
 type Days = "1" | "2" | "3" | "5" | "7";
 
+/** "13:30" → "1:30 PM". */
+const clock = (t: string) => {
+  const h = Number(t.slice(0, 2));
+  const m = Number(t.slice(3, 5));
+  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+};
 const dollars = (cents: number) => (cents / 100).toFixed(2).replace(/\.00$/, "");
 const toCents = (s: string) => {
   const t = s.replace(/[$,\s]/g, "");
@@ -35,6 +41,7 @@ export function QuoteSheet({ appt, draft, visible, onClose }: { appt: Appointmen
   const [discount, setDiscount] = useState(() => (prior?.discountCents ? dollars(prior.discountCents) : ""));
   const [notes, setNotes] = useState(prior?.notes ?? "");
   const [days, setDays] = useState<Days>(String(draft.defaultExpiresInDays) as Days);
+  const [arrival, setArrival] = useState(draft.arrivalTime);
   const [error, setError] = useState<string | null>(null);
   // One id per intended send: a retry after a dropped connection sends once.
   const requestId = useRef(newRequestId());
@@ -55,13 +62,13 @@ export function QuoteSheet({ appt, draft, visible, onClose }: { appt: Appointmen
     if (!Number.isFinite(discountCents) || discountCents < 0) return setError("Check the discount.");
     if (payload.length === 0 || total <= 0) return setError("The total must be more than $0.");
     setError(null);
-    Alert.alert(`Send ${formatCents(total)} quote?`, `${appt.customerName} gets it by email with a PDF and a link to accept. Accepting confirms the job.`, [
+    Alert.alert(`Send ${formatCents(total)} quote?`, `Arrival ${clock(arrival)}. ${appt.customerName} gets it by email with a PDF and a link to accept. Accepting confirms the job.`, [
       { text: "Not yet", style: "cancel" },
       {
         text: "Send",
         onPress: () =>
           send.mutate(
-            { requestId: requestId.current, lines: payload, discountCents, notes: notes.trim() || undefined, expiresInDays: Number(days) },
+            { requestId: requestId.current, lines: payload, discountCents, notes: notes.trim() || undefined, expiresInDays: Number(days), arrivalTime: arrival },
             {
               onSuccess: (res) => {
                 requestId.current = newRequestId();
@@ -96,6 +103,29 @@ export function QuoteSheet({ appt, draft, visible, onClose }: { appt: Appointmen
             <Text variant="caption">
               {appt.customerName} · {appt.serviceName ?? "Service"}
             </Text>
+            {draft.requested && (
+              <View style={styles.asked}>
+                <Text variant="caption">Customer asked for</Text>
+                <Text variant="bodyStrong">{draft.requested}</Text>
+              </View>
+            )}
+            <Text variant="label">Arrival time (same day)</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              {draft.arrivalOptions.map((t) => (
+                <Pressable
+                  key={t}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: arrival === t }}
+                  accessibilityLabel={`Arrive ${clock(t)}`}
+                  onPress={() => setArrival(t)}
+                  style={[styles.chip, arrival === t && styles.chipOn]}
+                >
+                  <Text variant="caption" style={arrival === t ? styles.chipOnText : undefined}>
+                    {clock(t)}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
 
             {lines.map((l, i) => (
               <View key={l.key} style={styles.line}>
@@ -190,4 +220,7 @@ const styles = StyleSheet.create({
   totalLabel: { color: colors.textMuted },
   totalValue: { color: colors.text },
   error: { color: colors.error },
+  asked: { borderLeftWidth: 3, borderLeftColor: colors.warning, paddingLeft: space.md, gap: space.xs },
+  chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+  chipOnText: { color: colors.text },
 });
