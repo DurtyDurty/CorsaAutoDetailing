@@ -153,7 +153,7 @@ assets:
     - Se Habla Español
   sitelinks:
     - { text: "Book a Detail", url: /request, line1: "Pick a date that works for you", line2: "We confirm your time by email" }
-    - { text: "Packages & Prices", url: /services, line1: "Essential and Signature options", line2: "Interior, exterior or full" }
+    - { text: "Packages & Prices", url: /services, line1: "Basic, Essential and Signature", line2: "Inside and out in one visit" }
     - { text: "Service Areas", url: /service-areas, line1: "Middleburg and Fleming Island", line2: "Green Cove Springs and nearby" }
     - { text: "Contact Us", url: /contact, line1: "Questions before you book?", line2: "Send us a message" }
   # Added only once a business phone number exists (NEXT_PUBLIC_CONTACT_PHONE). null = no call asset.

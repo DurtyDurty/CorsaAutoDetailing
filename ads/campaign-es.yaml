@@ -105,7 +105,7 @@ assets:
     - Sin Agua ni Corriente
   sitelinks:
     - { text: "Reservar Cita", url: /request, line1: "Elija el día que le convenga", line2: "Le confirmamos por correo" }
-    - { text: "Paquetes y Precios", url: /services, line1: "Opciones Essential y Signature", line2: "Interior, exterior o completo" }
+    - { text: "Paquetes y Precios", url: /services, line1: "Basic, Essential y Signature", line2: "Interior y exterior juntos" }
     - { text: "Zonas de Servicio", url: /service-areas, line1: "Middleburg y Fleming Island", line2: "Green Cove Springs y alrededores" }
     - { text: "Contacto", url: /contact, line1: "¿Preguntas antes de reservar?", line2: "Escríbanos; hablamos español" }
   call:
