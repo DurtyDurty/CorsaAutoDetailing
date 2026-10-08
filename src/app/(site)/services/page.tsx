@@ -28,7 +28,7 @@ export default function ServicesPage() {
       <PageHero
         eyebrow="Packages & pricing"
         title="Every package. Clear starting prices."
-        lede="Full, interior and exterior car detailing, done by hand at your home or workplace. Every package has one starting price; the final price is confirmed at an in-person inspection before any work begins."
+        lede="Full, interior and exterior car detailing, done by hand at your home or workplace. Every package shows its starting price, and full packages are priced by vehicle size; the final price is confirmed at an in-person inspection before any work begins."
       />
 
       <Section tone="white" id="quote" className="scroll-mt-20">

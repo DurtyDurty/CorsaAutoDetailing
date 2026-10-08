@@ -125,7 +125,7 @@ describe("calendar requests (deposits off)", () => {
 
     const s = await store();
     const [appt] = await s.listAppointments();
-    expect(appt).toMatchObject({ status: "held", depositStatus: "none", source: "online", startsAt: slot, quotedPriceCents: 29900 });
+    expect(appt).toMatchObject({ status: "held", depositStatus: "none", source: "online", startsAt: slot, quotedPriceCents: 17500 });
     // Held for at most 48 hours, and never past the start time.
     const hold = Date.parse(appt!.holdExpiresAt!);
     expect(hold).toBeLessThanOrEqual(Math.min(Date.now() + 48 * 3600_000 + 1000, Date.parse(slot)));

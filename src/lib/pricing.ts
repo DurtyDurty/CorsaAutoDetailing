@@ -121,6 +121,13 @@ export function formatServicePrice(service: Pick<ServiceDefinition, "price" | "b
   return `${formatUsd(service.price)}${billingSuffix(service.billing)}`;
 }
 
+/** Price per vehicle size ("Sedan" $90, "SUV" $105, "Truck" $120), or null when the package has one price for every size. */
+export function sizePrices(service: Pick<ServiceDefinition, "price" | "sizeStep">): { size: string; price: number }[] | null {
+  const step = service.sizeStep;
+  if (!step) return null;
+  return business.vehicleSizes.map((size, i) => ({ size, price: service.price + step * i }));
+}
+
 /** Lowest per-visit starting price in a package group, for "from $125" style copy. */
 export function groupStartingPrice(group: ServiceDefinition["group"]): number {
   return Math.min(...business.services.filter((s) => s.group === group && s.billing === "visit").map((s) => s.price));

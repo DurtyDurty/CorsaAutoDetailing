@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { business } from "@/config/business";
-import { computeEstimate, formatServicePrice, groupStartingPrice } from "@/lib/pricing";
+import { business, getService } from "@/config/business";
+import { computeEstimate, formatServicePrice, groupStartingPrice, sizePrices } from "@/lib/pricing";
 
 describe("computeEstimate", () => {
   it("returns each package's one starting price", () => {
     const expected: Record<string, number> = {
-      "signature-full": 179,
-      "platinum-full": 299,
+      "basic-full": 90,
+      "signature-full": 140,
+      "platinum-full": 175,
       "monthly-maintenance": 150,
       "signature-interior": 125,
       "full-works-interior": 225,
@@ -54,7 +55,16 @@ describe("computeEstimate", () => {
       conditionFlags: ["bogus"],
     });
     expect(e?.addOns).toEqual([]);
-    expect(e?.total).toBe(179);
+    expect(e?.total).toBe(140);
+  });
+
+  it("prices the full packages per vehicle size and leaves the others at one price", () => {
+    const ladder = (id: string) => sizePrices(getService(id)!)?.map((p) => `${p.size} ${p.price}`);
+    expect(ladder("basic-full")).toEqual(["Sedan 90", "SUV 105", "Truck 120"]);
+    expect(ladder("signature-full")).toEqual(["Sedan 140", "SUV 160", "Truck 180"]);
+    expect(ladder("platinum-full")).toEqual(["Sedan 175", "SUV 200", "Truck 225"]);
+    expect(sizePrices(getService("signature-interior")!)).toBeNull();
+    expect(sizePrices(getService("monthly-maintenance")!)).toBeNull();
   });
 
   it("returns null for an unknown service", () => {
@@ -73,7 +83,7 @@ describe("computeEstimate", () => {
     const e = computeEstimate({ serviceId: "signature-full" });
     expect(e?.pricingVersion).toBe(business.pricingVersion);
     expect(e?.taxNotice).toBe(business.taxNotice);
-    expect(groupStartingPrice("popular")).toBe(179); // monthly price excluded
+    expect(groupStartingPrice("popular")).toBe(90); // monthly price excluded
     expect(groupStartingPrice("interior")).toBe(125);
     expect(groupStartingPrice("exterior")).toBe(125);
   });

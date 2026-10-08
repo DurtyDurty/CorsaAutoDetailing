@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { business, getService, isPrelaunch } from "@/config/business";
-import { formatServicePrice } from "@/lib/pricing";
+import { formatServicePrice, formatUsd, sizePrices } from "@/lib/pricing";
 import { track } from "@/lib/analytics";
 import { Arrow } from "@/components/ui/Button";
 import { Field } from "@/components/forms/primitives";
@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 export function InstantQuote({ className }: { className?: string }) {
   const [serviceId, setServiceId] = useState("");
   const service = getService(serviceId);
+  const sizes = service ? sizePrices(service) : null;
 
   return (
     <div className={cn("border border-line bg-white rounded-sm p-6 sm:p-8", className)}>
@@ -49,6 +50,7 @@ export function InstantQuote({ className }: { className?: string }) {
                 {service.name}
                 {service.billing === "monthly" && " · billed monthly"}
               </p>
+              {sizes && <p className="mt-1 text-sm text-ink-muted">{sizes.map((p) => `${p.size} ${formatUsd(p.price)}`).join(" · ")}</p>}
             </div>
             <Link
               href={`/request?service=${service.id}`}

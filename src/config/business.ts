@@ -21,6 +21,7 @@ export type VehicleCategoryId =
   | "other";
 
 export type ServiceId =
+  | "basic-full"
   | "signature-full"
   | "platinum-full"
   | "monthly-maintenance"
@@ -59,6 +60,8 @@ export interface ServiceDefinition {
   includes: string[];
   /** Starting price in USD, per visit or per month (see `billing`). */
   price: number;
+  /** USD added for each vehicle size up from a sedan (see `business.vehicleSizes`). Unset = one price for every size. */
+  sizeStep?: number;
   billing: "visit" | "monthly";
 }
 
@@ -152,7 +155,7 @@ export const business = {
    * Bump whenever a price or service scope changes. Stored with each lead's
    * estimate so old inquiries can be understood later.
    */
-  pricingVersion: "2026-09-v9",
+  pricingVersion: "2026-10-v10",
   /** Shown next to all prices while in PRELAUNCH mode. */
   priceLabel: {
     PRELAUNCH: "Planned starting prices",
@@ -180,6 +183,9 @@ export const business = {
     { id: "other", label: "Other" },
   ] satisfies VehicleCategory[],
 
+  /** Smallest first. Packages with a `sizeStep` cost that much more for each size up (owner decision 2026-10-07). */
+  vehicleSizes: ["Sedan", "SUV", "Truck"],
+
   packageGroups: [
     { id: "popular", title: "Popular packages", subtitle: "Most booked" },
     { id: "interior", title: "Interior packages", subtitle: "Comprehensive deep cleaning" },
@@ -190,6 +196,19 @@ export const business = {
   // platinum-full = Signature Full Detail, signature-interior/-exterior = Essential Interior/Exterior,
   // full-works-interior = Signature Interior Detail, wax-and-buff = Signature Exterior Detail.
   services: [
+    {
+      id: "basic-full",
+      name: "Basic Package",
+      group: "popular",
+      tagline: null,
+      badge: null,
+      includesEverythingIn: null,
+      // Kept to two lines on purpose (owner decision 2026-10-07).
+      includes: ["Basic exterior wash", "Basic interior clean-up"],
+      price: 90,
+      sizeStep: 15,
+      billing: "visit",
+    },
     {
       id: "signature-full",
       name: "Essential Full Detail",
@@ -206,7 +225,8 @@ export const business = {
         "Windows cleaned",
         "Interior surface cleaning",
       ],
-      price: 179,
+      price: 140,
+      sizeStep: 20,
       billing: "visit",
     },
     {
@@ -216,8 +236,9 @@ export const business = {
       tagline: "Bring It Back",
       badge: "Most popular",
       includesEverythingIn: "signature-full",
-      includes: ["Clay bar treatment", "Steam and sanitation", "Full interior deep clean"],
-      price: 299,
+      includes: ["Clay bar treatment", "Sanitation", "Full interior deep clean", "Protectant wax (1 month protectant)"],
+      price: 175,
+      sizeStep: 25,
       billing: "visit",
     },
     {
@@ -471,6 +492,7 @@ export const business = {
      * Essential packages and Monthly Maintenance 2-3 hrs, Signature packages 4-5 hrs.
      */
     durationMinutes: {
+      "basic-full": 120, // Basic Package (not yet timed by the owner)
       "signature-full": 180, // Essential Full Detail
       "signature-interior": 180, // Essential Interior Detail
       "signature-exterior": 180, // Essential Exterior Detail

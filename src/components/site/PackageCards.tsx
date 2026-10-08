@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { business, getService, isPrelaunch, type PackageGroupId, type ServiceDefinition } from "@/config/business";
-import { formatServicePrice } from "@/lib/pricing";
+import { formatServicePrice, formatUsd, sizePrices } from "@/lib/pricing";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import { Arrow } from "@/components/ui/Button";
@@ -78,6 +78,7 @@ function PackageCard({
 }) {
   const featured = Boolean(s.badge);
   const base = s.includesEverythingIn ? getService(s.includesEverythingIn) : null;
+  const sizes = sizePrices(s);
   const headingId = `pkg-${s.id}`;
   const listHeading = base ? `Everything in ${base.name}, plus:` : (s.includesHeading ?? "What's included");
 
@@ -124,6 +125,16 @@ function PackageCard({
             <span className="align-top text-base text-ink-muted">+</span>
           </p>
           {s.billing === "monthly" && <p className="text-sm text-ink-muted">Billed monthly.</p>}
+          {sizes && (
+            <p className="mt-1 text-sm text-ink-muted">
+              {sizes.map((p, i) => (
+                <span key={p.size} className="whitespace-nowrap">
+                  {i > 0 && " · "}
+                  {p.size} {formatUsd(p.price)}
+                </span>
+              ))}
+            </p>
+          )}
         </div>
       )}
 

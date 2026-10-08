@@ -77,7 +77,7 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     await expect(page).toHaveURL(/\/request\?service=platinum-full$/);
     const form = page.getByRole("form", { name: "Service request" });
     await expect(form.getByLabel("Service", { exact: true })).toHaveValue("platinum-full");
-    await expect(form.locator('[data-step="0"]').getByText("$299", { exact: true })).toBeVisible();
+    await expect(form.locator('[data-step="0"]').getByText("$175", { exact: true })).toBeVisible();
     await expect(form.getByText(/Vehicle type/)).toHaveCount(0);
     await expect(page.getByText(/Preparing to launch/)).toHaveCount(0);
     if (!isMobile) await expect(page.getByRole("banner").getByRole("link", { name: "Book a detail" })).toBeVisible();
@@ -203,7 +203,7 @@ test.describe("owner dashboard laid out like the app (LIVE mode)", () => {
     await page.getByLabel("Service address").fill("45 Oak Ln");
     await page.getByLabel("ZIP").fill("32068");
     await page.getByLabel("Service", { exact: true }).selectOption("platinum-full");
-    await expect(page.getByLabel("Price ($)")).toHaveValue("299");
+    await expect(page.getByLabel("Price ($)")).toHaveValue("175");
     // A free Tuesday: each project and run picks its own week and hour so they never collide.
     const d = new Date(Date.now() + (8 + 7 * Math.floor(Math.random() * 20)) * 86400_000);
     while (d.getUTCDay() !== 2) d.setUTCDate(d.getUTCDate() + 1);
@@ -220,7 +220,7 @@ test.describe("owner dashboard laid out like the app (LIVE mode)", () => {
       await page.getByRole("button", { name: step }).click();
       await expect(page.getByRole("status")).toContainText("Updated");
     }
-    await expect(page.getByRole("link", { name: "Collect $299" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Collect $175" })).toBeVisible();
     await page.getByLabel("How").selectOption("cash");
     await page.getByRole("button", { name: "Record" }).click();
     await expect(page.getByRole("status")).toContainText("Payment recorded");
