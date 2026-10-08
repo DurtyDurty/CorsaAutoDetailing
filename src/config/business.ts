@@ -268,8 +268,6 @@ export const business = {
     { id: "pet-hair", name: "Excessive pet-hair removal", priceMin: 35, priceMax: 75 },
     { id: "sand-mud", name: "Heavy sand or mud removal", priceMin: 30, priceMax: 75 },
     { id: "extraction", name: "Full carpet and seat extraction", priceMin: 50, priceMax: 100 },
-    { id: "engine-bay", name: "Engine-bay detail", priceMin: 50, priceMax: 50 },
-    { id: "headlights", name: "Headlight restoration", priceMin: 100, priceMax: 150 },
 
   ] satisfies AdditionalService[],
 

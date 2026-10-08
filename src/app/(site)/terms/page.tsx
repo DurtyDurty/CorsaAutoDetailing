@@ -41,7 +41,7 @@ export default function TermsPage() {
         <ul>
           <li>Each package includes exactly what is listed on the services page.</li>
           <li>{business.disclosures.pricing}</li>
-          <li>Additional services (such as excessive pet-hair removal, extraction or headlight restoration) are priced as ranges on the services page and confirmed at inspection. Nothing extra is performed or charged without your approval.</li>
+          <li>Additional services (such as excessive pet-hair removal, heavy sand or mud removal, or extraction) are priced as ranges on the services page and confirmed at inspection. Nothing extra is performed or charged without your approval.</li>
           <li>{business.disclosures.protection}</li>
         </ul>
 

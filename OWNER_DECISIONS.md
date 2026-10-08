@@ -44,7 +44,7 @@ Things the website is deliberately silent or provisional about until you decide.
 - [ ] **Ceramic Coating, when you're ready.** Was listed at $600+ with "9H and 10H surface hardness" and 1-, 3- and 5-year options. Before bringing it back: training, product data sheets to back those claims, and a price for each year option.
 - [ ] **Service times per package.** Not shown on the site. Needed before online deposits can be turned on (`business.booking.durationMinutes`, along with `depositCents`).
 - [ ] **Validate the starting prices** after real jobs. Bump `business.pricingVersion` whenever you change them (now `2026-10-v13`). → `business.services[].price`
-- [x] **Additional services.** Five range-priced add-ons (one-step paint enhancement removed 2026-09-30; it's part of Signature Exterior) are listed and confirmed at inspection; they're never added to an online estimate automatically. → `business.additionalServices`
+- [x] **Additional services.** Three range-priced add-ons since 2026-10-07 (engine-bay detail and headlight restoration removed); before that five (one-step paint enhancement removed 2026-09-30; it's part of Signature Exterior) are listed and confirmed at inspection; they're never added to an online estimate automatically. → `business.additionalServices`
 
 - [ ] **Sales tax treatment.** Site shows "Any applicable tax will be disclosed in your final quote" until you confirm with the Florida DOR / your accountant whether detailing services are taxable for you and at what rate. → `business.taxNotice`
 
