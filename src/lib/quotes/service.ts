@@ -65,7 +65,7 @@ export function toQuoteSummary(q: QuoteRecord): QuoteSummary {
 const serviceName = (a: AppointmentRecord, lead: LeadRecord | null) =>
   (a.serviceId && getService(a.serviceId)?.name) || lead?.estimate?.serviceName || "Detail";
 
-/** A website request still waiting on the owner: the only kind of job a quote is for. */
+/** A held time still waiting on a quote (a website request, or one the owner entered to quote): the only kind of job a quote is for. */
 export const isQuotable = (a: AppointmentRecord) => a.status === "held" && a.depositStatus === "none" && Date.parse(a.startsAt) > Date.now();
 
 /** "08:00" in Eastern time. */
@@ -193,7 +193,7 @@ export async function sendQuote(
 
   let appt = await store.getAppointment(appointmentId);
   if (!appt) throw new ApiError("not_found", "That appointment doesn't exist.");
-  if (!isQuotable(appt)) throw new ApiError("conflict", "Quotes are for website requests still waiting on you, before their start time.");
+  if (!isQuotable(appt)) throw new ApiError("conflict", "Quotes are for held times still waiting on an answer, before their start time.");
   if (input.arrivalTime && input.arrivalTime !== easternHhmm(appt.startsAt)) appt = await setArrival(store, actor, appt, input.arrivalTime);
   const lead = await store.getLead(appt.leadId);
   if (!lead) throw new ApiError("not_found", "That customer doesn't exist.");

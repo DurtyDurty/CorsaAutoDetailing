@@ -30,9 +30,9 @@ let seq = 0;
 const line = (label: string, cents: number): Line => ({ key: `l${seq++}`, label, amount: cents ? dollars(cents) : "" });
 
 /**
- * Price a website request and email the customer the quote (PDF + link). The
- * customer accepting it confirms the job. Starts from the earlier quote, or
- * from the requested package.
+ * Price a held time (a website request, or one entered in the app) and email
+ * the customer the quote (PDF + link). The customer accepting it confirms the
+ * job. Starts from the earlier quote, or from the chosen package.
  */
 export function QuoteSheet({ appt, draft, visible, onClose }: { appt: AppointmentDetail; draft: QuoteDraft; visible: boolean; onClose: () => void }) {
   const send = useSendQuote(appt.id);

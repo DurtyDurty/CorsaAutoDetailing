@@ -30,6 +30,8 @@ export interface ScheduleInput {
   notes: string | null;
   /** Allow outside working hours / days off. Never allows overlapping another job. */
   override: boolean;
+  /** Hold the time for a quote instead of confirming it (the customer accepting the quote confirms). */
+  quoteFirst?: boolean;
   actor: string;
   requestId: string | null;
 }
@@ -81,19 +83,23 @@ export async function assertCanSchedule(
 export const overlapMessage = (buffer: number) =>
   `That overlaps another job (including the ${buffer}-minute travel buffer). Pick another time.`;
 
-/** Books a confirmed appointment for an existing lead, after assertCanSchedule. */
+/**
+ * Books an appointment for an existing lead, after assertCanSchedule: confirmed,
+ * or with `quoteFirst` held (like a website request) until the quote is answered.
+ */
 export async function scheduleAppointment(store: LeadStore, input: ScheduleInput): Promise<AppointmentRecord> {
   const { start, end } = await assertCanSchedule(store, input);
   const buffer = business.scheduling.travelBufferMinutes;
+  const status = input.quoteFirst ? "held" : "confirmed";
   let appt: AppointmentRecord;
   try {
     appt = await store.createAppointment({
       leadId: input.leadId,
       startsAt: start.toISOString(),
       endsAt: end.toISOString(),
-      status: "confirmed",
+      status,
       quotedPriceCents: input.priceCents,
-      customerAgreed: true,
+      customerAgreed: !input.quoteFirst,
       completedRevenueCents: null,
       notes: input.notes,
       source: "owner",
@@ -102,7 +108,10 @@ export async function scheduleAppointment(store: LeadStore, input: ScheduleInput
       depositStatus: "none",
       checkoutSessionId: null,
       paymentIntentId: null,
-      holdExpiresAt: null,
+      // Until the quote goes out (which extends the hold to the quote's expiry), same as a website request.
+      holdExpiresAt: input.quoteFirst
+        ? new Date(Math.min(Date.now() + business.booking.requestHoldHours * 3600_000, start.getTime())).toISOString()
+        : null,
       bufferMinutes: buffer,
     });
   } catch (err) {
@@ -114,12 +123,13 @@ export async function scheduleAppointment(store: LeadStore, input: ScheduleInput
     appointmentId: appt.id,
     type: "created",
     fromStatus: null,
-    toStatus: "confirmed",
+    toStatus: status,
     note: input.notes,
     actor: input.actor,
     requestId: input.requestId,
   });
-  await store.updateLead(input.leadId, { stage: "scheduled" });
+  // A held time isn't a booking yet: sending the quote and the customer accepting it move the stage.
+  if (!input.quoteFirst) await store.updateLead(input.leadId, { stage: "scheduled" });
   return appt;
 }
 
@@ -171,7 +181,7 @@ function newLeadFromApp(input: CreateAppointmentInput, c: NewCustomerInput): New
   };
 }
 
-/** Book from the app: new or existing customer, then (optionally) email the confirmation. */
+/** Book from the app: new or existing customer, then (optionally) email the confirmation, or hold the time for a quote. */
 export async function bookFromApp(store: LeadStore, actor: string, input: CreateAppointmentInput): Promise<CreateAppointmentResponse> {
   const service = getService(input.serviceId);
   if (!service) throw new ApiError("invalid", "Choose a service.", { serviceId: "Choose a service." });
@@ -183,7 +193,10 @@ export async function bookFromApp(store: LeadStore, actor: string, input: Create
   }
 
   // Check the time before creating anything, so a refused booking leaves no stray customer behind.
-  await assertCanSchedule(store, input);
+  const { start } = await assertCanSchedule(store, input);
+  if (input.quoteFirst && start.getTime() <= Date.now()) {
+    throw new ApiError("invalid", "A quote needs a time that hasn't started yet.", { time: "Pick a later time." });
+  }
 
   let leadId: string;
   if ("leadId" in input.customer) {
@@ -204,13 +217,15 @@ export async function bookFromApp(store: LeadStore, actor: string, input: Create
     serviceId: service.id,
     notes: input.notes || null,
     override: input.override,
+    quoteFirst: input.quoteFirst,
     actor,
     requestId: input.requestId,
   });
 
   let confirmation: CreateAppointmentResponse["confirmation"] = "skipped";
   let confirmationError: string | null = null;
-  if (input.sendConfirmation) {
+  // Quote first: nothing is confirmed yet, so the customer hears from us when the quote is sent.
+  if (input.sendConfirmation && !input.quoteFirst) {
     const lead = (await store.getLead(leadId))!;
     const email = appointmentConfirmationEmail({
       firstName: lead.firstName,

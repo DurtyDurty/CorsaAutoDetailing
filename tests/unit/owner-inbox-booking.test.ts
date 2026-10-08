@@ -249,6 +249,81 @@ describe("booking from the app", () => {
     expect(leads[0]).toMatchObject({ stage: "scheduled", phone: "9045550102", source: { landingPath: "owner-app" } });
   });
 
+  it("quote first: holds the time without emailing, then the customer accepting the quote confirms the job", async () => {
+    const r = await routes();
+    const t = await token();
+    const body = {
+      requestId: crypto.randomUUID(),
+      customer: { new: newCustomer },
+      serviceId: "platinum-full",
+      date: await nextTuesday(),
+      time: "10:00",
+      durationMinutes: 180,
+      priceCents: 29900,
+      sendConfirmation: true,
+      quoteFirst: true,
+    };
+    const res = await r.appointments.POST(req("/appointments", { method: "POST", token: t, body }));
+    expect(res.status).toBe(201);
+    const held = ((await res.json()) as CreateAppointmentResponse).appointment;
+    expect(held).toMatchObject({ status: "held", source: "owner", quoteStatus: null, requested: null, quoteDraft: { arrivalTime: "10:00", lines: [{ amountCents: 29900 }] } });
+    expect(await outbox()).toHaveLength(0);
+
+    const { getLeadStore } = await import("@/lib/leads/store");
+    const store = (await getLeadStore())!;
+    const saved = (await store.getAppointment(held.id))!;
+    expect(saved.customerAgreed).toBe(false);
+    expect(Date.parse(saved.holdExpiresAt!)).toBeGreaterThan(Date.now());
+    expect((await store.getLead(held.leadId))!.stage).toBe("new");
+    // The held time is on Today's list to quote, and blocks the calendar like any other job.
+    const { todaySummary } = await import("@/lib/owner/summary");
+    expect((await todaySummary(store)).toConfirm.map((a) => a.id)).toEqual([held.id]);
+    const clash = await r.appointments.POST(req("/appointments", { method: "POST", token: t, body: { ...body, requestId: crypto.randomUUID(), time: "11:00" } }));
+    expect(clash.status).toBe(409);
+
+    const quoteRoute = await import("@/app/api/owner/v1/appointments/[id]/quote/route");
+    const sent = await quoteRoute.POST(
+      req(`/appointments/${held.id}/quote`, {
+        method: "POST",
+        token: t,
+        body: { requestId: crypto.randomUUID(), lines: [{ label: "Signature Full Detail", amountCents: 29900 }, { label: "Pet hair", amountCents: 4000 }], discountCents: 1900, expiresInDays: 3 },
+      }),
+      params({ id: held.id }),
+    );
+    expect(sent.status).toBe(200);
+    const mail = await outbox();
+    expect(mail).toHaveLength(1);
+    expect(mail[0]).toMatchObject({ to: "sam@example.com", subject: expect.stringContaining("Your quote") });
+    expect((await todaySummary(store)).toConfirm[0]).toMatchObject({ id: held.id, quoteStatus: "sent" });
+
+    const { acceptQuote } = await import("@/lib/quotes/service");
+    expect(await acceptQuote(store, /\/q\/([A-Za-z0-9]{12})\b/.exec(mail[0]!.text)![1]!)).toEqual({ ok: true });
+    expect(await store.getAppointment(held.id)).toMatchObject({ status: "confirmed", quotedPriceCents: 33900, discountCents: 1900, customerAgreed: true, holdExpiresAt: null });
+    expect((await store.getLead(held.leadId))!.stage).toBe("scheduled");
+    expect((await outbox()).map((m) => m.to)).toEqual(["sam@example.com", "sam@example.com"]);
+  });
+
+  it("quote first: dropping the held time frees it without emailing the customer", async () => {
+    const r = await routes();
+    const t = await token();
+    const res = await r.appointments.POST(
+      req("/appointments", {
+        method: "POST",
+        token: t,
+        body: { requestId: crypto.randomUUID(), customer: { new: newCustomer }, serviceId: "signature-full", date: await nextTuesday(), time: "10:00", durationMinutes: 120, priceCents: 17900, quoteFirst: true },
+      }),
+    );
+    const held = ((await res.json()) as CreateAppointmentResponse).appointment;
+    const statusRoute = await import("@/app/api/owner/v1/appointments/[id]/status/route");
+    const dropped = await statusRoute.POST(
+      req(`/appointments/${held.id}/status`, { method: "POST", token: t, body: { to: "declined", reason: "Quote dropped by owner", requestId: crypto.randomUUID() } }),
+      params({ id: held.id }),
+    );
+    expect(dropped.status).toBe(200);
+    expect(((await dropped.json()) as { appointment: { status: string }; customerEmail: unknown })).toMatchObject({ appointment: { status: "declined" }, customerEmail: null });
+    expect(await outbox()).toHaveLength(0);
+  });
+
   it("refuses an overlapping time, even with override", async () => {
     const r = await routes();
     const t = await token();

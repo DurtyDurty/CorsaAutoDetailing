@@ -188,7 +188,9 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
               {a.quote.status === "declined" && a.quote.responseNote && <Text variant="body">Their reason: {a.quote.responseNote}</Text>}
             </>
           ) : (
-            <Text variant="caption">Price this request and send it. The job is confirmed when the customer accepts.</Text>
+            <Text variant="caption">
+              {a.source === "owner" ? "The time is held. Send the quote" : "Price this request and send it"}. The job is confirmed when the customer accepts.
+            </Text>
           )}
           {a.quoteDraft && (
             <Button label={a.quote ? "Revise & resend quote" : "Send quote"} haptic="medium" onPress={() => setQuoting(true)} fullWidth />
@@ -266,18 +268,30 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
         <Button label="Save note" variant="secondary" loading={addNote.isPending} disabled={!note.trim()} onPress={saveNote} />
       </Card>
 
-      {allowed.has("declined") && (
-        <Button
-          label="Decline request"
-          variant="danger"
-          onPress={() =>
-            Alert.alert("Decline this request?", "The customer gets an email asking them to pick another time.", [
-              { text: "Keep it", style: "cancel" },
-              { text: "Decline", style: "destructive", onPress: () => status.run("declined", { reason: "Requested time not available" }) },
-            ])
-          }
-        />
-      )}
+      {allowed.has("declined") &&
+        (a.source === "owner" ? (
+          <Button
+            label="Drop this quote"
+            variant="danger"
+            onPress={() =>
+              Alert.alert("Drop this quote?", "The time is freed and any quote you sent stops working. The customer isn't emailed.", [
+                { text: "Keep it", style: "cancel" },
+                { text: "Drop it", style: "destructive", onPress: () => status.run("declined", { reason: "Quote dropped by owner" }) },
+              ])
+            }
+          />
+        ) : (
+          <Button
+            label="Decline request"
+            variant="danger"
+            onPress={() =>
+              Alert.alert("Decline this request?", "The customer gets an email asking them to pick another time.", [
+                { text: "Keep it", style: "cancel" },
+                { text: "Decline", style: "destructive", onPress: () => status.run("declined", { reason: "Requested time not available" }) },
+              ])
+            }
+          />
+        ))}
       {(allowed.has("confirmed") || a.status === "confirmed" || allowed.has("cancelled") || allowed.has("no_show")) && (
         <View style={styles.actions}>
           {(a.status === "confirmed" || a.status === "held") && <Button label="Reschedule" variant="secondary" onPress={() => setMoving(true)} style={styles.action} />}

@@ -21,12 +21,14 @@ function emailNote(res: StatusChangeResponse): string {
   return e.status === "sent" ? " The customer was emailed." : ` The email to the customer didn't send: ${e.error ?? "unknown error"}.`;
 }
 
-/** A time a customer picked on the website, waiting for the owner's yes or no. */
+/** A held time waiting on a quote: one a customer picked on the website, or one the owner entered to quote. */
 export function ConfirmCard({ appt }: { appt: AppointmentSummary }) {
   const change = useChangeStatus();
   const pending = useRef<{ to: Decision; id: string } | null>(null);
   const vehicle = vehicleLine(appt.vehicle);
   const address = addressLine(appt);
+  // Entered by the owner: there's no customer request to decline, only his own quote to drop.
+  const mine = appt.source === "owner";
 
   const decide = (to: Decision) => {
     if (pending.current?.to !== to) pending.current = { to, id: newRequestId() };
@@ -35,13 +37,13 @@ export function ConfirmCard({ appt }: { appt: AppointmentSummary }) {
         id: appt.id,
         to,
         requestId: pending.current.id,
-        ...(to === "declined" ? { reason: "Requested time not available" } : {}),
+        ...(to === "declined" ? { reason: mine ? "Quote dropped by owner" : "Requested time not available" } : {}),
       },
       {
         onSuccess: (res) => {
           pending.current = null;
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          Alert.alert("Declined", `${appt.customerName}.${emailNote(res)}`);
+          Alert.alert(mine ? "Dropped" : "Declined", `${appt.customerName}.${emailNote(res)}`);
         },
         onError: (err) => {
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -54,9 +56,9 @@ export function ConfirmCard({ appt }: { appt: AppointmentSummary }) {
   };
 
   return (
-    <Card style={styles.card} accessibilityLabel={`Request from ${appt.customerName} for ${formatShortDay(appt.startsAt)}`}>
+    <Card style={styles.card} accessibilityLabel={`${mine ? "Your quote for" : "Request from"} ${appt.customerName} for ${formatShortDay(appt.startsAt)}`}>
       <Text variant="label" style={styles.label}>
-        Requested · {formatShortDay(appt.startsAt)}
+        {mine ? "Your quote" : "Requested"} · {formatShortDay(appt.startsAt)}
       </Text>
       <View style={styles.block}>
         <Text variant="heading">{appt.customerName}</Text>
@@ -68,14 +70,18 @@ export function ConfirmCard({ appt }: { appt: AppointmentSummary }) {
       </View>
       <View style={styles.actions}>
         <Button
-          label="Decline"
+          label={mine ? "Drop" : "Decline"}
           variant="danger"
           disabled={change.isPending}
           onPress={() =>
-            Alert.alert("Decline this request?", "The customer gets an email asking them to pick another time.", [
-              { text: "Keep it", style: "cancel" },
-              { text: "Decline", style: "destructive", onPress: () => decide("declined") },
-            ])
+            Alert.alert(
+              mine ? "Drop this quote?" : "Decline this request?",
+              mine ? "The time is freed and any quote you sent stops working. The customer isn't emailed." : "The customer gets an email asking them to pick another time.",
+              [
+                { text: "Keep it", style: "cancel" },
+                { text: mine ? "Drop it" : "Decline", style: "destructive", onPress: () => decide("declined") },
+              ],
+            )
           }
           style={styles.action}
         />

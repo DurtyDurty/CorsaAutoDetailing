@@ -103,7 +103,7 @@ export async function summarize(store: LeadStore, appts: AppointmentRecord[]): P
   const [leads, payments, quotes] = await Promise.all([
     store.getLeads(appts.map((a) => a.leadId)),
     store.listPayments({ appointmentIds: appts.map((a) => a.id) }),
-    store.listQuotesForAppointments(appts.filter((a) => a.source === "online").map((a) => a.id)),
+    store.listQuotesForAppointments(appts.map((a) => a.id)),
   ]);
   const leadById = new Map(leads.map((l) => [l.id, l]));
   // Newest first, so the first one seen per appointment is its latest.
@@ -230,7 +230,8 @@ export async function changeAppointmentStatus(
   }
   // A website calendar request (no deposit) the owner accepts: it's now a firm booking.
   const acceptingRequest = appt.status === "held" && input.to === "confirmed" && appt.depositStatus === "none";
-  const decliningRequest = appt.status === "held" && input.to === "declined" && appt.depositStatus === "none";
+  // A time the owner held for his own quote isn't a customer's request: withdrawing it emails nobody.
+  const decliningRequest = appt.status === "held" && input.to === "declined" && appt.depositStatus === "none" && appt.source === "online";
   if (acceptingRequest) patch.holdExpiresAt = null;
 
   const updated = await store.updateAppointmentIfStatus(id, appt.status, patch);

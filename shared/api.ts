@@ -137,7 +137,7 @@ export interface AppointmentDetail extends AppointmentSummary {
   allowedTransitions: AppointmentStatus[];
   /** The latest quote, if any. */
   quote: QuoteSummary | null;
-  /** Starting point for a new quote; only for a website request still waiting on you. */
+  /** Starting point for a new quote; only for a held time (website request or one you entered) still waiting on a quote. */
   quoteDraft: QuoteDraft | null;
 }
 
@@ -330,6 +330,8 @@ export const createAppointmentSchema = z.object({
   /** Book even if it's outside working hours or on a day off. Never overrides another booking. */
   override: z.boolean().default(false),
   sendConfirmation: z.boolean().default(true),
+  /** Hold the time instead of confirming it: the owner sends a quote next, and the customer accepting it confirms the job. */
+  quoteFirst: z.boolean().default(false),
 });
 export type CreateAppointmentInput = z.infer<typeof createAppointmentSchema>;
 

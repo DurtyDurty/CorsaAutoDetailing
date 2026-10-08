@@ -93,6 +93,8 @@ export default function NewAppointmentScreen() {
   const [duration, setDuration] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [sendConfirmation, setSendConfirmation] = useState(true);
+  // Quote first by default: the time is held and the customer accepting the quote confirms it.
+  const [after, setAfter] = useState<"quote" | "book">("quote");
   const [errors, setErrors] = useState<Errors>({});
 
   const services = useMemo(() => options.data?.services ?? [], [options.data]);
@@ -124,6 +126,7 @@ export default function NewAppointmentScreen() {
       notes: notes.trim() || undefined,
       override,
       sendConfirmation,
+      quoteFirst: after === "quote",
     };
     const parsed = createAppointmentSchema.safeParse(raw);
     if (parsed.success) {
@@ -149,6 +152,11 @@ export default function NewAppointmentScreen() {
     create.mutate(input, {
       onSuccess: (res) => {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        // Time held: straight to the job with the quote open, the same sheet as a website request.
+        if (res.appointment.status === "held") {
+          router.replace({ pathname: "/appointment/[id]", params: { id: res.appointment.id, quote: "1" } });
+          return;
+        }
         const email =
           res.confirmation === "sent"
             ? "Confirmation email sent."
@@ -164,12 +172,12 @@ export default function NewAppointmentScreen() {
         if (err instanceof ApiClientError && err.code === "conflict" && err.fields?.override === OVERRIDABLE) {
           Alert.alert("Outside your schedule", err.message, [
             { text: "Change time", style: "cancel" },
-            { text: "Book anyway", onPress: () => submit(true) },
+            { text: after === "quote" ? "Hold it anyway" : "Book anyway", onPress: () => submit(true) },
           ]);
           return;
         }
         if (err instanceof ApiClientError && err.fields) setErrors((e) => ({ ...e, ...err.fields }));
-        Alert.alert("Not booked", err.message);
+        Alert.alert(after === "quote" ? "Time not held" : "Not booked", err.message);
       },
     });
   };
@@ -231,7 +239,7 @@ export default function NewAppointmentScreen() {
                         <Field label="Last name" value={customer.lastName} onChangeText={setField("lastName")} autoComplete="off" />
                       </View>
                     </View>
-                    <Field label="Email" value={customer.email} onChangeText={setField("email")} error={errors.email} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} hint="The confirmation goes here." />
+                    <Field label="Email" value={customer.email} onChangeText={setField("email")} error={errors.email} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} hint="The quote and confirmation go here." />
                     <Field label="Phone" value={customer.phone} onChangeText={setField("phone")} error={errors.phone} keyboardType="phone-pad" />
                     <Field label="Service address" value={customer.serviceAddress} onChangeText={setField("serviceAddress")} error={errors.serviceAddress} />
                     <View style={styles.row2}>
@@ -288,7 +296,7 @@ export default function NewAppointmentScreen() {
               onChangeText={setPrice}
               keyboardType="decimal-pad"
               error={errors.priceCents}
-              hint="Starts at the package price; change it to what you quoted."
+              hint={after === "quote" ? "Starts at the package price; add extras or a discount on the quote." : "Starts at the package price; change it to what you quoted."}
             />
           </Card>
 
@@ -319,17 +327,36 @@ export default function NewAppointmentScreen() {
 
           <Card style={styles.gap}>
             <Field label="Notes (only you see these)" value={notes} onChangeText={setNotes} multiline maxLength={1000} />
-            <View style={styles.switchRow}>
-              <View style={styles.flex}>
-                <Text variant="bodyStrong">Email a confirmation</Text>
-                <Text variant="caption">Sent from your business email with the service, time, address and price.</Text>
+          </Card>
+
+          <Card style={styles.gap}>
+            <Text variant="label">What the customer gets</Text>
+            <Segmented
+              label="What the customer gets"
+              value={after}
+              onChange={setAfter}
+              options={[
+                { value: "quote", label: "A quote to accept" },
+                { value: "book", label: "Booked now" },
+              ]}
+            />
+            {after === "quote" ? (
+              <Text variant="caption">
+                Holds the time and opens the quote for you to finish and send. The customer gets it by email with a PDF and a link, and accepting it confirms the job.
+              </Text>
+            ) : (
+              <View style={styles.switchRow}>
+                <View style={styles.flex}>
+                  <Text variant="bodyStrong">Email a confirmation</Text>
+                  <Text variant="caption">No quote: the job is confirmed right away. Sent from your business email with the service, time, address and price.</Text>
+                </View>
+                <Switch value={sendConfirmation} onValueChange={setSendConfirmation} trackColor={{ true: colors.accent }} accessibilityLabel="Email a confirmation" />
               </View>
-              <Switch value={sendConfirmation} onValueChange={setSendConfirmation} trackColor={{ true: colors.accent }} accessibilityLabel="Email a confirmation" />
-            </View>
+            )}
           </Card>
 
           <Button
-            label={customerName ? `Book ${customerName}` : "Book appointment"}
+            label={after === "quote" ? (customerName ? `Next: quote for ${customerName}` : "Next: write the quote") : customerName ? `Book ${customerName}` : "Book appointment"}
             haptic="medium"
             loading={create.isPending}
             onPress={() => submit(false)}

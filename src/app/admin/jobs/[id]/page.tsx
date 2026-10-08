@@ -292,12 +292,16 @@ export default async function JobPage({ params, searchParams }: PageProps<"/admi
               <StepButton
                 id={a.id}
                 to="declined"
-                label="Decline request"
+                label={a.source === "owner" ? "Drop this quote" : "Decline request"}
                 back={back}
                 variant="danger"
                 size="sm"
-                reason="Requested time not available"
-                confirm="Decline this request? The customer gets an email asking them to pick another time."
+                reason={a.source === "owner" ? "Quote dropped by owner" : "Requested time not available"}
+                confirm={
+                  a.source === "owner"
+                    ? "Drop this quote? The time is freed and any quote you sent stops working. The customer isn't emailed."
+                    : "Decline this request? The customer gets an email asking them to pick another time."
+                }
               />
             )}
             {allowed.has("cancelled") && (
