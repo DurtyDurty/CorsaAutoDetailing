@@ -131,9 +131,9 @@ class ConfigTests(unittest.TestCase):
 
     def test_prices_come_from_the_site(self):
         prices = config.allowed_prices((REPO / "src/config/business.ts").read_text(encoding="utf-8"))
-        self.assertIn(125, prices)
-        self.assertNotIn(120, prices)
-        self.assertEqual(min(prices), 125, "ads say 'From $125'; update the ad copy if the lowest price changed")
+        self.assertIn(90, prices)
+        self.assertNotIn(125, prices)
+        self.assertEqual(min(prices), 90, "ads say 'From $90'; update the ad copy if the lowest price changed")
 
     def test_keywords(self):
         c = config.load()
