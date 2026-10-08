@@ -6,7 +6,7 @@ describe("computeEstimate", () => {
   it("returns each package's one starting price", () => {
     const expected: Record<string, number> = {
       "basic-full": 90,
-      "signature-full": 140,
+      "signature-full": 150,
       "platinum-full": 175,
       "monthly-maintenance": 150,
       "signature-interior": 125,
@@ -55,13 +55,13 @@ describe("computeEstimate", () => {
       conditionFlags: ["bogus"],
     });
     expect(e?.addOns).toEqual([]);
-    expect(e?.total).toBe(140);
+    expect(e?.total).toBe(150);
   });
 
   it("prices the full packages per vehicle size and leaves the others at one price", () => {
     const ladder = (id: string) => sizePrices(getService(id)!)?.map((p) => `${p.size} ${p.price}`);
     expect(ladder("basic-full")).toEqual(["Sedan 90", "SUV 105", "Truck 120"]);
-    expect(ladder("signature-full")).toEqual(["Sedan 140", "SUV 160", "Truck 180"]);
+    expect(ladder("signature-full")).toEqual(["Sedan 150", "SUV 170", "Truck 190"]);
     expect(ladder("platinum-full")).toEqual(["Sedan 175", "SUV 200", "Truck 225"]);
     expect(sizePrices(getService("signature-interior")!)).toBeNull();
     expect(sizePrices(getService("monthly-maintenance")!)).toBeNull();

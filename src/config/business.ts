@@ -155,7 +155,7 @@ export const business = {
    * Bump whenever a price or service scope changes. Stored with each lead's
    * estimate so old inquiries can be understood later.
    */
-  pricingVersion: "2026-10-v10",
+  pricingVersion: "2026-10-v11",
   /** Shown next to all prices while in PRELAUNCH mode. */
   priceLabel: {
     PRELAUNCH: "Planned starting prices",
@@ -217,7 +217,7 @@ export const business = {
       badge: null,
       includesEverythingIn: null,
       // Reworded 2026-10-07 to read as a full detail, not a wash: same work as before plus floor mats
-      // (already part of Essential Interior). Don't add lines for work that isn't done on every job.
+      // (already part of Essential Interior), door jambs and UV protectant (owner left the choice to me). Don't add lines for work that isn't done on every job.
       includes: [
         "Hand wash and hand dry",
         "Paint sealant for gloss and protection",
@@ -226,9 +226,11 @@ export const business = {
         "Full interior vacuum, seats and carpets",
         "Floor mats cleaned",
         "Dash, console and door panels wiped clean",
+        "UV protectant on dash and plastics",
+        "Door jambs wiped clean",
         "Windows cleaned inside and out",
       ],
-      price: 140,
+      price: 150,
       sizeStep: 20,
       billing: "visit",
     },
