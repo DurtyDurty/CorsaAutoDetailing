@@ -232,10 +232,10 @@ describe("booking requests: price and calendar integrity", () => {
     expect(res.status).toBe("ok");
     const s = await store();
     const [appt] = await s.listAppointments();
-    expect(appt).toMatchObject({ status: "held", depositStatus: "none", quotedPriceCents: 17500, customerAgreed: false });
+    expect(appt).toMatchObject({ status: "held", depositStatus: "none", quotedPriceCents: 20000, customerAgreed: false });
     const lead = await s.getLead(appt!.leadId);
     expect(lead).toMatchObject({ stage: "new" });
-    expect(lead!.estimate?.total).toBe(175);
+    expect(lead!.estimate?.total).toBe(200);
   });
 
   it("prices a replayed form from the package it asks for now, not the one first saved", async () => {
@@ -249,7 +249,7 @@ describe("booking requests: price and calendar integrity", () => {
     expect((await submitCalendarRequest(null, requestForm(await firstOpenSlot(), { idempotencyKey: key, serviceId: "platinum-full" }))).status).toBe("ok");
     const held = (await holds())[0]!;
     expect(held.serviceId).toBe("platinum-full");
-    expect(held.quotedPriceCents).toBe(17500);
+    expect(held.quotedPriceCents).toBe(20000);
   });
 
   it("lets only one of two simultaneous requests take the same time", async () => {

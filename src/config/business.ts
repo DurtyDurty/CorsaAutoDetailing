@@ -155,7 +155,7 @@ export const business = {
    * Bump whenever a price or service scope changes. Stored with each lead's
    * estimate so old inquiries can be understood later.
    */
-  pricingVersion: "2026-10-v11",
+  pricingVersion: "2026-10-v12",
   /** Shown next to all prices while in PRELAUNCH mode. */
   priceLabel: {
     PRELAUNCH: "Planned starting prices",
@@ -242,7 +242,7 @@ export const business = {
       badge: "Most popular",
       includesEverythingIn: "signature-full",
       includes: ["Clay bar treatment", "Sanitation", "Full interior deep clean", "Protectant wax (1 month protectant)"],
-      price: 175,
+      price: 200,
       sizeStep: 25,
       billing: "visit",
     },

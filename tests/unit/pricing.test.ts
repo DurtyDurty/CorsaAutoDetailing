@@ -7,7 +7,7 @@ describe("computeEstimate", () => {
     const expected: Record<string, number> = {
       "basic-full": 90,
       "signature-full": 150,
-      "platinum-full": 175,
+      "platinum-full": 200,
       "monthly-maintenance": 150,
       "signature-interior": 125,
       "full-works-interior": 225,
@@ -62,7 +62,7 @@ describe("computeEstimate", () => {
     const ladder = (id: string) => sizePrices(getService(id)!)?.map((p) => `${p.size} ${p.price}`);
     expect(ladder("basic-full")).toEqual(["Sedan 90", "SUV 105", "Truck 120"]);
     expect(ladder("signature-full")).toEqual(["Sedan 150", "SUV 170", "Truck 190"]);
-    expect(ladder("platinum-full")).toEqual(["Sedan 175", "SUV 200", "Truck 225"]);
+    expect(ladder("platinum-full")).toEqual(["Sedan 200", "SUV 225", "Truck 250"]);
     expect(sizePrices(getService("signature-interior")!)).toBeNull();
     expect(sizePrices(getService("monthly-maintenance")!)).toBeNull();
   });
