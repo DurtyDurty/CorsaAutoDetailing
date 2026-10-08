@@ -60,7 +60,7 @@ test.describe("public site", () => {
   test("services page shows every starting price, add-on range and disclosure", async ({ page }) => {
     await page.goto("/services");
     const text = (await page.textContent("main")) ?? "";
-    for (const price of ["$90", "$150", "$150/mo", "$125", "$225", "$200"]) expect(text).toContain(price);
+    for (const price of ["$90", "$150", "$150/mo", "$200"]) expect(text).toContain(price);
     for (const range of ["$35-$75", "$30-$75", "$50-$100", "$50", "$100-$150"]) expect(text).toContain(range);
     expect(text).toMatch(/Planned starting price/);
     expect(text).toMatch(/Most popular/);
@@ -92,7 +92,7 @@ test.describe("public site", () => {
     const jsonLd = (await page.locator('script[type="application/ld+json"]').allTextContents()).join("");
     expect(jsonLd).not.toMatch(/"(price|minPrice|priceRange)"/);
     await page.getByRole("link", { name: "See pricing & details" }).first().click();
-    await expect(page).toHaveURL(/\/services#signature-full$/);
+    await expect(page).toHaveURL(/\/services#basic-full$/);
   });
 
   test("services page shows every package with one starting price", async ({ page }) => {
@@ -102,12 +102,6 @@ test.describe("public site", () => {
       ["Essential Full Detail", "$150"],
       ["Signature Full Detail", "$200"],
       ["Monthly Maintenance", "$150/mo"],
-      ["Essential Interior Detail", "$125"],
-      ["Signature Interior Detail", "$225"],
-
-      ["Essential Exterior Detail", "$125"],
-      ["Signature Exterior Detail", "$200"],
-
     ]) {
       await expect(page.locator("article", { has: page.getByRole("heading", { name, exact: true }) })).toContainText(price);
     }
@@ -116,15 +110,15 @@ test.describe("public site", () => {
 
   test("instant quote shows the starting price for the chosen package", async ({ page }) => {
     await page.goto("/services#quote");
-    await page.getByLabel("Service", { exact: true }).selectOption("wax-and-buff");
+    await page.getByLabel("Service", { exact: true }).selectOption("platinum-full");
     await expect(page.locator("#quote")).toContainText("$200");
   });
 
   test("before launch, package buttons ask for an email with the package pre-filled (no booking)", async ({ page }) => {
     await page.goto("/services");
     await expect(page.getByRole("link", { name: "Book now" })).toHaveCount(0);
-    // Second card is Signature.
-    await page.locator("article").getByRole("link", { name: "Get launch updates" }).nth(1).click();
+    // Third card is Signature.
+    await page.locator("article").getByRole("link", { name: "Get launch updates" }).nth(2).click();
     await expect(page).toHaveURL(/\/request\?service=platinum-full$/);
     await expect(page.getByRole("form", { name: "Service request" })).toHaveCount(0);
     const form = page.getByRole("form", { name: "Launch list signup" });
@@ -132,8 +126,8 @@ test.describe("public site", () => {
 
     await page.goto("/");
     await page.locator("article").getByRole("link", { name: "Get launch updates" }).first().click();
-    await expect(page).toHaveURL(/\/request\?service=signature-full$/);
-    await expect(page.getByRole("form", { name: "Launch list signup" }).getByLabel(/Service you're interested in/)).toHaveValue("signature-full");
+    await expect(page).toHaveURL(/\/request\?service=basic-full$/);
+    await expect(page.getByRole("form", { name: "Launch list signup" }).getByLabel(/Service you're interested in/)).toHaveValue("basic-full");
   });
 
   test("old maintenance-plans links land on the Monthly Maintenance package", async ({ page }) => {

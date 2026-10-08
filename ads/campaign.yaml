@@ -89,7 +89,7 @@ ad_groups:
       headlines:
         - Clay County Mobile Detailing
         - We Come to You
-        - Detailing From $125
+        - Detailing From $90
         - Veteran-Owned Detailing
         - Book Your Detail Online
         - No Water or Power Needed
@@ -104,7 +104,7 @@ ad_groups:
         - Detailing at Home or Work
       descriptions:
         - Mobile auto detailing at your home or work in Middleburg, Fleming Island & Green Cove.
-        - Essential and Signature packages for interior, exterior or a full detail. From $125.
+        - Basic, Essential and Signature packages, inside and out in one visit. From $90.
         - Veteran-owned and self-contained, so we need no water or power hookup from you.
         - Pick a date online and we confirm by email. Now booking in Clay County.
 
@@ -124,12 +124,12 @@ ad_groups:
       headlines:
         - Interior Car Detailing
         - Interior & Exterior Detailing
-        - Interior Detail From $125
-        - Exterior Detail From $125
+        - Wash & Clean-Up From $90
+        - Signature Detail From $200
         - Full Detail From $150
-        - Steam Cleaning & Sanitation
+        - Clay Bar & Protectant Wax
         - Exterior Wash With Sealant
-        - Seats & Carpets Shampooed
+        - Interior Deep Clean
         - Car Detailing in Middleburg
         - Fleming Island Car Detailing
         - Green Cove Springs Detailing
@@ -138,8 +138,8 @@ ad_groups:
         - Book Your Detail Online
         - No Water or Power Needed
       descriptions:
-        - Interior, exterior and full detail packages, done at your home or work. From $125.
-        - Signature Interior adds steam sanitation, shampooed seats and carpets, UV protection.
+        - Interior and exterior detailed together, at your home or work. Packages from $90.
+        - Signature adds clay bar, sanitation, interior deep clean and a 1 month protectant wax.
         - Exterior hand wash, sealant application, wheels cleaned, tire shine and windows.
         - Veteran-owned mobile detailing in Clay County. Pick a date online; we confirm by email.
 
@@ -153,7 +153,7 @@ assets:
     - Se Habla Español
   sitelinks:
     - { text: "Book a Detail", url: /request, line1: "Pick a date that works for you", line2: "We confirm your time by email" }
-    - { text: "Packages & Prices", url: /services, line1: "Essential and Signature options", line2: "Interior, exterior or full" }
+    - { text: "Packages & Prices", url: /services, line1: "Basic, Essential and Signature", line2: "Inside and out in one visit" }
     - { text: "Service Areas", url: /service-areas, line1: "Middleburg and Fleming Island", line2: "Green Cove Springs and nearby" }
     - { text: "Contact Us", url: /contact, line1: "Questions before you book?", line2: "Send us a message" }
   # Added only once a business phone number exists (NEXT_PUBLIC_CONTACT_PHONE). null = no call asset.

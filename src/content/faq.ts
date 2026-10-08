@@ -5,7 +5,7 @@ export const HOME_FAQ: FaqItem[] = [
 
   {
     q: "Which package should I choose?",
-    a: "For a complete reset inside and out, start with the Signature Full Detail. If only the inside or the outside needs attention, choose one of the interior or exterior packages. After that, Monthly Maintenance keeps it fresh.",
+    a: "For a complete reset inside and out, start with the Signature Full Detail. For a lighter clean, the Essential Full Detail or the Basic Package covers inside and out for less. After that, Monthly Maintenance keeps it fresh.",
   },
   {
     q: "Are the prices final?",

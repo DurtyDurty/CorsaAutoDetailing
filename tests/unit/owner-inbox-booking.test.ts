@@ -367,7 +367,7 @@ describe("booking from the app", () => {
       req("/appointments", {
         method: "POST",
         token: t,
-        body: { requestId: crypto.randomUUID(), customer: { leadId: lead.id }, serviceId: "signature-exterior", date: await nextTuesday(), time: "13:00", durationMinutes: 90, priceCents: 12500, sendConfirmation: false },
+        body: { requestId: crypto.randomUUID(), customer: { leadId: lead.id }, serviceId: "basic-full", date: await nextTuesday(), time: "13:00", durationMinutes: 90, priceCents: 9000, sendConfirmation: false },
       }),
     );
     expect(res.status).toBe(201);

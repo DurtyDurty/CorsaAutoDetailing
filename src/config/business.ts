@@ -24,13 +24,9 @@ export type ServiceId =
   | "basic-full"
   | "signature-full"
   | "platinum-full"
-  | "monthly-maintenance"
-  | "signature-interior"
-  | "full-works-interior"
-
-  | "signature-exterior"
-  | "wax-and-buff";
-export type PackageGroupId = "popular" | "interior" | "exterior";
+  | "monthly-maintenance";
+/** One group since the interior-only and exterior-only packages were removed (2026-10-07). */
+export type PackageGroupId = "popular";
 
 /** Vehicle sizes are no longer asked for (2026-09-30); kept so older leads still show a label. */
 export interface VehicleCategory {
@@ -155,7 +151,7 @@ export const business = {
    * Bump whenever a price or service scope changes. Stored with each lead's
    * estimate so old inquiries can be understood later.
    */
-  pricingVersion: "2026-10-v12",
+  pricingVersion: "2026-10-v13",
   /** Shown next to all prices while in PRELAUNCH mode. */
   priceLabel: {
     PRELAUNCH: "Planned starting prices",
@@ -187,14 +183,13 @@ export const business = {
   vehicleSizes: ["Sedan", "SUV", "Truck"],
 
   packageGroups: [
-    { id: "popular", title: "Popular packages", subtitle: "Most booked" },
-    { id: "interior", title: "Interior packages", subtitle: "Comprehensive deep cleaning" },
-    { id: "exterior", title: "Exterior packages", subtitle: "Spotless exterior detailing" },
+    { id: "popular", title: "Detailing packages", subtitle: "Interior and exterior together" },
   ] satisfies PackageGroup[],
 
   // Ids are stable (URLs, saved leads); names changed 2026-09-30: signature-full = Essential Full Detail,
-  // platinum-full = Signature Full Detail, signature-interior/-exterior = Essential Interior/Exterior,
-  // full-works-interior = Signature Interior Detail, wax-and-buff = Signature Exterior Detail.
+  // platinum-full = Signature Full Detail.
+  // Removed 2026-10-07 (older leads and jobs may still carry these ids): signature-interior, full-works-interior,
+  // signature-exterior, wax-and-buff. Every package now covers interior and exterior.
   services: [
     {
       id: "basic-full",
@@ -216,8 +211,8 @@ export const business = {
       tagline: "Inside & Out Refresh",
       badge: null,
       includesEverythingIn: null,
-      // Reworded 2026-10-07 to read as a full detail, not a wash: same work as before plus floor mats
-      // (already part of Essential Interior), door jambs and UV protectant (owner left the choice to me). Don't add lines for work that isn't done on every job.
+      // Reworded 2026-10-07 to read as a full detail, not a wash: same work as before plus floor mats,
+      // door jambs and UV protectant (owner left the choice to me). Don't add lines for work that isn't done on every job.
       includes: [
         "Hand wash and hand dry",
         "Paint sealant for gloss and protection",
@@ -263,57 +258,6 @@ export const business = {
       ],
       price: 150,
       billing: "monthly",
-    },
-    {
-      id: "signature-interior",
-      name: "Essential Interior Detail",
-      group: "interior",
-      tagline: "Quick Refresh",
-      badge: null,
-      includesEverythingIn: null,
-      // Air freshener left off on purpose (owner decision 2026-09-30).
-      includes: ["Interior vacuum", "Quick interior wipe-down", "Floor mats detailed", "Trunk detailed", "Windows cleaned"],
-      price: 125,
-      billing: "visit",
-    },
-    {
-      id: "full-works-interior",
-      name: "Signature Interior Detail",
-      group: "interior",
-      tagline: "Bring It Back",
-      badge: "Most popular",
-      includesEverythingIn: "signature-interior",
-      includes: [
-        "Steam and sanitation",
-        "Seats and carpets shampooed",
-        "High-pressure air blasting",
-        "UV protection on plastics",
-        "Double vacuum",
-      ],
-      price: 225,
-      billing: "visit",
-    },
-    {
-      id: "signature-exterior",
-      name: "Essential Exterior Detail",
-      group: "exterior",
-      tagline: "Quick Refresh",
-      badge: null,
-      includesEverythingIn: null,
-      includes: ["Exterior hand wash", "Sealant application", "Wheels cleaned", "Tire shine", "Exterior windows cleaned"],
-      price: 125,
-      billing: "visit",
-    },
-    {
-      id: "wax-and-buff",
-      name: "Signature Exterior Detail",
-      group: "exterior",
-      tagline: "Showroom Shine",
-      badge: null,
-      includesEverythingIn: "signature-exterior",
-      includes: ["Clay bar", "1-step paint enhancement", "Hand wax", "Plastic dressing"],
-      price: 200,
-      billing: "visit",
     },
   ] satisfies ServiceDefinition[],
   /** Owner-approved fixed-price add-ons that the online estimate may add. None approved yet. */
@@ -386,7 +330,7 @@ export const business = {
         coverage: "core",
         blurb: "Northern St. Johns County, across the river from Clay County.",
         intro:
-          "St. Johns, in northern St. Johns County, is just across the St. Johns River from Clay County. We bring full, interior and exterior detailing to homes and workplaces throughout the area.",
+          "St. Johns, in northern St. Johns County, is just across the St. Johns River from Clay County. We bring full interior and exterior detailing to homes and workplaces throughout the area.",
         page: true,
         zips: ["32259"],
       },
@@ -499,12 +443,8 @@ export const business = {
     durationMinutes: {
       "basic-full": 120, // Basic Package (not yet timed by the owner)
       "signature-full": 180, // Essential Full Detail
-      "signature-interior": 180, // Essential Interior Detail
-      "signature-exterior": 180, // Essential Exterior Detail
       "monthly-maintenance": 180,
       "platinum-full": 300, // Signature Full Detail
-      "full-works-interior": 300, // Signature Interior Detail
-      "wax-and-buff": 300, // Signature Exterior Detail
     } as Partial<Record<ServiceId, number>>,
     slotIntervalMinutes: 30,
     /**

@@ -106,9 +106,9 @@ export default function HomePage() {
             <div className="py-5 pr-4 lg:pl-4 lg:border-l border-line-dark">
               <dt className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-chalk/50">03 / Packages</dt>
               <dd className="mt-2 text-chalk text-sm leading-relaxed">
-                {business.packageGroups.map((g) => (
-                  <span key={g.id} className="block">
-                    {g.title}
+                {business.services.map((s) => (
+                  <span key={s.id} className="block">
+                    {s.name}
                   </span>
                 ))}
               </dd>
@@ -153,7 +153,7 @@ export default function HomePage() {
           <SectionHeading
             eyebrow="Detailing packages"
             title="Popular packages. Built to perform."
-            lede="Our most-booked packages. Interior-only and exterior-only packages and every price are on the services page."
+            lede="Every package covers the inside and the outside. Prices are on the services page."
           />
           <div className="flex flex-col gap-3 shrink-0 lg:items-end">
             <Link

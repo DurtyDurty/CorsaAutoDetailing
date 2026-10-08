@@ -3,7 +3,7 @@ import { formatServicePrice } from "@/lib/pricing";
 import { Select } from "./primitives";
 
 /**
- * Every package in one drop-down, grouped (Popular / Interior / Exterior).
+ * Every package in one drop-down, grouped (one group today).
  * `showPrices={false}` for forms that appear on the home page, which shows no prices.
  */
 export function ServiceSelect({

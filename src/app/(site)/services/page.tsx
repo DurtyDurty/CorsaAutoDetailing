@@ -16,7 +16,7 @@ import { groupStartingPrice } from "@/lib/pricing";
 export const metadata: Metadata = {
   title: "Detailing packages & pricing",
   description:
-    `Full details from $${groupStartingPrice("popular")}, interior and exterior packages from $${Math.min(groupStartingPrice("interior"), groupStartingPrice("exterior"))}, plus monthly maintenance. Mobile car detailing at your home or work in Clay County, St. Johns and Jacksonville.`,
+    `Interior and exterior detailing packages from $${groupStartingPrice("popular")}, priced by vehicle size, plus monthly maintenance. Mobile car detailing at your home or work in Clay County, St. Johns and Jacksonville.`,
   alternates: { canonical: "/services" },
 };
 
@@ -28,7 +28,7 @@ export default function ServicesPage() {
       <PageHero
         eyebrow="Packages & pricing"
         title="Every package. Clear starting prices."
-        lede="Full, interior and exterior car detailing, done by hand at your home or workplace. Every package shows its starting price, and full packages are priced by vehicle size; the final price is confirmed at an in-person inspection before any work begins."
+        lede="Interior and exterior car detailing in one visit, done by hand at your home or workplace. Every package shows its starting price, and full packages are priced by vehicle size; the final price is confirmed at an in-person inspection before any work begins."
       />
 
       <Section tone="white" id="quote" className="scroll-mt-20">

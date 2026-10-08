@@ -9,11 +9,6 @@ describe("computeEstimate", () => {
       "signature-full": 150,
       "platinum-full": 200,
       "monthly-maintenance": 150,
-      "signature-interior": 125,
-      "full-works-interior": 225,
-
-      "signature-exterior": 125,
-      "wax-and-buff": 200,
     };
     expect(business.services.map((s) => s.id)).toEqual(Object.keys(expected));
     for (const service of business.services) {
@@ -63,7 +58,7 @@ describe("computeEstimate", () => {
     expect(ladder("basic-full")).toEqual(["Sedan 90", "SUV 105", "Truck 120"]);
     expect(ladder("signature-full")).toEqual(["Sedan 150", "SUV 170", "Truck 190"]);
     expect(ladder("platinum-full")).toEqual(["Sedan 200", "SUV 225", "Truck 250"]);
-    expect(sizePrices(getService("signature-interior")!)).toBeNull();
+    expect(getService("signature-interior")).toBeUndefined();
     expect(sizePrices(getService("monthly-maintenance")!)).toBeNull();
   });
 
@@ -74,7 +69,7 @@ describe("computeEstimate", () => {
 
   it("marks monthly packages and formats their price per month", () => {
     expect(computeEstimate({ serviceId: "monthly-maintenance" })?.billing).toBe("monthly");
-    expect(computeEstimate({ serviceId: "wax-and-buff" })?.billing).toBe("visit");
+    expect(computeEstimate({ serviceId: "platinum-full" })?.billing).toBe("visit");
     expect(formatServicePrice({ price: 150, billing: "monthly" })).toBe("$150/mo");
     expect(formatServicePrice({ price: 799, billing: "visit" })).toBe("$799");
   });
@@ -84,7 +79,5 @@ describe("computeEstimate", () => {
     expect(e?.pricingVersion).toBe(business.pricingVersion);
     expect(e?.taxNotice).toBe(business.taxNotice);
     expect(groupStartingPrice("popular")).toBe(90); // monthly price excluded
-    expect(groupStartingPrice("interior")).toBe(125);
-    expect(groupStartingPrice("exterior")).toBe(125);
   });
 });

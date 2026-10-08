@@ -16,7 +16,7 @@ function Check({ className }: { className?: string }) {
 }
 
 /**
- * Detailing packages as cards, in their groups (Popular / Interior / Exterior),
+ * Detailing packages as cards, in their groups (one group today),
  * each with one starting price and a link into the request form.
  *
  * `groups` limits which groups render (home page shows only "popular").
