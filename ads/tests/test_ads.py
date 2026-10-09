@@ -71,7 +71,7 @@ class ConfigTests(unittest.TestCase):
     def test_budget_micros(self):
         self.assertEqual(config.usd_to_micros(10), 10_000_000)
         self.assertEqual(config.usd_to_micros(12.34), 12_340_000)
-        self.assertEqual(config.load().budget_micros, 5_000_000)
+        self.assertEqual(config.load().budget_micros, 10_000_000)
         self.assertIn("whole cents", " ".join(cfg_with(**{"campaign.daily_budget_usd": 10.005}).errors))
         self.assertIn("safety cap", " ".join(cfg_with(**{"campaign.daily_budget_usd": 500}).errors))
         self.assertTrue(cfg_with(**{"campaign.daily_budget_usd": 0}).errors)
@@ -209,7 +209,7 @@ class PlanTests(unittest.TestCase):
     def test_preview(self):
         text = plan.preview(config.load())
         self.assertIn("PAUSED", text)
-        self.assertIn("5000000 micros", text)
+        self.assertIn("10000000 micros", text)
         self.assertIn("Middleburg, Florida, United States [1015119]", text)
         self.assertRegex(text, r"H1\s+28/30  Clay County Mobile Detailing")
 
@@ -241,7 +241,7 @@ class BuildTests(unittest.TestCase):
 
     def test_budget(self):
         (b,) = self.kind("campaign_budget_operation")
-        self.assertEqual(b.amount_micros, 5_000_000)
+        self.assertEqual(b.amount_micros, 10_000_000)
         self.assertFalse(b.explicitly_shared)
 
     def test_criteria(self):
