@@ -14,7 +14,7 @@ campaign:
   bidding:
     strategy: MAXIMIZE_CLICKS
     # Optional ceiling per click (USD). null = let Google bid within the budget.
-    max_cpc_usd: null
+    max_cpc_usd: 7.00
   networks:
     google_search: true
     search_partners: false

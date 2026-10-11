@@ -237,7 +237,7 @@ class BuildTests(unittest.TestCase):
         self.assertEqual(camp.geo_target_type_setting.positive_geo_target_type, E.PositiveGeoTargetTypeEnum.PRESENCE)
         self.assertEqual(camp.contains_eu_political_advertising, E.EuPoliticalAdvertisingStatusEnum.DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING)
         self.assertEqual(camp._pb.WhichOneof("campaign_bidding_strategy"), "target_spend")
-        self.assertEqual(camp.target_spend.cpc_bid_ceiling_micros, 0)
+        self.assertEqual(camp.target_spend.cpc_bid_ceiling_micros, 7_000_000)
 
     def test_budget(self):
         (b,) = self.kind("campaign_budget_operation")
