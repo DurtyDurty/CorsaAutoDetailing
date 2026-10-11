@@ -7,7 +7,7 @@ import { formatServicePrice, formatUsd, sizePrices } from "@/lib/pricing";
 import { track } from "@/lib/analytics";
 import { Arrow } from "@/components/ui/Button";
 import { Field } from "@/components/forms/primitives";
-import { ServiceSelect } from "@/components/forms/ServiceSelect";
+import { ServiceIncludes, ServiceSelect } from "@/components/forms/ServiceSelect";
 import { cn } from "@/lib/utils";
 
 /**
@@ -65,6 +65,7 @@ export function InstantQuote({ className }: { className?: string }) {
         ) : (
           <p className="text-ink-muted">Choose a service to see its starting price.</p>
         )}
+        <ServiceIncludes serviceId={serviceId} className="mt-5" />
         <p className="mt-4 text-xs text-ink-muted">
           Starting price for a vehicle in average condition. {business.finalQuoteNotice} {business.taxNotice}
         </p>

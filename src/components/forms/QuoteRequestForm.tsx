@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { InspectionDisclaimer } from "@/components/site/Disclosures";
 import { SlotPicker } from "./SlotPicker";
 import { DayPartPicker } from "./DayPartPicker";
-import { ServiceSelect } from "./ServiceSelect";
+import { ServiceIncludes, ServiceSelect } from "./ServiceSelect";
 import {
   ChoiceGroup,
   ConsentFields,
@@ -202,6 +202,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
             />
           )}
         </Field>
+        <ServiceIncludes serviceId={serviceId} />
         <div className="grid gap-5 sm:grid-cols-3">
           <Field name="vehicleYear" label="Year" error={errors.vehicleYear}>
             {(p) => (

@@ -54,6 +54,8 @@ export interface ServiceDefinition {
   includesHeading?: string;
   /** Only claim work and equipment you actually provide. */
   includes: string[];
+  /** Shorter version of `includes` for the package picker in the forms. Unset = show `includes`. */
+  summary?: string[];
   /** Starting price in USD, per visit or per month (see `billing`). */
   price: number;
   /** USD added for each vehicle size up from a sedan (see `business.vehicleSizes`). Unset = one price for every size. */
@@ -210,7 +212,8 @@ export const business = {
       group: "popular",
       tagline: "Inside & Out Refresh",
       badge: null,
-      includesEverythingIn: null,
+      // Each package builds on the one before it (owner decision 2026-10-11).
+      includesEverythingIn: "basic-full",
       // Reworded 2026-10-07 to read as a full detail, not a wash: same work as before plus floor mats,
       // door jambs and UV protectant (owner left the choice to me). Don't add lines for work that isn't done on every job.
       includes: [
@@ -225,6 +228,12 @@ export const business = {
         "Door jambs wiped clean",
         "Windows cleaned inside and out",
       ],
+      summary: [
+        "Hand wash with paint sealant",
+        "Wheels, tires and tire shine",
+        "Full interior vacuum and wipe-down",
+        "Windows cleaned inside and out",
+      ],
       price: 150,
       sizeStep: 20,
       billing: "visit",
@@ -236,7 +245,8 @@ export const business = {
       tagline: "Bring It Back",
       badge: "Most popular",
       includesEverythingIn: "signature-full",
-      includes: ["Clay bar treatment", "Sanitation", "Full interior deep clean", "Protectant wax (1 month protectant)"],
+      // Clay bar and the 4-week wax lead: they are what sets this package apart (owner, 2026-10-11).
+      includes: ["Clay bar treatment", "4-week paint sealant wax", "Full interior deep clean", "Sanitation"],
       price: 200,
       sizeStep: 25,
       billing: "visit",
