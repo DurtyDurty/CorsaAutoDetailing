@@ -15,7 +15,9 @@ export type AnalyticsEvent =
   | "lead_form_started"
   | "lead_form_submitted"
   | "membership_interest_submitted"
-  | "contact_clicked";
+  | "contact_clicked"
+  | "offer_shown"
+  | "offer_claimed";
 
 const ALLOWED_PROPS = new Set([
   "service",

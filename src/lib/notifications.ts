@@ -3,6 +3,7 @@ import { business, getService, getVehicleCategory } from "@/config/business";
 import { getEmailAdapter } from "@/lib/email";
 import { replyAddressFor } from "@/lib/inbound";
 import type { AppointmentRecord, LeadRecord, LeadStore, NotificationKind, NotificationRecord } from "@/lib/leads/types";
+import { isOfferSignup } from "@/lib/leads/shared";
 import { billingSuffix, formatUsd } from "@/lib/pricing";
 import { formatEastern } from "@/lib/time";
 import { shortRef } from "@/lib/utils";
@@ -20,6 +21,8 @@ const LEAD_TYPE_LABEL: Record<LeadRecord["leadType"], string> = {
   contact: "Contact message",
 };
 
+const typeLabel = (lead: LeadRecord) => (isOfferSignup(lead) ? "First-time offer signup" : LEAD_TYPE_LABEL[lead.leadType]);
+
 /** "Sat, Nov 7, 2026 at 9:00 AM ET" */
 const whenLabel = (a: AppointmentRecord) => `${formatEastern(a.startsAt, { dateStyle: "full", timeStyle: "short" })} ET`;
 /** A website request: the day, and the part of the day the customer asked for ("Saturday, November 7, 2026, morning, around 9:30"). */
@@ -33,7 +36,7 @@ function ownerSubject(lead: LeadRecord, booking?: AppointmentRecord, requested?:
   if (booking) {
     return `[${business.brand.shortName}] New booking: ${lead.firstName}, ${formatEastern(booking.startsAt, { dateStyle: "medium", timeStyle: "short" })} (${shortRef(lead.id)})`;
   }
-  return `[${business.brand.shortName}] ${LEAD_TYPE_LABEL[lead.leadType]}: ${lead.firstName} (${shortRef(lead.id)})`;
+  return `[${business.brand.shortName}] ${typeLabel(lead)}: ${lead.firstName} (${shortRef(lead.id)})`;
 }
 
 /** Internal notes are intentionally excluded from every email. */
@@ -43,7 +46,7 @@ function ownerBody(lead: LeadRecord, booking?: AppointmentRecord, requested?: Ap
       ? `Requested: ${requestLabel(requested)}. That part of the day is held for them until ${formatEastern(requested.holdExpiresAt ?? requested.startsAt)} ET. Send a quote with the exact time from the Corsa Owner app, or call them.`
       : booking
         ? `Online booking for ${whenLabel(booking)}. Deposit ${formatUsd((booking.depositCents ?? 0) / 100)} paid.`
-        : `${LEAD_TYPE_LABEL[lead.leadType]} received ${formatEastern(lead.createdAt)} ET`,
+        : `${typeLabel(lead)} received ${formatEastern(lead.createdAt)} ET`,
     `Reference: ${shortRef(lead.id)}`,
     `Mode: ${lead.businessMode}`,
     "",
@@ -79,6 +82,7 @@ function ownerBody(lead: LeadRecord, booking?: AppointmentRecord, requested?: Ap
       `Estimate (${lead.estimate.pricingVersion}): ${lead.estimate.total !== null ? formatUsd(lead.estimate.total) : "custom quote"}`,
     );
   }
+  if (lead.estimate?.offer) lines.push(`Offer claimed: ${lead.estimate.offer}`);
   if (lead.notes) lines.push("", `Customer notes:`, lead.notes);
   if (lead.message) lines.push("", `Message:`, lead.message);
   if (lead.consent.priceAcknowledgedAt) {
@@ -98,6 +102,7 @@ function customerSubject(lead: LeadRecord, booking?: AppointmentRecord, requeste
   }
   switch (lead.leadType) {
     case "launch_list":
+      if (isOfferSignup(lead)) return `Your ${business.firstTimeOffer.percent}% off at ${business.brand.name}`;
       return `You're on the ${business.brand.name} launch list`;
     case "quote_request":
       return `${business.brand.name}: we received your request`;
@@ -151,13 +156,19 @@ function customerBody(lead: LeadRecord, requested?: AppointmentRecord) {
     membership_interest: `Thanks for your interest in a maintenance plan. Plans aren't available yet and nothing has been charged. We'll share details once pricing and terms are finalized.`,
     contact: `Thanks for getting in touch. We've received your message and will reply as soon as we can.`,
   };
-  const lines = [
-    `Hi ${lead.firstName},`,
-    "",
-    intro[lead.leadType],
-    "",
-    `Reference: ${shortRef(lead.id)}`,
-  ];
+  const offer = business.firstTimeOffer;
+  const lines = isOfferSignup(lead)
+    ? [
+        `Hi ${lead.firstName},`,
+        "",
+        `Thanks for signing up. Your first detail with ${business.brand.name} is ${offer.percent}% off.`,
+        "",
+        `Book here and the offer is already selected:`,
+        `${business.brand.canonicalDomain}/request?offer=first-time`,
+        "",
+        offer.terms,
+      ]
+    : [`Hi ${lead.firstName},`, "", intro[lead.leadType], "", `Reference: ${shortRef(lead.id)}`];
   if (lead.estimate && lead.leadType === "quote_request") {
     lines.push(
       "",

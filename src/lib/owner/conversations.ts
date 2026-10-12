@@ -14,6 +14,7 @@ import { getEmailAdapter } from "@/lib/email";
 import { conditionFlagLabel } from "@/lib/pricing";
 import { visibleReply } from "@/lib/inbound";
 import { deleteLeadPhotos } from "@/lib/photos";
+import { isOfferSignup } from "@/lib/leads/shared";
 import type { InboundEmailRecord, LeadRecord, LeadStore, OutboundEmailRecord } from "@/lib/leads/types";
 import { defaultEmailSubject, ownerSignature } from "@/lib/owner-email";
 import { summarize } from "./appointments";
@@ -35,6 +36,7 @@ function websiteText(l: LeadRecord): { title: string; text: string } {
         vehicle && `Vehicle: ${vehicle}`,
         l.serviceAddress && `Address: ${[l.serviceAddress, l.city, l.zip].filter(Boolean).join(", ")}`,
         l.preferredDate && `Preferred date: ${l.preferredDate}`,
+        l.estimate?.offer && `Offer claimed: ${l.estimate.offer}`,
         l.estimate?.needs?.length && `Customer checked: ${l.estimate.needs.join("; ")}`,
         l.conditionFlags.length > 0 && `Noted: ${l.conditionFlags.map(conditionFlagLabel).join(", ")}`,
         l.concerns && `Concerns: ${l.concerns}`,
@@ -43,6 +45,7 @@ function websiteText(l: LeadRecord): { title: string; text: string } {
       return { title: "Booking request", text: lines.join("\n") };
     }
     case "launch_list":
+      if (isOfferSignup(l)) return { title: "Signed up for the first-time offer", text: l.notes ?? "" };
       return { title: "Joined the launch list", text: service ? `Interested in: ${service}` : "" };
     default:
       return { title: "Maintenance plan interest", text: l.notes ?? "" };

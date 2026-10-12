@@ -139,6 +139,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
                       : null
                   }
                 />
+                <Row label="Offer claimed" value={lead.estimate?.offer} />
                 <Row label="Review notes" value={lead.estimate?.reviewNotes} />
               </dl>
             </section>

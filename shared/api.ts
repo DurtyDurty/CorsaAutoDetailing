@@ -134,6 +134,8 @@ export interface AppointmentDetail extends AppointmentSummary {
     condition: string | null;
     /** What the customer ticked in the "Not sure which package?" checklist. Optional: older servers don't send it. */
     needs?: string[];
+    /** Set when the customer claimed the first-time offer: the discount to take off in the quote. Optional like `needs`. */
+    offer?: string | null;
   };
   internalNotes: string | null;
   appointmentNotes: string | null;

@@ -24,6 +24,8 @@ export interface EstimateSnapshot {
   reviewNotes: string[];
   /** What the customer ticked in the "Not sure which package?" checklist, as shown to them. Absent when nothing was ticked. */
   needs?: string[];
+  /** Set when the customer claimed the first-time offer: what the owner should take off in the quote. Not included in `total`. */
+  offer?: string;
   taxNotice: string;
   finalQuoteNotice: string;
 }
@@ -37,6 +39,8 @@ export interface EstimateInput {
   conditionFlags?: string[];
   /** Ids from `business.packageNeeds`. Recorded only; never changes the price. */
   needIds?: string[];
+  /** The customer ticked the first-time offer. Recorded only; the owner applies it in the quote. */
+  firstTimeOffer?: boolean;
 }
 
 const CONDITION_FLAG_LABELS: Record<string, string> = {
@@ -99,9 +103,17 @@ export function computeEstimate(input: EstimateInput): EstimateSnapshot | null {
     requiresCustomQuote: false,
     reviewNotes,
     ...(needs.length > 0 && { needs }),
+    ...(input.firstTimeOffer && business.firstTimeOffer.enabled && { offer: firstTimeOfferNote(total) }),
     taxNotice: business.taxNotice,
     finalQuoteNotice: business.finalQuoteNotice,
   };
+}
+
+/** "First-time customer: 15% off (about $30 off the $200 starting price)". */
+export function firstTimeOfferNote(startingPrice: number): string {
+  const { percent } = business.firstTimeOffer;
+  const off = Math.round((startingPrice * percent) / 100);
+  return `First-time customer: ${percent}% off (about ${formatUsd(off)} off the ${formatUsd(startingPrice)} starting price)`;
 }
 
 export function formatUsd(amount: number): string {

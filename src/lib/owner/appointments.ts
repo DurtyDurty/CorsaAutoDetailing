@@ -142,6 +142,7 @@ export async function getAppointmentDetail(store: LeadStore, id: string): Promis
       conditionFlags: lead?.conditionFlags ?? [],
       condition: lead?.condition ?? null,
       needs: lead?.estimate?.needs ?? [],
+      offer: lead?.estimate?.offer ?? null,
     },
     internalNotes: lead?.internalNotes ?? null,
     appointmentNotes: a.notes,

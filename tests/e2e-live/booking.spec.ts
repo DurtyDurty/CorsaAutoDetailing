@@ -99,6 +99,37 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     await expect(finder.getByText("Selected below")).toBeVisible();
   });
 
+  test("the first-time offer pops up once per visit and carries into the booking form", async ({ page }) => {
+    await page.goto("/services");
+    const offer = page.getByRole("dialog", { name: "15% off your first detail" });
+    await expect(offer).toBeVisible();
+    await expect(offer.getByRole("img", { name: "Corsa Auto Detailing" })).toBeVisible();
+    if (process.env.OFFER_SHOTS) await page.screenshot({ path: `${process.env.OFFER_SHOTS}/offer-${test.info().project.name}.png` });
+    // Leaving an email saves the signup and sends the offer; then they can book with it selected.
+    const email = `${unique()}@example.com`;
+    await offer.getByLabel("First name").fill("Casey");
+    await offer.getByLabel("Email").fill(email);
+    await offer.getByRole("button", { name: "Send my 15% off" }).click();
+    await expect(page.getByRole("dialog", { name: "You're in." })).toBeVisible();
+    if (process.env.OFFER_SHOTS) await page.screenshot({ path: `${process.env.OFFER_SHOTS}/offer-joined-${test.info().project.name}.png` });
+    const { readFile } = await import("node:fs/promises");
+    const outbox = JSON.parse(await readFile(".data/demo-outbox.json", "utf8")) as { to: string; subject: string; text: string }[];
+    const sent = outbox.find((m) => m.to === email);
+    expect(sent?.subject).toBe("Your 15% off at Corsa Auto Detailing");
+    expect(sent?.text).toContain("/request?offer=first-time");
+    await page.getByRole("dialog").getByRole("link", { name: "Book with 15% off" }).click();
+    await expect(page).toHaveURL(/\/request\?offer=first-time$/);
+    await expect(offer).toHaveCount(0);
+    const form = page.getByRole("form", { name: "Service request" });
+    await expect(form.getByRole("checkbox", { name: /first-time customer/ })).toBeChecked();
+    await form.getByLabel("Service", { exact: true }).selectOption("platinum-full");
+    await expect(form.locator('[data-step="0"]').getByText(/First-time customer: 15% off \(about \$30 off the \$200 starting price\)/)).toBeVisible();
+    // Same visit, another page: it does not come back.
+    await page.goto("/about");
+    await page.waitForTimeout(2500);
+    await expect(offer).toHaveCount(0);
+  });
+
   test("a customer picks a day and part of the day (no times shown); it's held for the owner, nothing is paid", async ({ page }) => {
     const form = await fillVehicleAndCondition(page, "monthly-maintenance");
     // No time picked yet: can't continue.
@@ -137,6 +168,7 @@ test.describe("quotes: request, quote, accept (LIVE mode)", () => {
     await pickDayPart(page, "Morning");
     // What they tick in "Not sure which package?" (step 1, still in the form) is saved for the owner.
     await form.locator('input[name="needs"][value="rough-paint"]').evaluate((el: HTMLInputElement) => el.click());
+    await form.locator('input[name="firstTimeOffer"]').evaluate((el: HTMLInputElement) => el.click());
     await form.getByRole("button", { name: "Continue" }).click();
     const name = `Quote ${word()}`;
     const email = `${unique()}@example.com`;
@@ -157,6 +189,7 @@ test.describe("quotes: request, quote, accept (LIVE mode)", () => {
     await card.getByRole("link", { name: "Send quote" }).click();
     await expect(page).toHaveURL(/\/admin\/jobs\/[0-9a-f-]{36}#quote$/);
     await expect(page.getByText("Paint feels rough or gritty to the touch")).toBeVisible();
+    await expect(page.getByText("First-time customer: 15% off (about $23 off the $150 starting price)")).toBeVisible();
     const quote = page.getByRole("region", { name: "Quote" });
     await expect(quote.getByText("Customer asked for:")).toBeVisible();
     // The arrival time starts at the time held for the request (moving it is covered by unit tests).

@@ -1,5 +1,15 @@
 import type { AppointmentRecord, DashboardCounts, LeadFilter, LeadRecord } from "./types";
 
+/**
+ * Start of `notes` on an email signup that came from the first-time offer pop-up. Lead types are fixed by a
+ * database check, so these reuse the email-list type ("launch_list") and are told apart by this note.
+ */
+export const OFFER_SIGNUP_NOTE = "Signed up for the first-time customer offer";
+
+export function isOfferSignup(lead: Pick<LeadRecord, "leadType" | "notes">): boolean {
+  return lead.leadType === "launch_list" && Boolean(lead.notes?.startsWith(OFFER_SIGNUP_NOTE));
+}
+
 export function matchesFilter(lead: LeadRecord, filter: LeadFilter): boolean {
   if (!filter.includeArchived && lead.archivedAt) return false;
   if (filter.leadType) {

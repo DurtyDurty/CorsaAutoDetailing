@@ -102,6 +102,13 @@ export const launchListSchema = z.object({
   preferredContact: contactMethod.optional().or(z.literal("")).transform((v) => v || null),
 });
 
+/** First-time offer pop-up: a name and an email, nothing else. Signing up is the consent to be emailed. */
+export const offerSignupSchema = z.object({
+  ...meta,
+  firstName,
+  email: emailSchema,
+});
+
 export const contactSchema = z.object({
   ...meta,
   ...consentFields,
@@ -144,6 +151,10 @@ const quoteRequestFields = z
     serviceId: z.enum(serviceIds, { message: "Choose a service." }),
     // "Not sure which package?" checklist; optional, kept for the owner.
     needs: arrayField(z.enum(needIds)).default([]),
+    firstTimeOffer: z
+      .string()
+      .optional()
+      .transform((v) => v === "on"),
     vehicleYear: z
       .string({ message: "Enter the vehicle year." })
       .trim()

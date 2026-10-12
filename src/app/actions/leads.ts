@@ -9,6 +9,7 @@ import { todayEastern } from "@/lib/time";
 import { SlotTakenError, type LeadRecord, type LeadStore, type NewLead } from "@/lib/leads/types";
 import { getPaymentAdapter } from "@/lib/payments";
 import { intake, baseLead, type IntakeResult } from "@/lib/leads/intake";
+import { OFFER_SIGNUP_NOTE } from "@/lib/leads/shared";
 import { getLeadStore } from "@/lib/leads/store";
 import { photosEnabled, storeLeadPhotos } from "@/lib/photos";
 import { computeEstimate } from "@/lib/pricing";
@@ -18,6 +19,7 @@ import {
   contactSchema,
   launchListSchema,
   membershipInterestSchema,
+  offerSignupSchema,
   quoteRequestSchema,
   bookingRequestSchema,
   calendarRequestSchema,
@@ -43,6 +45,21 @@ export async function submitLaunchList(_prev: FormResult | null, formData: FormD
     }),
   });
   return withRedirect(result, "launch-list");
+}
+
+/** Email signup from the first-time offer pop-up. Saved on the email list; the customer is emailed the booking link. */
+export async function submitOfferSignup(_prev: FormResult | null, formData: FormData): Promise<FormResult> {
+  const offer = business.firstTimeOffer;
+  if (!offer.enabled) return { status: "unavailable", message: "This offer isn't available right now." };
+  return intake({
+    leadType: "launch_list",
+    schema: offerSignupSchema,
+    formData,
+    build: (d) => ({
+      ...baseLead("launch_list", { ...d, marketingEmail: true }),
+      notes: `${OFFER_SIGNUP_NOTE} (${offer.percent}% off the first detail).`,
+    }),
+  });
 }
 
 export async function submitContact(_prev: FormResult | null, formData: FormData): Promise<FormResult> {
@@ -116,6 +133,7 @@ function buildQuoteLead(d: QuoteRequestInput): NewLead {
       condition: d.condition,
       conditionFlags: d.conditionFlags,
       needIds: d.needs,
+      firstTimeOffer: d.firstTimeOffer,
     }),
   };
 }

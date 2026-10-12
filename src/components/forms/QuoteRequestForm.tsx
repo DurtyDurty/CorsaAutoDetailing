@@ -34,6 +34,7 @@ const CALENDAR_STEPS = ["Service & vehicle", "Condition", "Location & time", "Co
 const FIELD_STEP: Record<string, number> = {
   serviceId: 0,
   needs: 0,
+  firstTimeOffer: 0,
   vehicleYear: 0,
   vehicleMake: 0,
   vehicleModel: 0,
@@ -67,13 +68,23 @@ interface Props {
   earliestDate: string | null;
   photosEnabled: boolean;
   initialService?: string;
+  /** Arrived from the first-time offer pop-up: its checkbox starts ticked. */
+  firstTimeOffer?: boolean;
   /** Online booking: pick an open time and pay the deposit (LIVE + payments configured). */
   booking?: boolean;
   /** Deposits off: pick an open time, which is held for the owner to confirm. */
   calendar?: boolean;
 }
 
-export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialService, booking = false, calendar = false }: Props) {
+export function QuoteRequestForm({
+  mode,
+  earliestDate,
+  photosEnabled,
+  initialService,
+  firstTimeOffer = false,
+  booking = false,
+  calendar = false,
+}: Props) {
   const { onSubmit, pending, errors, message, onStart } = useLeadForm(
     booking ? submitBooking : calendar ? submitCalendarRequest : submitQuoteRequest,
     { formName: booking ? "booking" : calendar ? "calendar_request" : "quote_request", leadType: "quote_request" },
@@ -83,6 +94,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
   const pickTime = booking || calendar;
   const [step, setStep] = useState(0);
   const [serviceId, setServiceId] = useState(initialService ?? "");
+  const [firstTime, setFirstTime] = useState(firstTimeOffer);
 
   const [condition, setCondition] = useState("");
   const [flags, setFlags] = useState<string[]>([]);
@@ -106,8 +118,10 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
 
   const estimate = useMemo(
     () =>
-      serviceId ? computeEstimate({ serviceId, condition: condition as never, conditionFlags: flags }) : null,
-    [serviceId, condition, flags],
+      serviceId
+        ? computeEstimate({ serviceId, condition: condition as never, conditionFlags: flags, firstTimeOffer: firstTime })
+        : null,
+    [serviceId, condition, flags, firstTime],
   );
   const zipInfo = isValidZip(zip) ? lookupZip(zip) : null;
 
@@ -227,6 +241,21 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
             {(p) => <TextInput name="vehicleModel" placeholder="4Runner" required={step === 0} {...p} />}
           </Field>
         </div>
+        {business.firstTimeOffer.enabled && (
+          <label className="choice">
+            <input
+              type="checkbox"
+              name="firstTimeOffer"
+              className="checkbox"
+              checked={firstTime}
+              onChange={(e) => setFirstTime(e.target.checked)}
+            />
+            <span>
+              <span className="block font-medium leading-snug">{business.firstTimeOffer.checkboxLabel}</span>
+              <span className="block text-sm text-ink-muted mt-0.5">{business.firstTimeOffer.terms}</span>
+            </span>
+          </label>
+        )}
         <EstimatePanel estimate={estimate} mode={mode} compact />
       </div>
 
@@ -558,6 +587,7 @@ function EstimatePanel({
           ))}
         </ul>
       )}
+      {estimate.offer && <p className="mt-2 text-sm font-medium text-apex-deep">{estimate.offer}. Applied to your final quote.</p>}
       {!compact && estimate.reviewNotes.length > 0 && (
         <ul className="mt-3 text-sm text-ink-muted list-disc pl-5 space-y-1">
           {estimate.reviewNotes.map((n) => (

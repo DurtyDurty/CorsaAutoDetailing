@@ -73,6 +73,7 @@ export default async function RequestPage({ searchParams }: PageProps<"/request"
               earliestDate={earliestPreferenceDate()}
               photosEnabled={photosEnabled()}
               initialService={service}
+              firstTimeOffer={sp.offer === "first-time"}
               booking={booking}
               calendar={calendar}
             />
