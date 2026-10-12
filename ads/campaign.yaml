@@ -67,6 +67,13 @@ negative_keywords:
   - { text: kit, match: BROAD }
   - { text: kits, match: BROAD }
   - { text: products, match: BROAD }
+  # Added 2026-10-12: services Corsa doesn't offer yet (business.futureServices); "ppf" and "ceramic" searches had matched.
+  - { text: ppf, match: BROAD }
+  - { text: paint protection film, match: PHRASE }
+  - { text: ceramic, match: BROAD }
+  - { text: tint, match: BROAD }
+  - { text: tinting, match: BROAD }
+  - { text: paint correction, match: PHRASE }
 
 ad_groups:
   - name: Mobile Detailing

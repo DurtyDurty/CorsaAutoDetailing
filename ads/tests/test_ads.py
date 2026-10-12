@@ -252,7 +252,7 @@ class BuildTests(unittest.TestCase):
         sched = [c.ad_schedule for c in crit if c.ad_schedule.start_hour or c.ad_schedule.end_hour]
         self.assertEqual(len(sched), 7)
         self.assertTrue(all(s.start_hour == 8 and s.end_hour == 19 for s in sched))
-        self.assertEqual(sum(1 for c in crit if c.negative), 23)
+        self.assertEqual(sum(1 for c in crit if c.negative), 29)
 
     def test_keywords_and_ads(self):
         kws = self.kind("ad_group_criterion_operation")
@@ -322,6 +322,7 @@ class NegativeSuggestionTests(unittest.TestCase):
             self.row("how to detail a car interior"),
             self.row("jacksonville mobile detailing"),
             self.row("ceramic coating near me"),
+            self.row("car wrap near me"),
             self.row("detailing job openings", status="EXCLUDED"),
             self.row("mobile detailing near me", clicks=9, conv=2),
             self.row("car detailers green cove", clicks=6),
@@ -331,7 +332,8 @@ class NegativeSuggestionTests(unittest.TestCase):
         self.assertNotIn(("salary", "BROAD"), got, "already covered by the campaign's negatives")
         self.assertNotIn(("how to", "PHRASE"), got, "already covered")
         self.assertIn(("jacksonville", "PHRASE"), got)
-        self.assertIn(("ceramic", "PHRASE"), got)
+        self.assertNotIn(("ceramic", "PHRASE"), got, "already covered since 2026-10-12")
+        self.assertIn(("wrap", "PHRASE"), got)
         self.assertEqual([r.term for r in review], ["car detailers green cove"])
 
 
