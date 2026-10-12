@@ -7,6 +7,7 @@ import { formatServicePrice, formatUsd, sizePrices } from "@/lib/pricing";
 import { track } from "@/lib/analytics";
 import { Arrow } from "@/components/ui/Button";
 import { Field } from "@/components/forms/primitives";
+import { PackageFinder } from "@/components/forms/PackageFinder";
 import { ServiceIncludes, ServiceSelect } from "@/components/forms/ServiceSelect";
 import { cn } from "@/lib/utils";
 
@@ -19,21 +20,19 @@ export function InstantQuote({ className }: { className?: string }) {
   const service = getService(serviceId);
   const sizes = service ? sizePrices(service) : null;
 
+  function choose(id: string) {
+    setServiceId(id);
+    if (id) track("pricing_vehicle_selected", { service: id });
+  }
+
   return (
     <div className={cn("border border-line bg-white rounded-sm p-6 sm:p-8", className)}>
-      <Field name="quoteService" label="Service">
-        {(p) => (
-          <ServiceSelect
-            name="quoteService"
-            value={serviceId}
-            onChange={(e) => {
-              setServiceId(e.target.value);
-              if (e.target.value) track("pricing_vehicle_selected", { service: e.target.value });
-            }}
-            {...p}
-          />
-        )}
-      </Field>
+      <PackageFinder selected={serviceId} onChoose={choose} />
+      <div className="mt-5">
+        <Field name="quoteService" label="Service">
+          {(p) => <ServiceSelect name="quoteService" value={serviceId} onChange={(e) => choose(e.target.value)} {...p} />}
+        </Field>
+      </div>
 
       <div className="mt-6 border-t border-line pt-6" aria-live="polite">
         {service ? (

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { InspectionDisclaimer } from "@/components/site/Disclosures";
 import { SlotPicker } from "./SlotPicker";
 import { DayPartPicker } from "./DayPartPicker";
+import { PackageFinder } from "./PackageFinder";
 import { ServiceIncludes, ServiceSelect } from "./ServiceSelect";
 import {
   ChoiceGroup,
@@ -191,6 +192,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
 
       {/* Step 1 */}
       <div data-step="0" hidden={step !== 0} className="flex flex-col gap-5">
+        <PackageFinder selected={serviceId} onChoose={setServiceId} />
         <Field name="serviceId" label="Service" error={errors.serviceId}>
           {(p) => (
             <ServiceSelect

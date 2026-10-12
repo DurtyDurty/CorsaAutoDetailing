@@ -63,6 +63,15 @@ export interface ServiceDefinition {
   billing: "visit" | "monthly";
 }
 
+/** One line of the "Not sure which package?" checklist. */
+export interface PackageNeed {
+  id: string;
+  /** Written from the customer's side: what the car needs, not what we do. */
+  label: string;
+  /** The lowest package that covers this need. */
+  service: ServiceId;
+}
+
 /** Extra work quoted as a range and confirmed at inspection. Never added to an online estimate automatically. */
 export interface AdditionalService {
   id: string;
@@ -270,6 +279,21 @@ export const business = {
       billing: "monthly",
     },
   ] satisfies ServiceDefinition[],
+  /**
+   * Checklist in the package picker (owner idea, 2026-10-11): the customer checks what the car needs and
+   * the form recommends a package (see `recommendService`). Only list needs a package really covers.
+   */
+  packageNeeds: [
+    { id: "quick-clean", label: "A quick wash and interior tidy-up", service: "basic-full" },
+    { id: "wheels", label: "Wheels and tires need a deep clean", service: "signature-full" },
+    { id: "interior", label: "Interior needs a full vacuum and wipe-down", service: "signature-full" },
+    { id: "shine", label: "Paint needs shine and protection", service: "signature-full" },
+    { id: "rough-paint", label: "Paint feels rough or gritty to the touch", service: "platinum-full" },
+    { id: "lasting-wax", label: "Wax protection that lasts about 4 weeks", service: "platinum-full" },
+    { id: "deep-interior", label: "Interior needs a deep clean and sanitizing", service: "platinum-full" },
+    { id: "monthly", label: "I want it kept clean every month", service: "monthly-maintenance" },
+  ] satisfies PackageNeed[],
+
   /** Owner-approved fixed-price add-ons that the online estimate may add. None approved yet. */
   addOns: [] as FixedAddOn[],
 

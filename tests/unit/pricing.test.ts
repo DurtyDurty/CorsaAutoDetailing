@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { business, getService } from "@/config/business";
-import { computeEstimate, formatServicePrice, groupStartingPrice, sizePrices } from "@/lib/pricing";
+import { computeEstimate, formatServicePrice, groupStartingPrice, recommendService, sizePrices } from "@/lib/pricing";
 
 describe("computeEstimate", () => {
   it("returns each package's one starting price", () => {
@@ -60,6 +60,22 @@ describe("computeEstimate", () => {
     expect(ladder("platinum-full")).toEqual(["Sedan 200", "SUV 225", "Truck 250"]);
     expect(getService("signature-interior")).toBeUndefined();
     expect(sizePrices(getService("monthly-maintenance")!)).toBeNull();
+  });
+
+  it("recommends the highest package the checked needs call for", () => {
+    const pick = (...ids: string[]) => {
+      const r = recommendService(ids);
+      return r && [r.service.id, r.followUp?.id ?? null];
+    };
+    expect(pick()).toBeNull();
+    expect(pick("bogus")).toBeNull();
+    expect(pick("quick-clean")).toEqual(["basic-full", null]);
+    expect(pick("quick-clean", "wheels")).toEqual(["signature-full", null]);
+    expect(pick("interior", "rough-paint")).toEqual(["platinum-full", null]);
+    expect(pick("monthly")).toEqual(["monthly-maintenance", null]);
+    expect(pick("monthly", "shine")).toEqual(["monthly-maintenance", null]);
+    expect(pick("monthly", "deep-interior")).toEqual(["platinum-full", "monthly-maintenance"]);
+    for (const n of business.packageNeeds) expect(getService(n.service), n.id).toBeDefined();
   });
 
   it("returns null for an unknown service", () => {

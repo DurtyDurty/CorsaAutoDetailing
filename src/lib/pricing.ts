@@ -128,6 +128,20 @@ export function sizePrices(service: Pick<ServiceDefinition, "price" | "sizeStep"
   return business.vehicleSizes.map((size, i) => ({ size, price: service.price + step * i }));
 }
 
+/**
+ * Package to recommend for the checked `business.packageNeeds`: the highest per-visit package any of them
+ * points to. A monthly need recommends the monthly package instead, unless something checked needs the top
+ * package; then the top package comes first and the monthly one is offered as the follow-up.
+ */
+export function recommendService(needIds: string[]): { service: ServiceDefinition; followUp: ServiceDefinition | null } | null {
+  const wanted = business.packageNeeds.filter((n) => needIds.includes(n.id)).map((n) => getService(n.service));
+  const visits = business.services.filter((s) => s.billing === "visit");
+  const monthly = wanted.find((s) => s?.billing === "monthly") ?? null;
+  const top = Math.max(-1, ...wanted.map((s) => visits.findIndex((v) => v.id === s?.id)));
+  if (monthly && top < visits.length - 1) return { service: monthly, followUp: null };
+  return top < 0 ? null : { service: visits[top], followUp: monthly };
+}
+
 /** Lowest per-visit starting price in a package group, for "from $125" style copy. */
 export function groupStartingPrice(group: ServiceDefinition["group"]): number {
   return Math.min(...business.services.filter((s) => s.group === group && s.billing === "visit").map((s) => s.price));

@@ -83,6 +83,22 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     if (!isMobile) await expect(page.getByRole("banner").getByRole("link", { name: "Book a detail" })).toBeVisible();
   });
 
+  test("checking what the car needs recommends a package and puts it in the drop-down", async ({ page }) => {
+    await page.goto("/request");
+    const form = page.getByRole("form", { name: "Service request" });
+    const finder = form.locator("details");
+    await finder.getByText(/Not sure which package/).click();
+    await finder.getByRole("checkbox", { name: /quick wash/ }).check();
+    await expect(finder.getByText("Basic Package · from $90")).toBeVisible();
+    await finder.getByRole("checkbox", { name: /Paint feels rough/ }).check();
+    await expect(finder.getByText("Signature Full Detail · from $200")).toBeVisible();
+    await finder.getByRole("button", { name: "Choose this package" }).click();
+    await expect(form.getByLabel("Service", { exact: true })).toHaveValue("platinum-full");
+    await expect(form.getByText("Everything in Essential Full Detail, plus:")).toBeVisible();
+    await expect(form.getByText("4-week paint sealant wax")).toBeVisible();
+    await expect(finder.getByText("Selected below")).toBeVisible();
+  });
+
   test("a customer picks a day and part of the day (no times shown); it's held for the owner, nothing is paid", async ({ page }) => {
     const form = await fillVehicleAndCondition(page, "monthly-maintenance");
     // No time picked yet: can't continue.
