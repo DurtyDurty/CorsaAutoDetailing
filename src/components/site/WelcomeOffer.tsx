@@ -95,12 +95,23 @@ function OfferBanner({ onClose }: { onClose: () => void }) {
         {/* Brand panel: logo and the number. */}
         <div className="on-dark relative flex flex-col overflow-hidden bg-asphalt text-chalk">
           <div className="grid-lines absolute inset-0" aria-hidden="true" />
-          <div className="relative flex flex-1 items-center justify-between gap-4 py-3 pl-6 pr-14 sm:flex-col sm:items-start sm:p-8">
+          <div className="relative flex flex-1 items-center justify-between gap-4 py-3 pl-6 pr-14 sm:flex-col sm:items-center sm:p-8">
             <Wordmark onDark asLink={false} className="[&_img]:h-6 sm:[&_img]:h-8" />
-            <p className="font-display italic font-extrabold leading-[0.8]" aria-hidden="true">
-              <span className="text-4xl sm:text-[9rem]">{offer.percent}</span>
-              <span className="text-2xl text-apex sm:text-7xl">%</span>
-              <span className="hidden sm:mt-3 sm:block sm:text-6xl">Off</span>
+            <p
+              className="flex items-baseline gap-2 font-display italic font-extrabold leading-[0.8] sm:flex-col sm:items-center sm:gap-4"
+              aria-hidden="true"
+            >
+              <span>
+                <span className="text-4xl sm:text-[9rem]">{offer.percent}</span>
+                <span className="text-2xl text-apex sm:text-7xl">%</span>
+              </span>
+              {/* "OFF" races away and back (globals.css); the smoke stays on the start line. */}
+              <span className="relative text-2xl sm:text-6xl">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <span key={i} className="offer-smoke" />
+                ))}
+                <span className="offer-off-word">Off</span>
+              </span>
             </p>
             <p className="hidden font-mono text-[0.7rem] uppercase tracking-[0.18em] text-chalk/65 sm:block">Your first detail</p>
           </div>

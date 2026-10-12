@@ -104,6 +104,11 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     const offer = page.getByRole("dialog", { name: "10% off your first detail" });
     await expect(offer).toBeVisible();
     await expect(offer.getByRole("img", { name: "Corsa Auto Detailing" })).toBeVisible();
+    // OFFER_SHOTS: frames of the "OFF" launch animation, then the banner at rest.
+    for (let i = 0; process.env.OFFER_SHOTS && i < 7; i++) {
+      await page.screenshot({ path: `${process.env.OFFER_SHOTS}/offer-${test.info().project.name}-${i}.png` });
+      await page.waitForTimeout(300);
+    }
     if (process.env.OFFER_SHOTS) await page.screenshot({ path: `${process.env.OFFER_SHOTS}/offer-${test.info().project.name}.png` });
     // Leaving an email saves the signup and sends the offer; then they can book with it selected.
     const email = `${unique()}@example.com`;
