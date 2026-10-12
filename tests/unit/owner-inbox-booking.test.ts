@@ -329,10 +329,10 @@ describe("booking from the app", () => {
     const t = await token();
     const date = await nextTuesday();
     const base = { customer: { new: newCustomer }, serviceId: "signature-full", date, durationMinutes: 120, priceCents: 17900, sendConfirmation: false };
-    expect((await r.appointments.POST(req("/appointments", { method: "POST", token: t, body: { ...base, requestId: crypto.randomUUID(), time: "09:00" } }))).status).toBe(201);
-    // 10:30 starts inside the first job's 11:00 end + 45-minute buffer.
+    expect((await r.appointments.POST(req("/appointments", { method: "POST", token: t, body: { ...base, requestId: crypto.randomUUID(), time: "10:00" } }))).status).toBe(201);
+    // 11:30 starts inside the first job's 12:00 end + 45-minute buffer.
     const clash = await r.appointments.POST(
-      req("/appointments", { method: "POST", token: t, body: { ...base, requestId: crypto.randomUUID(), time: "10:30", override: true } }),
+      req("/appointments", { method: "POST", token: t, body: { ...base, requestId: crypto.randomUUID(), time: "11:30", override: true } }),
     );
     expect(clash.status).toBe(409);
     const err = (await clash.json()) as { error: { message: string; fields?: Record<string, string> } };

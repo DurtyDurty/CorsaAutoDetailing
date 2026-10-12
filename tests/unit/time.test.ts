@@ -42,11 +42,14 @@ describe("Eastern time helpers", () => {
   });
 
   it("enforces work hours and days in Eastern time", () => {
-    const wedMorning = easternToUtc("2026-07-01", "08:00");
+    const wedMorning = easternToUtc("2026-07-01", "10:00");
     expect(withinWorkHours(wedMorning, new Date(wedMorning.getTime() + 2 * 3600_000)).ok).toBe(true);
     const wedEvening = easternToUtc("2026-07-01", "17:00");
     expect(withinWorkHours(wedEvening, new Date(wedEvening.getTime() + 2 * 3600_000)).ok).toBe(false);
+    // Every day is a work day since 2026-10-12; the day starts at 9:30.
     const sunday = easternToUtc("2026-07-05", "10:00");
-    expect(withinWorkHours(sunday, new Date(sunday.getTime() + 3600_000)).ok).toBe(false);
+    expect(withinWorkHours(sunday, new Date(sunday.getTime() + 3600_000)).ok).toBe(true);
+    const early = easternToUtc("2026-07-01", "08:00");
+    expect(withinWorkHours(early, new Date(early.getTime() + 3600_000)).ok).toBe(false);
   });
 });

@@ -261,11 +261,12 @@ test.describe("owner dashboard laid out like the app (LIVE mode)", () => {
     await page.getByLabel("ZIP").fill("32068");
     await page.getByLabel("Service", { exact: true }).selectOption("platinum-full");
     await expect(page.getByLabel("Price ($)")).toHaveValue("200");
-    // A free Tuesday: each project and run picks its own week and hour so they never collide.
+    // A free day: each project and run picks its own week and weekday so they never collide
+    // (a 5-hour job has to start by noon to finish inside working hours, so two don't fit in one day).
     const d = new Date(Date.now() + (8 + 7 * Math.floor(Math.random() * 20)) * 86400_000);
-    while (d.getUTCDay() !== 2) d.setUTCDate(d.getUTCDate() + 1);
+    while (d.getUTCDay() !== (testInfo.project.name.includes("mobile") ? 2 : 3)) d.setUTCDate(d.getUTCDate() + 1);
     await page.getByLabel("Date").fill(d.toISOString().slice(0, 10));
-    await page.getByLabel("Time (Eastern)").fill(testInfo.project.name.includes("mobile") ? "08:00" : "12:30");
+    await page.getByLabel("Time (Eastern)").fill("09:30");
     await page.getByRole("button", { name: "Book appointment" }).click();
 
     await expect(page).toHaveURL(/\/admin\/jobs\/[0-9a-f-]{36}\?ok=/);

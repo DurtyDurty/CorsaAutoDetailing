@@ -200,8 +200,8 @@ describe("sending a quote", () => {
     expect(appt.notes).toBe("Morning, around 9:30");
     const { getAppointmentDetail } = await import("@/lib/owner/appointments");
     const detail = await getAppointmentDetail(await store(), appt.id);
-    expect(detail).toMatchObject({ requested: "Morning, around 9:30", quoteDraft: { requested: "Morning, around 9:30", arrivalTime: "08:00" } });
-    expect(detail.quoteDraft!.arrivalOptions).toContain("09:30");
+    expect(detail).toMatchObject({ requested: "Morning, around 9:30", quoteDraft: { requested: "Morning, around 9:30", arrivalTime: "09:30" } });
+    expect(detail.quoteDraft!.arrivalOptions).toContain("10:30");
     const ack = (await outbox()).find((m) => m.to === "dana@example.com")!;
     expect(ack.text).toContain("morning, around 9:30");
 
@@ -219,20 +219,20 @@ describe("sending a quote", () => {
   it("sets the exact arrival time as the quote goes out, and refuses one that overlaps another job", async () => {
     const appt = await request("dana@example.com", { dayPart: "morning", preferredTime: "around 9:30" });
     const t = await ownerToken();
-    const moved = await sendQuote(appt.id, { arrivalTime: "09:30" }, t);
+    const moved = await sendQuote(appt.id, { arrivalTime: "10:00" }, t);
     expect(moved.status).toBe(200);
     const job = (await (await store()).getAppointment(appt.id))!;
     const { formatEastern } = await import("@/lib/time");
-    expect(formatEastern(job.startsAt, { dateStyle: undefined, timeStyle: "short" })).toBe("9:30 AM");
+    expect(formatEastern(job.startsAt, { dateStyle: undefined, timeStyle: "short" })).toBe("10:00 AM");
     expect(Date.parse(job.endsAt) - Date.parse(job.startsAt)).toBe(Date.parse(appt.endsAt) - Date.parse(appt.startsAt));
-    expect(moved.body.appointment.events.some((e) => e.type === "rescheduled" && e.note?.includes("9:30"))).toBe(true);
+    expect(moved.body.appointment.events.some((e) => e.type === "rescheduled" && e.note?.includes("10:00"))).toBe(true);
 
     // The owner's own job that afternoon; a quote moving the request onto it is refused.
     const s = await store();
     const { easternToUtc } = await import("@/lib/time");
     const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(job.startsAt));
     await s.createAppointment({ leadId: appt.leadId, startsAt: easternToUtc(day, "16:00").toISOString(), endsAt: easternToUtc(day, "17:00").toISOString(), status: "confirmed", quotedPriceCents: 1000, customerAgreed: true, completedRevenueCents: null, notes: null, source: "owner", serviceId: null, depositCents: null, depositStatus: "none", checkoutSessionId: null, paymentIntentId: null, holdExpiresAt: null, bufferMinutes: 45 });
-    const clash = await sendQuote(appt.id, { arrivalTime: "13:00" }, t);
+    const clash = await sendQuote(appt.id, { arrivalTime: "12:00" }, t);
     expect(clash.status).toBe(409);
     expect((await s.getAppointment(appt.id))!.startsAt).toBe(job.startsAt);
   });

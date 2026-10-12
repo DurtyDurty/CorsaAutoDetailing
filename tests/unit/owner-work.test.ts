@@ -101,14 +101,14 @@ describe("working a job", () => {
   it("reschedules into a nearby slot without clashing with itself, refuses another job's time, and emails the new time", async () => {
     const r = await routes();
     const t = await token();
-    const a = await book(t, "09:00");
+    const a = await book(t, "10:00");
     const b = await book(t, "14:00", "pat@example.com");
     const date = await nextTuesday();
     const move = (id: string, time: string, requestId = crypto.randomUUID()) =>
       r.reschedule.POST(req(`/appointments/${id}/reschedule`, { method: "POST", token: t, body: { requestId, date, time, durationMinutes: 120 } }), params({ id }));
 
-    // 09:30 overlaps only its own old 09:00 slot.
-    const ok = await move(a.id, "09:30");
+    // 10:30 overlaps only its own old 10:00 slot.
+    const ok = await move(a.id, "10:30");
     expect(ok.status).toBe(200);
     const body = (await ok.json()) as WorkResponse;
     expect(body.customerEmail.status).toBe("sent");
@@ -124,7 +124,7 @@ describe("working a job", () => {
   it("records payments into the balance, once per tap, and refuses refunds above what was collected", async () => {
     const r = await routes();
     const t = await token();
-    const a = await book(t, "09:00");
+    const a = await book(t, "10:00");
     const pay = (body: Record<string, unknown>) =>
       r.payments.POST(req(`/appointments/${a.id}/payments`, { method: "POST", token: t, body }), params({ id: a.id }));
 
@@ -146,7 +146,7 @@ describe("working a job", () => {
   it("sends a receipt only after something was paid, and keeps private notes in the history", async () => {
     const r = await routes();
     const t = await token();
-    const a = await book(t, "09:00");
+    const a = await book(t, "10:00");
     const receipt = () => r.receipt.POST(req(`/appointments/${a.id}/receipt`, { method: "POST", token: t, body: { requestId: crypto.randomUUID() } }), params({ id: a.id }));
     expect((await receipt()).status).toBe(409);
 

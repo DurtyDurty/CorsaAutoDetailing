@@ -459,19 +459,19 @@ export const business = {
   promotions: [] as { title: string; detail: string }[],
 
   scheduling: {
-    /** Owner-defined default work hours in Eastern time, 24h clock. */
-    workHours: { start: "08:00", end: "18:00" },
+    /** Owner's hours in Eastern time, 24h clock (2026-10-12: 9:30 AM to 5 PM, every day). Jobs must finish by the end. */
+    workHours: { start: "09:30", end: "17:00" },
     /** 0 = Sunday … 6 = Saturday */
-    workDays: [1, 2, 3, 4, 5, 6],
+    workDays: [0, 1, 2, 3, 4, 5, 6],
     /** Minutes reserved between confirmed appointments for travel and setup. */
     travelBufferMinutes: 45,
     /** Default appointment duration used for conflict checks until validated. */
     defaultDurationMinutes: 120,
     timeWindows: [
-      { id: "weekday-morning", label: "Weekday mornings (8-11am)" },
-      { id: "weekday-midday", label: "Weekday midday (11am-2pm)" },
-      { id: "weekday-afternoon", label: "Weekday afternoons (2-6pm)" },
-      { id: "saturday", label: "Saturdays" },
+      { id: "weekday-morning", label: "Weekday mornings (9:30am-12pm)" },
+      { id: "weekday-midday", label: "Weekday midday (12-2pm)" },
+      { id: "weekday-afternoon", label: "Weekday afternoons (2-5pm)" },
+      { id: "saturday", label: "Weekends" },
       { id: "flexible", label: "Flexible (whatever is open)" },
     ],
   },
@@ -503,7 +503,7 @@ export const business = {
      * visit still blocks its full length plus travel. Empty = every interval all day.
      */
     arrivalWindows: [
-      { id: "morning", label: "Morning", from: "08:00", to: "11:00" },
+      { id: "morning", label: "Morning", from: "09:30", to: "11:30" },
       { id: "afternoon", label: "Afternoon", from: "12:00", to: "15:00" },
     ] as { id: string; label: string; from: string; to: string }[],
     /** Earliest bookable day = today + minDaysAhead (Eastern). */
