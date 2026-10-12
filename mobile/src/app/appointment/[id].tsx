@@ -228,6 +228,7 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
       <Card style={styles.card}>
         <Text variant="label">Job</Text>
         <Row label="Vehicle" value={vehicle ? `${vehicle}${a.vehicle.sizeLabel ? ` (${a.vehicle.sizeLabel})` : ""}` : null} />
+        <Row label="Customer checked" value={a.customerNotes.needs?.join("; ") || null} />
         <Row label="Condition" value={a.customerNotes.condition} />
         <Row label="Noted" value={a.customerNotes.conditionFlags.join(", ") || null} />
         <Row label="Concerns" value={a.customerNotes.concerns} />

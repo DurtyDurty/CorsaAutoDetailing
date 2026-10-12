@@ -70,6 +70,13 @@ describe("launchListSchema", () => {
 });
 
 describe("quoteRequestSchema", () => {
+  it("keeps the needs the customer ticked, one or several", () => {
+    const one = quoteRequestSchema.safeParse(formDataToObject(fd({ ...validQuote, needs: "wheels" })));
+    expect(one.success && one.data.needs).toEqual(["wheels"]);
+    const two = quoteRequestSchema.safeParse(formDataToObject(fd({ ...validQuote, needs: ["wheels", "rough-paint"] })));
+    expect(two.success && two.data.needs).toEqual(["wheels", "rough-paint"]);
+  });
+
   it("accepts a valid request", () => {
     const r = quoteRequestSchema.safeParse(formDataToObject(fd(validQuote)));
     expect(r.success, JSON.stringify(!r.success && r.error.issues)).toBe(true);
@@ -79,6 +86,7 @@ describe("quoteRequestSchema", () => {
       expect(r.data.email).toBe("owner@example.com");
       expect(r.data.phone).toBe("9045550100");
       expect(r.data.serviceAddress).toBe("123 Main St");
+      expect(r.data.needs).toEqual([]);
     }
   });
   it("requires a phone number", () => {

@@ -135,6 +135,8 @@ test.describe("quotes: request, quote, accept (LIVE mode)", () => {
     // A customer requests a time on the website.
     const form = await fillVehicleAndCondition(page, "monthly-maintenance");
     await pickDayPart(page, "Morning");
+    // What they tick in "Not sure which package?" (step 1, still in the form) is saved for the owner.
+    await form.locator('input[name="needs"][value="rough-paint"]').evaluate((el: HTMLInputElement) => el.click());
     await form.getByRole("button", { name: "Continue" }).click();
     const name = `Quote ${word()}`;
     const email = `${unique()}@example.com`;
@@ -154,6 +156,7 @@ test.describe("quotes: request, quote, accept (LIVE mode)", () => {
     const card = page.locator("article", { hasText: name });
     await card.getByRole("link", { name: "Send quote" }).click();
     await expect(page).toHaveURL(/\/admin\/jobs\/[0-9a-f-]{36}#quote$/);
+    await expect(page.getByText("Paint feels rough or gritty to the touch")).toBeVisible();
     const quote = page.getByRole("region", { name: "Quote" });
     await expect(quote.getByText("Customer asked for:")).toBeVisible();
     // The arrival time starts at the time held for the request (moving it is covered by unit tests).

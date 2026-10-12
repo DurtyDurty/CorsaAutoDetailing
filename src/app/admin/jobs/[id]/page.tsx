@@ -145,6 +145,7 @@ export default async function JobPage({ params, searchParams }: PageProps<"/admi
         <Card title="Job">
           <dl className="flex flex-col gap-1.5">
             <Row label="Vehicle" value={vehicle ? `${vehicle}${a.vehicle.sizeLabel ? ` (${a.vehicle.sizeLabel})` : ""}` : null} />
+            <Row label="Customer checked" value={a.customerNotes.needs?.join("; ")} />
             <Row label="Condition" value={a.customerNotes.condition} />
             <Row label="Noted" value={a.customerNotes.conditionFlags.map(conditionFlagLabel).join(", ")} />
             <Row label="Concerns" value={a.customerNotes.concerns} />

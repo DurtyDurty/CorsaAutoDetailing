@@ -7,13 +7,16 @@ import { Button } from "@/components/ui/Button";
 
 /**
  * "Not sure which package?" The customer checks what the car needs and gets one recommended package,
- * which a button puts into the package drop-down. The checkboxes have no `name`, so they are never submitted.
+ * which a button puts into the package drop-down. With `name`, the ticked needs are submitted with the form.
  */
 export function PackageFinder({
   selected,
   onChoose,
   showPrices = true,
+  name,
 }: {
+  /** Set inside a form that saves the ticked needs with the request; leave unset elsewhere. */
+  name?: string;
   /** The package currently in the drop-down. */
   selected: string;
   onChoose: (serviceId: string) => void;
@@ -33,6 +36,8 @@ export function PackageFinder({
               <input
                 type="checkbox"
                 className="checkbox"
+                name={name}
+                value={n.id}
                 checked={needs.includes(n.id)}
                 onChange={() => setNeeds((v) => (v.includes(n.id) ? v.filter((x) => x !== n.id) : [...v, n.id]))}
               />

@@ -33,6 +33,7 @@ const CALENDAR_STEPS = ["Service & vehicle", "Condition", "Location & time", "Co
 /** Which step each server-validated field lives on, so errors jump to the right place. */
 const FIELD_STEP: Record<string, number> = {
   serviceId: 0,
+  needs: 0,
   vehicleYear: 0,
   vehicleMake: 0,
   vehicleModel: 0,
@@ -192,7 +193,7 @@ export function QuoteRequestForm({ mode, earliestDate, photosEnabled, initialSer
 
       {/* Step 1 */}
       <div data-step="0" hidden={step !== 0} className="flex flex-col gap-5">
-        <PackageFinder selected={serviceId} onChoose={setServiceId} />
+        <PackageFinder name="needs" selected={serviceId} onChoose={setServiceId} />
         <Field name="serviceId" label="Service" error={errors.serviceId}>
           {(p) => (
             <ServiceSelect

@@ -76,6 +76,11 @@ describe("computeEstimate", () => {
     expect(pick("monthly", "shine")).toEqual(["monthly-maintenance", null]);
     expect(pick("monthly", "deep-interior")).toEqual(["platinum-full", "monthly-maintenance"]);
     for (const n of business.packageNeeds) expect(getService(n.service), n.id).toBeDefined();
+    // Ticked needs are saved with the estimate, in the customer's wording, and never change the price.
+    const e = computeEstimate({ serviceId: "basic-full", needIds: ["rough-paint", "bogus"] });
+    expect(e?.needs).toEqual(["Paint feels rough or gritty to the touch"]);
+    expect(e?.total).toBe(90);
+    expect(computeEstimate({ serviceId: "basic-full" })).not.toHaveProperty("needs");
   });
 
   it("returns null for an unknown service", () => {

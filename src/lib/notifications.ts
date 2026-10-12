@@ -66,6 +66,7 @@ function ownerBody(lead: LeadRecord, booking?: AppointmentRecord, requested?: Ap
       `Condition: ${lead.condition}${lead.conditionFlags.length ? `. Flags: ${lead.conditionFlags.join(", ")}` : ""}`,
     );
   }
+  if (lead.estimate?.needs?.length) lines.push(`Customer checked: ${lead.estimate.needs.join("; ")}`);
   if (lead.concerns) lines.push(`Concerns: ${lead.concerns}`);
   if (lead.locationType) lines.push(`Location: ${lead.locationType}`);
   if (lead.timeWindows.length) lines.push(`Preferred windows: ${lead.timeWindows.join(", ")}`);

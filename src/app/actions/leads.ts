@@ -115,6 +115,7 @@ function buildQuoteLead(d: QuoteRequestInput): NewLead {
       serviceId: d.serviceId,
       condition: d.condition,
       conditionFlags: d.conditionFlags,
+      needIds: d.needs,
     }),
   };
 }

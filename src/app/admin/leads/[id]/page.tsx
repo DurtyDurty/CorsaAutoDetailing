@@ -128,6 +128,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
                 <Row label="Category" value={lead.vehicleCategory ? getVehicleCategory(lead.vehicleCategory)?.label : null} />
                 <Row label="Vehicle" value={[lead.vehicleYear, lead.vehicleMake, lead.vehicleModel].filter(Boolean).join(" ")} />
                 <Row label="Condition" value={lead.condition} />
+                <Row label="Customer checked" value={lead.estimate?.needs} />
                 <Row label="Flags" value={lead.conditionFlags} />
                 <Row label="Concerns" value={lead.concerns} />
                 <Row

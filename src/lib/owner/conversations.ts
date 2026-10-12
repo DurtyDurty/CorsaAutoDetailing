@@ -35,6 +35,7 @@ function websiteText(l: LeadRecord): { title: string; text: string } {
         vehicle && `Vehicle: ${vehicle}`,
         l.serviceAddress && `Address: ${[l.serviceAddress, l.city, l.zip].filter(Boolean).join(", ")}`,
         l.preferredDate && `Preferred date: ${l.preferredDate}`,
+        l.estimate?.needs?.length && `Customer checked: ${l.estimate.needs.join("; ")}`,
         l.conditionFlags.length > 0 && `Noted: ${l.conditionFlags.map(conditionFlagLabel).join(", ")}`,
         l.concerns && `Concerns: ${l.concerns}`,
         l.notes && `About the space: ${l.notes}`,

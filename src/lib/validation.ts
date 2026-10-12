@@ -6,7 +6,8 @@ import { cleanLine, cleanText, normalizeEmail, normalizePhone } from "@/lib/util
 
 const serviceIds = business.services.map((s) => s.id) as [string, ...string[]];
 const vehicleIds = business.vehicleCategories.map((v) => v.id) as [string, ...string[]];
-const windowIds = business.scheduling.timeWindows.map((w) => w.id) as [string, ...string[]];
+const needIds = business.packageNeeds.map((n) => n.id) as [string, ...string[]];
+const windowIds =business.scheduling.timeWindows.map((w) => w.id) as [string, ...string[]];
 const cadenceIds = business.membership.cadences.map((c) => c.id) as [string, ...string[]];
 
 const text = (max: number) => z.string().transform((v) => cleanText(v, max));
@@ -141,6 +142,8 @@ const quoteRequestFields = z
     ...consentFields,
     // Step 1
     serviceId: z.enum(serviceIds, { message: "Choose a service." }),
+    // "Not sure which package?" checklist; optional, kept for the owner.
+    needs: arrayField(z.enum(needIds)).default([]),
     vehicleYear: z
       .string({ message: "Enter the vehicle year." })
       .trim()

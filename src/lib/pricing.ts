@@ -22,6 +22,8 @@ export interface EstimateSnapshot {
   requiresCustomQuote: boolean;
   /** Human-readable reasons the owner must review before quoting. Never change the price. */
   reviewNotes: string[];
+  /** What the customer ticked in the "Not sure which package?" checklist, as shown to them. Absent when nothing was ticked. */
+  needs?: string[];
   taxNotice: string;
   finalQuoteNotice: string;
 }
@@ -33,6 +35,8 @@ export interface EstimateInput {
   addOnIds?: string[];
   condition?: "normal" | "deeper" | "unsure" | null;
   conditionFlags?: string[];
+  /** Ids from `business.packageNeeds`. Recorded only; never changes the price. */
+  needIds?: string[];
 }
 
 const CONDITION_FLAG_LABELS: Record<string, string> = {
@@ -80,6 +84,7 @@ export function computeEstimate(input: EstimateInput): EstimateSnapshot | null {
   }
 
   const total = basePrice + addOns.reduce((sum, a) => sum + a.amount, 0);
+  const needs = business.packageNeeds.filter((n) => input.needIds?.includes(n.id)).map((n) => n.label);
 
   return {
     pricingVersion: business.pricingVersion,
@@ -93,6 +98,7 @@ export function computeEstimate(input: EstimateInput): EstimateSnapshot | null {
     total,
     requiresCustomQuote: false,
     reviewNotes,
+    ...(needs.length > 0 && { needs }),
     taxNotice: business.taxNotice,
     finalQuoteNotice: business.finalQuoteNotice,
   };

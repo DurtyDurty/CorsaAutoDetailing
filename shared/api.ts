@@ -127,7 +127,14 @@ export interface AppointmentDetail extends AppointmentSummary {
     preferredContact: "email" | "phone" | "text" | null;
   };
   /** What the customer wrote on the request. */
-  customerNotes: { concerns: string | null; spaceNotes: string | null; conditionFlags: string[]; condition: string | null };
+  customerNotes: {
+    concerns: string | null;
+    spaceNotes: string | null;
+    conditionFlags: string[];
+    condition: string | null;
+    /** What the customer ticked in the "Not sure which package?" checklist. Optional: older servers don't send it. */
+    needs?: string[];
+  };
   internalNotes: string | null;
   appointmentNotes: string | null;
   bufferMinutes: number;
