@@ -62,6 +62,7 @@ export function WelcomeOffer() {
 
 function OfferBanner({ onClose }: { onClose: () => void }) {
   const offer = business.firstTimeOffer;
+  const logo = business.brand.logos.horizontalLight;
   const { state, onSubmit, pending, errors, message } = useLeadForm(submitOfferSignup, {
     formName: "first_time_offer",
     leadType: "launch_list",
@@ -96,7 +97,21 @@ function OfferBanner({ onClose }: { onClose: () => void }) {
         <div className="on-dark relative flex flex-col overflow-hidden bg-asphalt text-chalk">
           <div className="grid-lines absolute inset-0" aria-hidden="true" />
           <div className="relative flex flex-1 items-center justify-between gap-4 py-3 pl-6 pr-14 sm:flex-col sm:items-center sm:p-8">
-            <Wordmark onDark asLink={false} className="[&_img]:h-6 sm:[&_img]:h-8" />
+            {/* The logo gets washed in a loop (globals.css): mud melts off it, drips fall, water runs across. */}
+            <div className="offer-logo text-2xl sm:text-3xl" style={logo ? ({ "--offer-logo": `url(${logo})` } as React.CSSProperties) : undefined}>
+              <Wordmark onDark asLink={false} className="[&_img]:h-6 sm:[&_img]:h-8" />
+              {logo && (
+                <div aria-hidden="true">
+                  <span className="offer-dirt" />
+                  <span className="offer-shine-clip">
+                    <span className="offer-shine" />
+                  </span>
+                  <span className="offer-drip" />
+                  <span className="offer-drip" />
+                  <span className="offer-drip" />
+                </div>
+              )}
+            </div>
             <p
               className="flex items-baseline gap-2 font-display italic font-extrabold leading-[0.8] sm:flex-col sm:items-center sm:gap-4"
               aria-hidden="true"
