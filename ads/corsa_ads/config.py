@@ -350,7 +350,8 @@ def validate(cfg: Config, prices: set[int] | None = None) -> Config:
         check_text(f"sitelink {i} text", s.get("text", ""), SITELINK_TEXT_MAX, e, prices)
         check_text(f"sitelink {i} line1", s.get("line1", ""), SITELINK_LINE_MAX, e, prices)
         check_text(f"sitelink {i} line2", s.get("line2", ""), SITELINK_LINE_MAX, e, prices)
-        if s.get("url") not in KNOWN_PATHS:
+        # A query string is allowed on a known page (e.g. /request?offer=first-time ticks the offer on the form).
+        if str(s.get("url") or "").split("?", 1)[0] not in KNOWN_PATHS:
             e.append(f"sitelink {i}: url {s.get('url')!r} is not a known page")
     if len(cfg.sitelinks) < 2:
         w.append("fewer than 2 sitelinks: Google needs at least 2 to show them")

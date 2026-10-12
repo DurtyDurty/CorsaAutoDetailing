@@ -163,6 +163,8 @@ assets:
     - { text: "Packages & Prices", url: /services, line1: "Basic, Essential and Signature", line2: "Inside and out in one visit" }
     - { text: "Service Areas", url: /service-areas, line1: "Middleburg and Fleming Island", line2: "Green Cove Springs and nearby" }
     - { text: "Contact Us", url: /contact, line1: "Questions before you book?", line2: "Send us a message" }
+    # Added 2026-10-12. Must match business.firstTimeOffer (percent and terms); the link ticks the offer on the booking form.
+    - { text: "10% Off First Detail", url: "/request?offer=first-time", line1: "First-time customers only", line2: "Applied to your final quote" }
   # Added only once a business phone number exists (NEXT_PUBLIC_CONTACT_PHONE). null = no call asset.
   call:
     phone: "904-649-0739"

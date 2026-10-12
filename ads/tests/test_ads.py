@@ -269,7 +269,10 @@ class BuildTests(unittest.TestCase):
         links = self.kind("campaign_asset_operation")
         self.assertEqual(len(assets), len(links), "every asset is linked to the campaign")
         self.assertEqual(len(assets), len(self.cfg.callouts) + len(self.cfg.sitelinks) + 1, "callouts, sitelinks and the call asset")
-        self.assertEqual(len(self.cfg.sitelinks), 4)
+        self.assertEqual(len(self.cfg.sitelinks), 5)
+        # The offer sitelink keeps its query string, so the booking form opens with the offer ticked.
+        urls = [a.final_urls[0] for a in assets if a.sitelink_asset.link_text]
+        self.assertIn("https://corsaautodetailing.com/request?offer=first-time", urls)
 
     def test_rerun_with_existing_campaign_uses_its_resource_names(self):
         ex = full_existing(self.cfg)
