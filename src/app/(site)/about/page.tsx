@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { business, primaryCta } from "@/config/business";
+import { business, isPrelaunch, primaryCta } from "@/config/business";
 import { ButtonLink } from "@/components/ui/Button";
 import { Section, SectionHeading } from "@/components/ui/Section";
 import { PageHero } from "@/components/site/PageHero";
@@ -32,7 +32,7 @@ export default function AboutPage() {
           {[
             {
               t: "Straight answers",
-              b: "Planned prices are labeled as planned. Requests aren't called appointments. If we can't reach your area yet, we'll say so.",
+              b: "Starting prices are labeled as starting prices. A request isn't an appointment until we confirm it. If we can't reach your area yet, we'll say so.",
             },
             {
               t: "Your approval first",
@@ -40,7 +40,7 @@ export default function AboutPage() {
             },
             {
               t: "Deliberate growth",
-              b: "Two packages, clear starting prices, and a service area we can reach well: Clay County and Jacksonville. Film, tint and professional coatings are ideas for later, not promises for now.",
+              b: `A short list of packages, clear starting prices, and a service area we can reach well: ${business.serviceAreas.region}. Film, tint and professional coatings are ideas for later, not promises for now.`,
             },
           ].map((item) => (
             <div key={item.t} className="border-t border-asphalt pt-5">
@@ -53,7 +53,7 @@ export default function AboutPage() {
 
       <Section tone="dark">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-          <h2 className="font-display text-3xl text-balance">Want to hear when we open?</h2>
+          <h2 className="font-display text-3xl text-balance">{isPrelaunch ? "Want to hear when we open?" : "Ready for a detail?"}</h2>
           <ButtonLink href={cta.href} variant="apex" size="lg">
             {cta.label}
           </ButtonLink>

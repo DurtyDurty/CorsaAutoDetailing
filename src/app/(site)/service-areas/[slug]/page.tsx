@@ -73,8 +73,8 @@ export default async function TownPage({ params }: PageProps<"/service-areas/[sl
       <Section tone="chalk">
         <SectionHeading
           eyebrow={`Packages in ${town.name}`}
-          title="Two packages. We come to you."
-          lede={`Both packages are done by hand at your home or workplace in ${town.name}. See the services page for starting prices by vehicle size.`}
+          title="Pick a package. We come to you."
+          lede={`Every package is done by hand at your home or workplace in ${town.name}. See the services page for starting prices by vehicle size.`}
         />
         <div className="mt-12">
           <PackageCards showPrices={false} />
