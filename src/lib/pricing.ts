@@ -109,7 +109,7 @@ export function computeEstimate(input: EstimateInput): EstimateSnapshot | null {
   };
 }
 
-/** "First-time customer: 15% off (about $30 off the $200 starting price)". */
+/** "First-time customer: 10% off (about $20 off the $200 starting price)". */
 export function firstTimeOfferNote(startingPrice: number): string {
   const { percent } = business.firstTimeOffer;
   const off = Math.round((startingPrice * percent) / 100);

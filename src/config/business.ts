@@ -301,13 +301,13 @@ export const business = {
    */
   firstTimeOffer: {
     enabled: true,
-    percent: 15,
-    headline: "15% off your first detail",
-    body: "New to Corsa? Leave your email and we'll send your 15% off. We detail at your home or work.",
+    percent: 10,
+    headline: "10% off your first detail",
+    body: "New to Corsa? Leave your email and we'll send your 10% off. We detail at your home or work.",
     /** Under the signup button: signing up is the consent to be emailed. */
     emailNote: "We'll email your offer, plus occasional updates and offers. Unsubscribe any time.",
     terms: "First-time customers only. The discount is applied to your final quote and can't be combined with other offers.",
-    checkboxLabel: "I'm a first-time customer: take 15% off my first detail",
+    checkboxLabel: "I'm a first-time customer: take 10% off my first detail",
   },
 
   /** Owner-approved fixed-price add-ons that the online estimate may add. None approved yet. */

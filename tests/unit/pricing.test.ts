@@ -85,7 +85,7 @@ describe("computeEstimate", () => {
 
   it("flags the first-time offer for the owner without changing the estimate", () => {
     const e = computeEstimate({ serviceId: "platinum-full", firstTimeOffer: true });
-    expect(e?.offer).toBe("First-time customer: 15% off (about $30 off the $200 starting price)");
+    expect(e?.offer).toBe("First-time customer: 10% off (about $20 off the $200 starting price)");
     expect(e?.total).toBe(200);
     expect(computeEstimate({ serviceId: "platinum-full" })).not.toHaveProperty("offer");
     expect(computeEstimate({ serviceId: "platinum-full", firstTimeOffer: false })).not.toHaveProperty("offer");
