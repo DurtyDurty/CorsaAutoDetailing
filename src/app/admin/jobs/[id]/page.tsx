@@ -113,8 +113,9 @@ export default async function JobPage({ params, searchParams }: PageProps<"/admi
         <Card title="Work confirmation">
           <p className="text-sm text-ink-muted">
             {a.workConfirmationSentAt ? `Sent ${when(a.workConfirmationSentAt)}. ` : ""}
-            Emails the customer that the job is done: the service, the total, what was paid
+            Emails the customer that the job is done, with the invoice PDF attached: the service, the total, what was paid
             {business.reviews.googleUrl ? " and your Google review link." : ". No Google review link is set yet, so the email leaves it out."}
+            {b.balanceDueCents > 0 ? " The invoice shows your Zelle code for the balance." : ""}
             {b.balanceDueCents > 0 ? ` It will show ${formatCents(b.balanceDueCents)} still due, so record the payment first if they already paid.` : ""}
           </p>
           <form action={workConfirmationAction}>
@@ -125,6 +126,9 @@ export default async function JobPage({ params, searchParams }: PageProps<"/admi
               {a.workConfirmationSentAt ? "Send again" : "Send work confirmation"}
             </ConfirmSubmit>
           </form>
+          <a href={`/admin/jobs/${a.id}/invoice`} target="_blank" rel="noreferrer" className="text-sm underline underline-offset-4 w-fit">
+            View invoice PDF
+          </a>
         </Card>
       )}
 

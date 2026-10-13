@@ -415,4 +415,26 @@ describe("the PDF", () => {
     const { PDFDocument } = await import("pdf-lib");
     expect((await PDFDocument.load(bytes)).getPageCount()).toBeGreaterThanOrEqual(2);
   });
+
+  it("renders an invoice, with the Zelle section only while a balance is due", async () => {
+    const { renderInvoicePdf } = await import("@/lib/quotes/pdf");
+    const { ZELLE } = await import("@/lib/quotes/zelle");
+    const base = {
+      number: "INV-TEST01",
+      issuedAt: new Date().toISOString(),
+      customer: { name: "Sam Rivers", email: "a@example.com", phone: "9045550101", address: "12 Pine St, 32003" },
+      appointment: { startsAt: new Date().toISOString(), endsAt: new Date(Date.now() + 3_600_000).toISOString(), serviceName: "Signature Full Detail", vehicle: "2019 Toyota 4Runner" },
+      lines: [{ label: "Signature Full Detail", amountCents: 20000 }],
+      subtotalCents: 20000,
+      discountCents: 2000,
+      totalCents: 18000,
+      zelle: ZELLE,
+    };
+    const due = await renderInvoicePdf({ ...base, payments: [{ label: "Paid Oct 13, 2026 (Cash)", amountCents: 5000 }], balanceDueCents: 13000 });
+    const paid = await renderInvoicePdf({ ...base, payments: [{ label: "Paid Oct 13, 2026 (Cash)", amountCents: 18000 }], balanceDueCents: 0 });
+    expect(Buffer.from(due).subarray(0, 5).toString()).toBe("%PDF-");
+    // The QR code is hundreds of drawn rectangles: the paid copy is far smaller without it.
+    expect(due.length - paid.length).toBeGreaterThan(2000);
+    if (process.env.INVOICE_SAMPLE_OUT) (await import("node:fs")).writeFileSync(process.env.INVOICE_SAMPLE_OUT, due);
+  });
 });

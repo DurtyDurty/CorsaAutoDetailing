@@ -7,6 +7,8 @@ import { SlotTakenError, type AppointmentRecord, type LeadStore } from "@/lib/le
 import { formatEastern } from "@/lib/time";
 import { getAppointmentDetail, logAppointmentEvent, WORK_CONFIRMATION_SENT } from "./appointments";
 import { sendOwnerEmail } from "./email";
+import { invoiceFilename, renderInvoice } from "./invoice";
+import type { EmailAttachment } from "@/lib/email";
 import { assertCanSchedule, overlapMessage } from "./schedule";
 import { withdrawOpenQuotes } from "@/lib/quotes/service";
 
@@ -32,8 +34,8 @@ async function replayed(store: LeadStore, requestId: string, id: string): Promis
 const when = (iso: string) => formatEastern(iso, { dateStyle: "full", timeStyle: "short" });
 const serviceName = (a: AppointmentRecord) => (a.serviceId && getService(a.serviceId)?.name) || "detail";
 
-async function emailCustomer(store: LeadStore, leadId: string, subject: string, message: string, sendKey: string): Promise<CustomerEmail> {
-  const sent = await sendOwnerEmail(store, leadId, { subject, message, sendKey });
+async function emailCustomer(store: LeadStore, leadId: string, subject: string, message: string, sendKey: string, attachments?: EmailAttachment[]): Promise<CustomerEmail> {
+  const sent = await sendOwnerEmail(store, leadId, { subject, message, sendKey, attachments });
   if (sent.status === "sent") return { status: "sent", error: null };
   return { status: "failed", error: sent.status === "not_found" ? "Customer not found." : sent.reason };
 }
@@ -168,7 +170,8 @@ export async function sendReceipt(store: LeadStore, actor: string, id: string, r
 
 /**
  * "Your detail is complete": what was done, what it cost, what was paid and anything
- * still owed, with the Google review link when one is set. Only for a completed job.
+ * still owed, with the Google review link when one is set and the invoice PDF attached
+ * (the only place the Zelle details appear). Only for a completed job.
  */
 export async function sendWorkConfirmation(store: LeadStore, actor: string, id: string, requestId: string): Promise<WorkResponse> {
   const replay = await replayed(store, requestId, id);
@@ -207,9 +210,11 @@ export async function sendWorkConfirmation(store: LeadStore, actor: string, id: 
       : "Paid in full.",
     ...(review ? ["", "If you're happy with the result, a quick Google review would mean a lot to a new local business:", review] : []),
     "",
-    "If anything doesn't look right, just reply to this email.",
+    "Your invoice is attached. If anything doesn't look right, just reply to this email.",
   ];
-  const customerEmail = await emailCustomer(store, appt.leadId, `Your ${serviceName(appt)} is complete`, lines.join("\n"), `work-confirmation-${requestId}`);
+  const customerEmail = await emailCustomer(store, appt.leadId, `Your ${serviceName(appt)} is complete`, lines.join("\n"), `work-confirmation-${requestId}`, [
+    { filename: invoiceFilename(detail), content: await renderInvoice(detail) },
+  ]);
   await store.addAppointmentEvent({
     appointmentId: id,
     type: "note",

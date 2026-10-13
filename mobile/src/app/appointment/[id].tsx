@@ -234,7 +234,7 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
           <Text variant="label">Work confirmation</Text>
           <Text variant="caption">
             {a.workConfirmationSentAt ? `Sent ${formatShortDay(a.workConfirmationSentAt)} ${formatTime(a.workConfirmationSentAt)}. ` : ""}
-            Emails the customer that the job is done: the service, the total, what was paid and your Google review link.
+            Emails the customer that the job is done, with the invoice PDF attached (your Zelle code is on it while a balance is due).
             {b.balanceDueCents > 0 ? ` It will show ${formatCents(b.balanceDueCents)} still due, so record the payment first if they already paid.` : ""}
           </Text>
           <Button

@@ -9,7 +9,7 @@ import type { QuoteLine } from "@/lib/leads/types";
 import { LOGO_ASPECT, LOGO_LIGHT_PNG_BASE64 } from "./logo";
 
 /**
- * The quote as a PDF: Letter size, dark header band with the logo, line items,
+ * The quote (and the invoice) as a PDF: Letter size, dark header band with the logo, line items,
  * totals, notes and terms. Everything is drawn as text by pdf-lib (no HTML,
  * no fonts or images fetched from anywhere), so customer-typed text can only
  * ever appear as text.
@@ -29,6 +29,17 @@ export interface QuoteDocument {
   /** The customer's private link; omitted on copies that shouldn't carry it. */
   acceptUrl: string | null;
 }
+
+/** The bill for a job: same layout as the quote, with what was paid, what is left and how to pay it. */
+export interface InvoiceDocument extends Pick<QuoteDocument, "number" | "issuedAt" | "customer" | "appointment" | "lines" | "subtotalCents" | "discountCents" | "totalCents"> {
+  /** Money received so far (a refund is negative), oldest first. */
+  payments: { label: string; amountCents: number }[];
+  balanceDueCents: number;
+  /** Shown under "How to pay" while a balance is due. `null` = no Zelle section. */
+  zelle: { name: string; phone: string; qr: readonly string[] } | null;
+}
+
+type Doc = ({ kind: "quote" } & QuoteDocument) | ({ kind: "invoice" } & InvoiceDocument);
 
 const hex = (h: string): RGB => rgb(parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255);
 const C = {
@@ -91,11 +102,16 @@ function wrap(font: PDFFont, size: number, text: string, width: number): string[
   return out;
 }
 
-export async function renderQuotePdf(q: QuoteDocument): Promise<Uint8Array> {
+export const renderQuotePdf = (q: QuoteDocument) => render({ kind: "quote", ...q });
+export const renderInvoicePdf = (i: InvoiceDocument) => render({ kind: "invoice", ...i });
+
+async function render(q: Doc): Promise<Uint8Array> {
+  const invoice = q.kind === "invoice" ? q : null;
+  const Title = invoice ? "Invoice" : "Quote";
   const pdf = await PDFDocument.create();
-  pdf.setTitle(`Quote ${q.number} - ${business.brand.name}`);
+  pdf.setTitle(`${Title} ${q.number} - ${business.brand.name}`);
   pdf.setAuthor(business.brand.name);
-  pdf.setSubject(`Quote for ${q.appointment.serviceName}`);
+  pdf.setSubject(`${Title} for ${q.appointment.serviceName}`);
   pdf.setCreator(business.brand.name);
   pdf.setProducer(business.brand.name);
   pdf.setCreationDate(new Date(q.issuedAt));
@@ -130,13 +146,14 @@ export async function renderQuotePdf(q: QuoteDocument): Promise<Uint8Array> {
     const logoW = first ? 210 : 120;
     page.drawImage(logo, { x: M, y: PAGE.h - band / 2 - logoW / LOGO_ASPECT / 2, width: logoW, height: logoW / LOGO_ASPECT });
     if (first) {
-      text("QUOTE", RIGHT, PAGE.h - 52, { size: 26, font: bold, color: C.bandText, align: "right" });
+      text(Title.toUpperCase(), RIGHT, PAGE.h - 52, { size: 26, font: bold, color: C.bandText, align: "right" });
       text(`No. ${q.number}`, RIGHT, PAGE.h - 72, { size: 9.5, color: C.bandMuted, align: "right" });
       text(`Issued ${day(q.issuedAt)}`, RIGHT, PAGE.h - 86, { size: 9.5, color: C.bandMuted, align: "right" });
-      text(`Valid until ${day(q.expiresAt)}`, RIGHT, PAGE.h - 100, { size: 9.5, font: bold, color: C.bandText, align: "right" });
+      const status = q.kind === "quote" ? `Valid until ${day(q.expiresAt)}` : q.balanceDueCents > 0 ? `Balance due ${formatCents(q.balanceDueCents)}` : "Paid in full";
+      text(status, RIGHT, PAGE.h - 100, { size: 9.5, font: bold, color: C.bandText, align: "right" });
       y = PAGE.h - band - 40;
     } else {
-      text(`Quote ${q.number} (continued)`, RIGHT, PAGE.h - 33, { size: 9.5, color: C.bandMuted, align: "right" });
+      text(`${Title} ${q.number} (continued)`, RIGHT, PAGE.h - 33, { size: 9.5, color: C.bandMuted, align: "right" });
       y = PAGE.h - band - 32;
     }
   };
@@ -152,8 +169,8 @@ export async function renderQuotePdf(q: QuoteDocument): Promise<Uint8Array> {
   const leftX = M;
   const rightX = M + colW + 32;
   const top = y;
-  label("Prepared for", leftX, y);
-  label("Appointment", rightX, y);
+  label(invoice ? "Billed to" : "Prepared for", leftX, y);
+  label(invoice ? "Service" : "Appointment", rightX, y);
   let ly = y - 17;
   let ry = y - 17;
   const left = [
@@ -207,7 +224,7 @@ export async function renderQuotePdf(q: QuoteDocument): Promise<Uint8Array> {
   }
 
   /* ---- Totals ---- */
-  ensure(q.discountCents > 0 ? 100 : 80);
+  ensure((q.discountCents > 0 ? 100 : 80) + (invoice ? 22 + invoice.payments.length * 18 : 0));
   const totalsX = RIGHT - 220;
   y -= 4;
   text("Subtotal", totalsX, y, { size: 10, color: C.muted });
@@ -218,15 +235,26 @@ export async function renderQuotePdf(q: QuoteDocument): Promise<Uint8Array> {
     text(`-${formatCents(q.discountCents)}`, amountX, y, { size: 10, align: "right" });
     y -= 18;
   }
+  if (invoice) {
+    // The price, then what has been paid; the box below holds what is left.
+    text("Total", totalsX, y, { size: 10, font: bold });
+    text(formatCents(q.totalCents), amountX, y, { size: 10, font: bold, align: "right" });
+    y -= 18;
+    for (const p of invoice.payments) {
+      text(p.label, totalsX, y, { size: 10, color: C.muted });
+      text(`${p.amountCents > 0 ? "-" : "+"}${formatCents(Math.abs(p.amountCents))}`, amountX, y, { size: 10, align: "right" });
+      y -= 18;
+    }
+  }
   y -= 10;
   page.drawRectangle({ x: totalsX - 12, y: y - 14, width: RIGHT - totalsX + 12, height: 34, color: C.band });
   page.drawRectangle({ x: totalsX - 12, y: y - 14, width: 4, height: 34, color: C.accent });
-  text("TOTAL", totalsX + 2, y - 2, { size: 9, font: bold, color: C.bandMuted });
-  text(formatCents(q.totalCents), amountX, y - 3, { size: 16, font: bold, color: C.bandText, align: "right" });
+  text(invoice ? (invoice.balanceDueCents > 0 ? "BALANCE DUE" : "PAID IN FULL") : "TOTAL", totalsX + 2, y - 2, { size: 9, font: bold, color: C.bandMuted });
+  text(formatCents(invoice ? invoice.balanceDueCents : q.totalCents), amountX, y - 3, { size: 16, font: bold, color: C.bandText, align: "right" });
   y -= 46;
 
   /* ---- Notes ---- */
-  if (q.notes) {
+  if (q.kind === "quote" && q.notes) {
     const rows = wrap(regular, 10, safeText(regular, q.notes), RIGHT - M - 28);
     ensure(rows.length * 14 + 40);
     const boxH = rows.length * 14 + 30;
@@ -238,7 +266,7 @@ export async function renderQuotePdf(q: QuoteDocument): Promise<Uint8Array> {
   }
 
   /* ---- How to accept ---- */
-  if (q.acceptUrl) {
+  if (q.kind === "quote" && q.acceptUrl) {
     ensure(78);
     label("How to accept", M, y);
     text("Accepting confirms your appointment. It takes a minute.", M, y - 16, { size: 10, color: C.muted });
@@ -266,12 +294,39 @@ export async function renderQuotePdf(q: QuoteDocument): Promise<Uint8Array> {
     y = btnTop - btnH - 26;
   }
 
+  /* ---- How to pay (invoice with a balance) ---- */
+  if (invoice && invoice.balanceDueCents > 0 && invoice.zelle) {
+    const z = invoice.zelle;
+    const size = 104;
+    ensure(size + 34);
+    label("How to pay", M, y);
+    const qrTop = y - 12;
+    const n = z.qr.length;
+    const cell = size / n;
+    // Each run of dark modules is one rectangle; a hair of overlap keeps viewers from showing seams.
+    z.qr.forEach((row, r) => {
+      for (const run of row.matchAll(/1+/g)) {
+        page.drawRectangle({ x: M + run.index * cell, y: qrTop - (r + 1) * cell - 0.1, width: run[0].length * cell + 0.1, height: cell + 0.2, color: rgb(0, 0, 0) });
+      }
+    });
+    const tx = M + size + 22;
+    text("Pay with Zelle", tx, qrTop - 16, { size: 13, font: bold });
+    text("Scan the code in your banking app, or send to:", tx, qrTop - 34, { size: 10, color: C.muted });
+    text(formatPhone(z.phone), tx, qrTop - 54, { size: 14, font: bold });
+    text(z.name, tx, qrTop - 70, { size: 10, color: C.muted });
+    text(`Amount: ${formatCents(invoice.balanceDueCents)}. Cash is welcome too.`, tx, qrTop - 92, { size: 10, color: C.muted });
+    y = qrTop - size - 26;
+  }
+
   /* ---- Terms ---- */
-  const terms = [
-    business.disclosures.inspection,
-    `${business.finalQuoteNotice} ${business.taxNotice}`,
-    `This quote is valid until ${day(q.expiresAt, "long")}. If weather prevents the service, we'll reschedule at no charge.`,
-  ];
+  const terms =
+    q.kind === "quote"
+      ? [
+          business.disclosures.inspection,
+          `${business.finalQuoteNotice} ${business.taxNotice}`,
+          `This quote is valid until ${day(q.expiresAt, "long")}. If weather prevents the service, we'll reschedule at no charge.`,
+        ]
+      : [`Payment is due when the service is complete. Thank you for choosing ${business.brand.name}.`];
   const termRows = terms.map((t) => wrap(regular, 8, safeText(regular, t), RIGHT - M));
   ensure(termRows.reduce((n, r) => n + r.length * 10.5 + 6, 24));
   label("Terms", M, y);
