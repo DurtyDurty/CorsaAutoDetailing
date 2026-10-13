@@ -1,6 +1,6 @@
 import "server-only";
 import { business, getService } from "@/config/business";
-import type { ChangeTotalInput, RecordPaymentInput, RescheduleInput, WorkResponse } from "@shared/api";
+import type { AppointmentDetail, ChangeTotalInput, RecordPaymentInput, RescheduleInput, WorkResponse } from "@shared/api";
 import { computeBalance, formatCents, PAYMENT_METHOD_LABELS } from "@shared/money";
 import { ApiError } from "@/lib/api/http";
 import { SlotTakenError, type AppointmentRecord, type LeadStore } from "@/lib/leads/types";
@@ -8,7 +8,8 @@ import { formatEastern } from "@/lib/time";
 import { getAppointmentDetail, logAppointmentEvent, priceChangeNote, WORK_CONFIRMATION_SENT } from "./appointments";
 import { sendOwnerEmail } from "./email";
 import { invoiceDocument, invoiceFilename, isInvoiceable, renderInvoice } from "./invoice";
-import type { EmailAttachment } from "@/lib/email";
+import { getEmailAdapter, type EmailAttachment } from "@/lib/email";
+import { composeOwnerEmail } from "@/lib/owner-email";
 import { assertCanSchedule, overlapMessage } from "./schedule";
 import { withdrawOpenQuotes } from "@/lib/quotes/service";
 
@@ -216,6 +217,45 @@ export async function sendWorkConfirmation(store: LeadStore, actor: string, id: 
     throw new ApiError("conflict", "Mark the job complete first, then send the confirmation.");
   }
   const detail = await getAppointmentDetail(store, id);
+  const email = await workConfirmationEmail(appt, detail);
+  const customerEmail = await emailCustomer(store, appt.leadId, email.subject, email.message, `work-confirmation-${requestId}`, email.attachments);
+  await store.addAppointmentEvent({
+    appointmentId: id,
+    type: "note",
+    fromStatus: null,
+    toStatus: null,
+    note: customerEmail.status === "sent" ? WORK_CONFIRMATION_SENT : `Work confirmation email failed: ${customerEmail.error}`,
+    actor,
+    requestId,
+  });
+  return { appointment: await getAppointmentDetail(store, id), customerEmail, unchanged: false };
+}
+
+/**
+ * Sends the owner, and nobody else, the work confirmation exactly as the customer would get it
+ * (invoice attached), so he can check it first. Nothing is logged on the job.
+ */
+export async function previewWorkConfirmation(store: LeadStore, ownerEmail: string, id: string): Promise<{ sentTo: string }> {
+  const appt = await requireAppointment(store, id);
+  if (!isInvoiceable(appt)) throw new ApiError("conflict", "There's no invoice to preview until the job is booked.");
+  const adapter = getEmailAdapter();
+  if (adapter.kind === "disabled") throw new ApiError("unavailable", "Email isn't configured on the server (Resend).");
+  const detail = await getAppointmentDetail(store, id);
+  const email = await workConfirmationEmail(appt, detail);
+  try {
+    await adapter.send({
+      to: ownerEmail,
+      subject: `[Preview] ${email.subject}`,
+      text: composeOwnerEmail(`PREVIEW: only you received this. ${detail.customerName} has not been emailed.\n\n${email.message}`),
+      attachments: email.attachments,
+    });
+  } catch (err) {
+    throw new ApiError("unavailable", `The preview didn't send: ${err instanceof Error ? err.message.slice(0, 200) : "unknown error"}`);
+  }
+  return { sentTo: ownerEmail };
+}
+
+async function workConfirmationEmail(appt: AppointmentRecord, detail: AppointmentDetail): Promise<{ subject: string; message: string; attachments: EmailAttachment[] }> {
   const { balance } = detail;
   const vehicle = [detail.vehicle.year, detail.vehicle.make, detail.vehicle.model].filter(Boolean).join(" ");
   const address = [detail.serviceAddress, detail.city, detail.zip].filter(Boolean).join(", ");
@@ -247,19 +287,11 @@ export async function sendWorkConfirmation(store: LeadStore, actor: string, id: 
     "",
     "Your invoice is attached. If anything doesn't look right, just reply to this email.",
   ];
-  const customerEmail = await emailCustomer(store, appt.leadId, `Your ${serviceName(appt)} is complete`, lines.join("\n"), `work-confirmation-${requestId}`, [
-    { filename: invoiceFilename(detail), content: await renderInvoice(detail) },
-  ]);
-  await store.addAppointmentEvent({
-    appointmentId: id,
-    type: "note",
-    fromStatus: null,
-    toStatus: null,
-    note: customerEmail.status === "sent" ? WORK_CONFIRMATION_SENT : `Work confirmation email failed: ${customerEmail.error}`,
-    actor,
-    requestId,
-  });
-  return { appointment: await getAppointmentDetail(store, id), customerEmail, unchanged: false };
+  return {
+    subject: `Your ${serviceName(appt)} is complete`,
+    message: lines.join("\n"),
+    attachments: [{ filename: invoiceFilename(detail), content: await renderInvoice(detail) }],
+  };
 }
 
 /** A private note on the job (never sent to the customer). */

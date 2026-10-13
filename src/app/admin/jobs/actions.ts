@@ -10,7 +10,7 @@ import { ApiError } from "@/lib/api/http";
 import { getLeadStore } from "@/lib/leads/store";
 import { changeAppointmentStatus, getAppointmentDetail } from "@/lib/owner/appointments";
 import { sendQuote } from "@/lib/quotes/service";
-import { addNote, changeTotal, recordPayment, rescheduleAppointment, sendReceipt, sendWorkConfirmation } from "@/lib/owner/work";
+import { addNote, changeTotal, previewWorkConfirmation, recordPayment, rescheduleAppointment, sendReceipt, sendWorkConfirmation } from "@/lib/owner/work";
 
 /**
  * Job actions for the web dashboard. Same services as the owner app, so a
@@ -147,6 +147,13 @@ export async function workConfirmationAction(formData: FormData) {
     id,
     res.customerEmail.status === "sent" || res.unchanged ? { ok: "Work confirmation sent to the customer." } : { error: `Work confirmation not sent: ${res.customerEmail.error}` },
   );
+}
+
+export async function previewConfirmationAction(formData: FormData) {
+  const owner = await requireOwner();
+  const id = jobId(formData);
+  const res = await attempt(formData, id, async () => previewWorkConfirmation(await store(), owner.email, id));
+  backTo(formData, id, { ok: `Preview sent to ${res.sentTo}. The customer was not emailed.` });
 }
 
 export async function noteAction(formData: FormData) {

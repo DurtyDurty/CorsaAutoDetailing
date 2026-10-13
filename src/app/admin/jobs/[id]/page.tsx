@@ -20,7 +20,7 @@ import { StatusBadge } from "@/components/admin/work/StatusBadge";
 import { StepButton } from "@/components/admin/work/StepButton";
 import { QuoteCard } from "@/components/admin/work/QuoteCard";
 import { nextStepFor } from "@/components/admin/work/next-step";
-import { changeTotalAction, noteAction, receiptAction, recordPaymentAction, rescheduleAction, changeStatusAction, workConfirmationAction } from "../actions";
+import { changeTotalAction, noteAction, previewConfirmationAction, receiptAction, recordPaymentAction, rescheduleAction, changeStatusAction, workConfirmationAction } from "../actions";
 
 export const metadata: Metadata = { title: "Job" };
 
@@ -126,6 +126,13 @@ export default async function JobPage({ params, searchParams }: PageProps<"/admi
             <ConfirmSubmit variant={a.workConfirmationSentAt ? "secondary" : "apex"} size="sm" confirm={a.workConfirmationSentAt ? "Send the work confirmation again?" : undefined}>
               {a.workConfirmationSentAt ? "Send again" : "Send work confirmation"}
             </ConfirmSubmit>
+          </form>
+          <form action={previewConfirmationAction}>
+            <input type="hidden" name="id" value={a.id} />
+            <input type="hidden" name="back" value={back} />
+            <Button type="submit" variant="secondary" size="sm">
+              Email me a preview
+            </Button>
           </form>
           <a href={`/admin/jobs/${a.id}/invoice`} target="_blank" rel="noreferrer" className="text-sm underline underline-offset-4 w-fit">
             View invoice PDF

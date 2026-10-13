@@ -17,6 +17,7 @@ import type {
   CustomerOption,
   MeResponse,
   Page,
+  PreviewResponse,
   SendMessageInput,
   SendMessageResponse,
   SendQuoteInput,
@@ -268,7 +269,10 @@ export const useRecordPayment = (id: string) => useWork<RecordPaymentInput>(() =
 export const useSendReceipt = (id: string) => useWork<{ requestId: string }>(() => `/appointments/${id}/receipt`, (v) => v);
 export const useChangeTotal = (id: string) => useWork<ChangeTotalInput>(() => `/appointments/${id}/total`, (v) => v);
 export const useSendWorkConfirmation = (id: string) => useWork<{ requestId: string }>(() => `/appointments/${id}/work-confirmation`, (v) => v);
-export const useAddNote =(id: string) => useWork<{ requestId: string; note: string }>(() => `/appointments/${id}/notes`, (v) => v);
+export function usePreviewWorkConfirmation(id: string) {
+  return useMutation({ mutationFn: () => apiRequest<PreviewResponse>(`/appointments/${id}/work-confirmation/preview`, { method: "POST", body: {} }) });
+}
+export const useAddNote = (id: string) => useWork<{ requestId: string; note: string }>(() => `/appointments/${id}/notes`, (v) => v);
 
 export function useSendQuote(id: string) {
   const qc = useQueryClient();

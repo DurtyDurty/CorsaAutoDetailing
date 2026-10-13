@@ -445,6 +445,11 @@ export const changeTotalSchema = z.object({
 });
 export type ChangeTotalInput = z.infer<typeof changeTotalSchema>;
 
+/** A preview goes only to the signed-in owner's own address. */
+export interface PreviewResponse {
+  sentTo: string;
+}
+
 export interface WorkResponse {
   appointment: AppointmentDetail;
   /** For reschedule and receipt: whether the customer email went out. */

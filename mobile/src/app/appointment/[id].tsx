@@ -7,7 +7,7 @@ import { QUOTE_STATUS_LABELS, type AppointmentDetail } from "@shared/api";
 import { APPOINTMENT_STATUS_LABELS, type AppointmentStatus } from "@shared/appointment-status";
 import { formatCents, PAYMENT_METHOD_LABELS } from "@shared/money";
 import { ApiClientError } from "@/api/client";
-import { newRequestId, useAddNote, useAppointment, useChangeStatus, useSendReceipt, useSendWorkConfirmation } from "@/api/queries";
+import { newRequestId, useAddNote, useAppointment, useChangeStatus, usePreviewWorkConfirmation, useSendReceipt, useSendWorkConfirmation } from "@/api/queries";
 import { Button } from "@/design/Button";
 import { Card } from "@/design/Card";
 import { Field } from "@/design/Field";
@@ -95,6 +95,7 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
   const receiptId = useRef(newRequestId());
   const confirmation = useSendWorkConfirmation(a.id);
   const confirmationId = useRef(newRequestId());
+  const preview = usePreviewWorkConfirmation(a.id);
 
   const step = nextStep(a.status);
   const allowed = new Set(a.allowedTransitions);
@@ -250,6 +251,17 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
             loading={confirmation.isPending}
             onPress={sendConfirmation}
             fullWidth
+          />
+          <Button
+            label="Email me a preview"
+            variant="ghost"
+            loading={preview.isPending}
+            onPress={() =>
+              preview.mutate(undefined, {
+                onSuccess: (res) => Alert.alert("Preview sent", `Check ${res.sentTo}. The customer was not emailed.`),
+                onError: (err) => Alert.alert("Preview not sent", err.message),
+              })
+            }
           />
         </Card>
       )}

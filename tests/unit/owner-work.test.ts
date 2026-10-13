@@ -225,5 +225,16 @@ describe("working a job", () => {
     expect(mails[0]!.text).toContain("Balance due: $99");
     // No review link configured in tests: the request is left out rather than sent without a link.
     expect(mails[0]!.text).not.toContain("Google review");
+
+    // A preview goes to the signed-in owner only and leaves no trace on the job.
+    const preview = await import("@/app/api/owner/v1/appointments/[id]/work-confirmation/preview/route");
+    const previewReq = (tok?: string) => preview.POST(req(`/appointments/${a.id}/work-confirmation/preview`, { method: "POST", token: tok, body: {} }), params({ id: a.id }));
+    expect((await previewReq()).status).toBe(401);
+    expect(await (await previewReq(t)).json()).toEqual({ sentTo: "demo-owner@localhost" });
+    const previews = (await outbox()).filter((m) => m.subject.startsWith("[Preview]"));
+    expect(previews).toHaveLength(1);
+    expect(previews[0]).toMatchObject({ to: "demo-owner@localhost", subject: "[Preview] Your Signature Full Detail is complete" });
+    expect(previews[0]!.text).toContain("Sam has not been emailed");
+    expect((await outbox()).filter((m) => m.to === "sam@example.com")).toHaveLength(1);
   });
 });
