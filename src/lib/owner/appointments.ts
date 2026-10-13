@@ -153,8 +153,12 @@ export async function getAppointmentDetail(store: LeadStore, id: string): Promis
     allowedTransitions: [...allowedTransitions(a.status)],
     quote: latest ? toQuoteSummary(latest) : null,
     quoteDraft: isQuotable(a) ? quoteDraft(a, lead) : null,
+    workConfirmationSentAt: events.findLast((e) => e.type === "note" && e.note === WORK_CONFIRMATION_SENT)?.createdAt ?? null,
   };
 }
+
+/** History note written when the work confirmation email goes out; the detail reads it back. */
+export const WORK_CONFIRMATION_SENT = "Work confirmation emailed to the customer";
 
 /* ---------- Listing ---------- */
 

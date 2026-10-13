@@ -9,7 +9,7 @@ import { ApiError } from "@/lib/api/http";
 import { getLeadStore } from "@/lib/leads/store";
 import { changeAppointmentStatus, getAppointmentDetail } from "@/lib/owner/appointments";
 import { sendQuote } from "@/lib/quotes/service";
-import { addNote, recordPayment, rescheduleAppointment, sendReceipt } from "@/lib/owner/work";
+import { addNote, recordPayment, rescheduleAppointment, sendReceipt, sendWorkConfirmation } from "@/lib/owner/work";
 
 /**
  * Job actions for the web dashboard. Same services as the owner app, so a
@@ -120,6 +120,19 @@ export async function receiptAction(formData: FormData) {
   if (!requestId || !UUID.test(requestId)) backTo(formData, id, { error: "Please reload the page and try again." });
   const res = await attempt(formData, id, async () => sendReceipt(await store(), owner.email, id, requestId));
   backTo(formData, id, res.customerEmail.status === "sent" || res.unchanged ? { ok: "Receipt sent." } : { error: `Receipt not sent: ${res.customerEmail.error}` });
+}
+
+export async function workConfirmationAction(formData: FormData) {
+  const owner = await requireOwner();
+  const id = jobId(formData);
+  const requestId = str(formData, "requestId");
+  if (!requestId || !UUID.test(requestId)) backTo(formData, id, { error: "Please reload the page and try again." });
+  const res = await attempt(formData, id, async () => sendWorkConfirmation(await store(), owner.email, id, requestId));
+  backTo(
+    formData,
+    id,
+    res.customerEmail.status === "sent" || res.unchanged ? { ok: "Work confirmation sent to the customer." } : { error: `Work confirmation not sent: ${res.customerEmail.error}` },
+  );
 }
 
 export async function noteAction(formData: FormData) {

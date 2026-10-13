@@ -163,4 +163,33 @@ describe("working a job", () => {
     expect(noted.appointment.events.some((e) => e.type === "note" && e.note === "Gate code 1234")).toBe(true);
     expect((await outbox()).some((m) => m.text.includes("Gate code"))).toBe(false);
   });
+
+  it("sends the work confirmation only for a completed job, with what was paid and the review link when set", async () => {
+    const r = await routes();
+    const t = await token();
+    const a = await book(t, "10:00");
+    const { POST } = await import("@/app/api/owner/v1/appointments/[id]/work-confirmation/route");
+    const confirm = (requestId = crypto.randomUUID()) =>
+      POST(req(`/appointments/${a.id}/work-confirmation`, { method: "POST", token: t, body: { requestId } }), params({ id: a.id }));
+    expect((await POST(req(`/appointments/${a.id}/work-confirmation`, { method: "POST", body: {} }), params({ id: a.id }))).status).toBe(401);
+    expect((await confirm()).status).toBe(409);
+
+    const status = await import("@/app/api/owner/v1/appointments/[id]/status/route");
+    await status.POST(req(`/appointments/${a.id}/status`, { method: "POST", token: t, body: { to: "completed", requestId: crypto.randomUUID() } }), params({ id: a.id }));
+    await r.payments.POST(req(`/appointments/${a.id}/payments`, { method: "POST", token: t, body: { requestId: crypto.randomUUID(), method: "cash", amountCents: 20000 } }), params({ id: a.id }));
+
+    const requestId = crypto.randomUUID();
+    const sent = (await (await confirm(requestId)).json()) as WorkResponse;
+    expect(sent.customerEmail.status).toBe("sent");
+    expect(sent.appointment.workConfirmationSentAt).toBeTruthy();
+    expect(((await (await confirm(requestId)).json()) as WorkResponse).unchanged).toBe(true);
+
+    const mails = (await outbox()).filter((m) => m.subject === "Your Signature Full Detail is complete");
+    expect(mails).toHaveLength(1);
+    expect(mails[0]!.text).toContain("Total: $299");
+    expect(mails[0]!.text).toContain("Paid (Cash): $200");
+    expect(mails[0]!.text).toContain("Balance due: $99");
+    // No review link configured in tests: the request is left out rather than sent without a link.
+    expect(mails[0]!.text).not.toContain("Google review");
+  });
 });

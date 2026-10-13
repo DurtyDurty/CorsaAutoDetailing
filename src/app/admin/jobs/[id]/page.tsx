@@ -19,7 +19,7 @@ import { StatusBadge } from "@/components/admin/work/StatusBadge";
 import { StepButton } from "@/components/admin/work/StepButton";
 import { QuoteCard } from "@/components/admin/work/QuoteCard";
 import { nextStepFor } from "@/components/admin/work/next-step";
-import { noteAction, receiptAction, recordPaymentAction, rescheduleAction, changeStatusAction } from "../actions";
+import { noteAction, receiptAction, recordPaymentAction, rescheduleAction, changeStatusAction, workConfirmationAction } from "../actions";
 
 export const metadata: Metadata = { title: "Job" };
 
@@ -108,6 +108,24 @@ export default async function JobPage({ params, searchParams }: PageProps<"/admi
       )}
       {a.status === "completed" && b.balanceDueCents === 0 && (
         <p className="border border-success/40 bg-[#eef6ef] text-success font-medium rounded-md px-4 py-3">✓ Closed out: completed and paid in full</p>
+      )}
+      {a.status === "completed" && (
+        <Card title="Work confirmation">
+          <p className="text-sm text-ink-muted">
+            {a.workConfirmationSentAt ? `Sent ${when(a.workConfirmationSentAt)}. ` : ""}
+            Emails the customer that the job is done: the service, the total, what was paid
+            {business.reviews.googleUrl ? " and your Google review link." : ". No Google review link is set yet, so the email leaves it out."}
+            {b.balanceDueCents > 0 ? ` It will show ${formatCents(b.balanceDueCents)} still due, so record the payment first if they already paid.` : ""}
+          </p>
+          <form action={workConfirmationAction}>
+            <input type="hidden" name="id" value={a.id} />
+            <input type="hidden" name="requestId" value={randomUUID()} />
+            <input type="hidden" name="back" value={back} />
+            <ConfirmSubmit variant={a.workConfirmationSentAt ? "secondary" : "apex"} size="sm" confirm={a.workConfirmationSentAt ? "Send the work confirmation again?" : undefined}>
+              {a.workConfirmationSentAt ? "Send again" : "Send work confirmation"}
+            </ConfirmSubmit>
+          </form>
+        </Card>
       )}
 
       <QuoteCard a={a} back={back} />

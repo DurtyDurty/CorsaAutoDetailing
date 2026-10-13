@@ -7,7 +7,7 @@ import { QUOTE_STATUS_LABELS, type AppointmentDetail } from "@shared/api";
 import { APPOINTMENT_STATUS_LABELS, type AppointmentStatus } from "@shared/appointment-status";
 import { formatCents, PAYMENT_METHOD_LABELS } from "@shared/money";
 import { ApiClientError } from "@/api/client";
-import { newRequestId, useAddNote, useAppointment, useChangeStatus, useSendReceipt } from "@/api/queries";
+import { newRequestId, useAddNote, useAppointment, useChangeStatus, useSendReceipt, useSendWorkConfirmation } from "@/api/queries";
 import { Button } from "@/design/Button";
 import { Card } from "@/design/Card";
 import { Field } from "@/design/Field";
@@ -87,6 +87,8 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
   const [note, setNote] = useState("");
   const noteId = useRef(newRequestId());
   const receiptId = useRef(newRequestId());
+  const confirmation = useSendWorkConfirmation(a.id);
+  const confirmationId = useRef(newRequestId());
 
   const step = nextStep(a.status);
   const allowed = new Set(a.allowedTransitions);
@@ -140,6 +142,25 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
         onError: (err) => {
           if (!offline(err)) receiptId.current = newRequestId();
           Alert.alert("Receipt not sent", err.message);
+        },
+      },
+    );
+
+  const sendConfirmation = () =>
+    confirmation.mutate(
+      { requestId: confirmationId.current },
+      {
+        onSuccess: (res) => {
+          confirmationId.current = newRequestId();
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          Alert.alert(
+            res.customerEmail.status === "sent" ? "Confirmation sent" : "Confirmation not sent",
+            res.customerEmail.status === "sent" ? `Emailed to ${a.email}.` : (res.customerEmail.error ?? ""),
+          );
+        },
+        onError: (err) => {
+          if (!offline(err)) confirmationId.current = newRequestId();
+          Alert.alert("Confirmation not sent", err.message);
         },
       },
     );
@@ -205,6 +226,25 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
           <Text variant="bodyStrong" style={styles.doneText}>
             ✓ Closed out: completed and paid in full
           </Text>
+        </Card>
+      )}
+
+      {a.status === "completed" && (
+        <Card style={styles.card}>
+          <Text variant="label">Work confirmation</Text>
+          <Text variant="caption">
+            {a.workConfirmationSentAt ? `Sent ${formatShortDay(a.workConfirmationSentAt)} ${formatTime(a.workConfirmationSentAt)}. ` : ""}
+            Emails the customer that the job is done: the service, the total, what was paid and your Google review link.
+            {b.balanceDueCents > 0 ? ` It will show ${formatCents(b.balanceDueCents)} still due, so record the payment first if they already paid.` : ""}
+          </Text>
+          <Button
+            label={a.workConfirmationSentAt ? "Send again" : "Send work confirmation"}
+            variant={a.workConfirmationSentAt ? "secondary" : "primary"}
+            haptic="medium"
+            loading={confirmation.isPending}
+            onPress={sendConfirmation}
+            fullWidth
+          />
         </Card>
       )}
 

@@ -114,6 +114,11 @@ function envMode(): BusinessMode {
   return process.env.NEXT_PUBLIC_BUSINESS_MODE === "LIVE" ? "LIVE" : "PRELAUNCH";
 }
 
+/** Only an https link is ever emailed to customers; anything else counts as not set. */
+function reviewUrl(v: string | null): string | null {
+  return v && /^https:\/\/\S+$/.test(v) ? v : null;
+}
+
 /** Public, browser-safe values must come from NEXT_PUBLIC_* variables. */
 const canonicalDomain = env("NEXT_PUBLIC_SITE_URL") ?? "http://localhost:3000";
 
@@ -457,6 +462,13 @@ export const business = {
   /** Verified customer testimonials only. Empty = section hidden. */
   testimonials: [] as { quote: string; name: string; location: string }[],
   promotions: [] as { title: string; detail: string }[],
+  /**
+   * Google review link from the Business Profile ("Ask for reviews", e.g. https://g.page/r/.../review).
+   * `null` = the work confirmation email leaves the review request out.
+   */
+  reviews: {
+    googleUrl: reviewUrl(env("NEXT_PUBLIC_GOOGLE_REVIEW_URL")),
+  },
 
   scheduling: {
     /** Owner's hours in Eastern time, 24h clock (2026-10-12: 9:30 AM to 5 PM, every day). Jobs must finish by the end. */

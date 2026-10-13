@@ -148,6 +148,8 @@ export interface AppointmentDetail extends AppointmentSummary {
   quote: QuoteSummary | null;
   /** Starting point for a new quote; only for a held time (website request or one you entered) still waiting on a quote. */
   quoteDraft: QuoteDraft | null;
+  /** When the "your detail is complete" email last went out. Optional: older servers don't send it. */
+  workConfirmationSentAt?: string | null;
 }
 
 export interface Page<T> {

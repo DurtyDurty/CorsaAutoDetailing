@@ -5,7 +5,7 @@ import { computeBalance, formatCents, PAYMENT_METHOD_LABELS } from "@shared/mone
 import { ApiError } from "@/lib/api/http";
 import { SlotTakenError, type AppointmentRecord, type LeadStore } from "@/lib/leads/types";
 import { formatEastern } from "@/lib/time";
-import { getAppointmentDetail, logAppointmentEvent } from "./appointments";
+import { getAppointmentDetail, logAppointmentEvent, WORK_CONFIRMATION_SENT } from "./appointments";
 import { sendOwnerEmail } from "./email";
 import { assertCanSchedule, overlapMessage } from "./schedule";
 import { withdrawOpenQuotes } from "@/lib/quotes/service";
@@ -160,6 +160,62 @@ export async function sendReceipt(store: LeadStore, actor: string, id: string, r
     fromStatus: null,
     toStatus: null,
     note: customerEmail.status === "sent" ? "Receipt emailed to the customer" : `Receipt email failed: ${customerEmail.error}`,
+    actor,
+    requestId,
+  });
+  return { appointment: await getAppointmentDetail(store, id), customerEmail, unchanged: false };
+}
+
+/**
+ * "Your detail is complete": what was done, what it cost, what was paid and anything
+ * still owed, with the Google review link when one is set. Only for a completed job.
+ */
+export async function sendWorkConfirmation(store: LeadStore, actor: string, id: string, requestId: string): Promise<WorkResponse> {
+  const replay = await replayed(store, requestId, id);
+  if (replay) return replay;
+  const appt = await requireAppointment(store, id);
+  if (appt.status !== "completed") {
+    throw new ApiError("conflict", "Mark the job complete first, then send the confirmation.");
+  }
+  const detail = await getAppointmentDetail(store, id);
+  const { balance } = detail;
+  const vehicle = [detail.vehicle.year, detail.vehicle.make, detail.vehicle.model].filter(Boolean).join(" ");
+  const address = [detail.serviceAddress, detail.city, detail.zip].filter(Boolean).join(", ");
+  // An accepted quote lists exactly what was agreed; otherwise the package name stands for the work.
+  const quoted = detail.quote?.status === "accepted" ? detail.quote.lines : [];
+  const review = business.reviews.googleUrl;
+  const lines = [
+    `Hi ${detail.customer.firstName},`,
+    "",
+    `Your ${serviceName(appt)} is complete. Thank you for choosing ${business.brand.name}.`,
+    "",
+    "Work completed",
+    `Service: ${serviceName(appt)}`,
+    ...quoted.map((l) => `- ${l.label}: ${formatCents(l.amountCents)}`),
+    `Date: ${formatEastern(appt.startsAt, { dateStyle: "full", timeStyle: undefined })}`,
+    ...(vehicle ? [`Vehicle: ${vehicle}`] : []),
+    ...(address ? [`Location: ${address}`] : []),
+    "",
+    ...(detail.discountCents > 0 ? [`Discount: -${formatCents(detail.discountCents)}`] : []),
+    `Total: ${formatCents(balance.totalCents)}`,
+    ...detail.payments.map(
+      (p) =>
+        `${p.kind === "refund" ? "Refund" : p.kind === "deposit" ? "Deposit" : "Paid"} (${PAYMENT_METHOD_LABELS[p.method]}): ${p.kind === "refund" ? "-" : ""}${formatCents(p.amountCents)}`,
+    ),
+    balance.balanceDueCents > 0
+      ? `Balance due: ${formatCents(balance.balanceDueCents)}. We accept card, cash and digital payments.`
+      : "Paid in full.",
+    ...(review ? ["", "If you're happy with the result, a quick Google review would mean a lot to a new local business:", review] : []),
+    "",
+    "If anything doesn't look right, just reply to this email.",
+  ];
+  const customerEmail = await emailCustomer(store, appt.leadId, `Your ${serviceName(appt)} is complete`, lines.join("\n"), `work-confirmation-${requestId}`);
+  await store.addAppointmentEvent({
+    appointmentId: id,
+    type: "note",
+    fromStatus: null,
+    toStatus: null,
+    note: customerEmail.status === "sent" ? WORK_CONFIRMATION_SENT : `Work confirmation email failed: ${customerEmail.error}`,
     actor,
     requestId,
   });
