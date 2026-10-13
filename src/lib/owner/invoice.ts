@@ -18,8 +18,13 @@ export const invoiceFilename = (a: Pick<AppointmentDetail, "id" | "quote">) => `
 
 export function invoiceDocument(a: AppointmentDetail, issuedAt = new Date().toISOString()): InvoiceDocument {
   const serviceName = a.serviceName ?? "Detail";
-  // The accepted quote lists the work line by line, unless the price was changed after it was accepted.
-  const quoted = a.quote?.status === "accepted" && a.quote.subtotalCents === a.quotedPriceCents ? a.quote.lines : null;
+  // What was added on the day comes after the price the job was booked at.
+  const added = (a.priceChanges ?? []).filter((c) => c.amountCents > 0);
+  const addedCents = added.reduce((s, c) => s + c.amountCents, 0);
+  // If the history and the price ever disagree, one line at the full price is always right.
+  const bookedCents = addedCents < a.quotedPriceCents ? a.quotedPriceCents - addedCents : null;
+  // The accepted quote lists the booked work line by line.
+  const quoted = a.quote?.status === "accepted" && a.quote.subtotalCents === bookedCents ? a.quote.lines : null;
   const payments = a.payments.map((p) => ({
     label: `${p.kind === "refund" ? "Refund" : p.kind === "deposit" ? "Deposit" : "Paid"} ${formatEastern(p.createdAt, { dateStyle: "medium", timeStyle: undefined })} (${PAYMENT_METHOD_LABELS[p.method].replace(/ \(.*$/, "")})`,
     amountCents: p.kind === "refund" ? -p.amountCents : p.amountCents,
@@ -42,7 +47,10 @@ export function invoiceDocument(a: AppointmentDetail, issuedAt = new Date().toIS
       serviceName,
       vehicle: [a.vehicle.year, a.vehicle.make, a.vehicle.model].filter(Boolean).join(" ") || null,
     },
-    lines: quoted ?? [{ label: serviceName, amountCents: a.quotedPriceCents }],
+    lines:
+      bookedCents === null
+        ? [{ label: serviceName, amountCents: a.quotedPriceCents }]
+        : [...(quoted ?? [{ label: serviceName, amountCents: bookedCents }]), ...added.map((c) => ({ label: c.label, amountCents: c.amountCents }))],
     subtotalCents: a.quotedPriceCents,
     discountCents: Math.min(Math.max(0, a.discountCents), a.quotedPriceCents),
     totalCents: a.balance.totalCents,

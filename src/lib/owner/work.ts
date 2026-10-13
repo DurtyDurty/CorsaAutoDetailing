@@ -1,13 +1,13 @@
 import "server-only";
 import { business, getService } from "@/config/business";
-import type { RecordPaymentInput, RescheduleInput, WorkResponse } from "@shared/api";
+import type { ChangeTotalInput, RecordPaymentInput, RescheduleInput, WorkResponse } from "@shared/api";
 import { computeBalance, formatCents, PAYMENT_METHOD_LABELS } from "@shared/money";
 import { ApiError } from "@/lib/api/http";
 import { SlotTakenError, type AppointmentRecord, type LeadStore } from "@/lib/leads/types";
 import { formatEastern } from "@/lib/time";
-import { getAppointmentDetail, logAppointmentEvent, WORK_CONFIRMATION_SENT } from "./appointments";
+import { getAppointmentDetail, logAppointmentEvent, priceChangeNote, WORK_CONFIRMATION_SENT } from "./appointments";
 import { sendOwnerEmail } from "./email";
-import { invoiceFilename, renderInvoice } from "./invoice";
+import { invoiceDocument, invoiceFilename, isInvoiceable, renderInvoice } from "./invoice";
 import type { EmailAttachment } from "@/lib/email";
 import { assertCanSchedule, overlapMessage } from "./schedule";
 import { withdrawOpenQuotes } from "@/lib/quotes/service";
@@ -132,6 +132,41 @@ export async function recordPayment(store: LeadStore, actor: string, id: string,
   return { appointment: await getAppointmentDetail(store, id), customerEmail: SKIPPED, unchanged: false };
 }
 
+/**
+ * Extra work asked for on the day (or something taken off): changes the total the invoice,
+ * balance and work confirmation use. Nothing is sent to the customer.
+ */
+export async function changeTotal(store: LeadStore, actor: string, id: string, input: ChangeTotalInput): Promise<WorkResponse> {
+  const replay = await replayed(store, input.requestId, id);
+  if (replay) return replay;
+  const appt = await requireAppointment(store, id);
+  if (!isInvoiceable(appt)) throw new ApiError("conflict", "The total can be changed once the job is booked. Before that, revise the quote.");
+
+  const patch =
+    input.amountCents > 0
+      ? { quotedPriceCents: appt.quotedPriceCents + input.amountCents }
+      : { discountCents: appt.discountCents - input.amountCents };
+  const total = (patch.quotedPriceCents ?? appt.quotedPriceCents) - (patch.discountCents ?? appt.discountCents);
+  if (total < 0) {
+    const most = formatCents(appt.quotedPriceCents - appt.discountCents);
+    throw new ApiError("invalid", `You can take off at most ${most}, the current total.`, { amountCents: "More than the total." });
+  }
+  if (total > 1_000_000) throw new ApiError("invalid", "That total looks too large.", { amountCents: "Too large." });
+
+  const updated = await store.updateAppointmentIfStatus(id, appt.status, patch);
+  if (!updated) throw new ApiError("conflict", "This appointment was just changed on another device. Pull to refresh and try again.");
+  await store.addAppointmentEvent({
+    appointmentId: id,
+    type: "note",
+    fromStatus: null,
+    toStatus: null,
+    note: priceChangeNote(input.label, input.amountCents),
+    actor,
+    requestId: input.requestId,
+  });
+  return { appointment: await getAppointmentDetail(store, id), customerEmail: SKIPPED, unchanged: false };
+}
+
 /** Emails the customer what the job cost, what they paid and anything still owed. */
 export async function sendReceipt(store: LeadStore, actor: string, id: string, requestId: string): Promise<WorkResponse> {
   const replay = await replayed(store, requestId, id);
@@ -184,8 +219,8 @@ export async function sendWorkConfirmation(store: LeadStore, actor: string, id: 
   const { balance } = detail;
   const vehicle = [detail.vehicle.year, detail.vehicle.make, detail.vehicle.model].filter(Boolean).join(" ");
   const address = [detail.serviceAddress, detail.city, detail.zip].filter(Boolean).join(", ");
-  // An accepted quote lists exactly what was agreed; otherwise the package name stands for the work.
-  const quoted = detail.quote?.status === "accepted" ? detail.quote.lines : [];
+  // The same lines as the attached invoice: what was booked, then anything added on the day.
+  const work = invoiceDocument(detail).lines;
   const review = business.reviews.googleUrl;
   const lines = [
     `Hi ${detail.customer.firstName},`,
@@ -194,7 +229,7 @@ export async function sendWorkConfirmation(store: LeadStore, actor: string, id: 
     "",
     "Work completed",
     `Service: ${serviceName(appt)}`,
-    ...quoted.map((l) => `- ${l.label}: ${formatCents(l.amountCents)}`),
+    ...(work.length > 1 ? work.map((l) => `- ${l.label}: ${formatCents(l.amountCents)}`) : []),
     `Date: ${formatEastern(appt.startsAt, { dateStyle: "full", timeStyle: undefined })}`,
     ...(vehicle ? [`Vehicle: ${vehicle}`] : []),
     ...(address ? [`Location: ${address}`] : []),

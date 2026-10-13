@@ -164,6 +164,40 @@ describe("working a job", () => {
     expect((await outbox()).some((m) => m.text.includes("Gate code"))).toBe(false);
   });
 
+  it("changes a booked job's total once per tap, and the invoice lists what was added", async () => {
+    const t = await token();
+    const a = await book(t, "10:00");
+    const { POST } = await import("@/app/api/owner/v1/appointments/[id]/total/route");
+    const change = (body: Record<string, unknown>, tok: string | null = t) =>
+      POST(req(`/appointments/${a.id}/total`, { method: "POST", token: tok ?? undefined, body }), params({ id: a.id }));
+    expect((await change({}, null)).status).toBe(401);
+
+    const requestId = crypto.randomUUID();
+    const added = (await (await change({ requestId, label: "Pet hair removal", amountCents: 3500 })).json()) as WorkResponse;
+    expect(added.appointment.balance.totalCents).toBe(33400);
+    expect(added.appointment.priceChanges).toMatchObject([{ label: "Pet hair removal", amountCents: 3500 }]);
+    expect(((await (await change({ requestId, label: "Pet hair removal", amountCents: 3500 })).json()) as WorkResponse).appointment.balance.totalCents).toBe(33400);
+
+    const off = (await (await change({ requestId: crypto.randomUUID(), label: "Skipped the trunk (customer's call)", amountCents: -1000 })).json()) as WorkResponse;
+    expect(off.appointment).toMatchObject({ quotedPriceCents: 33400, discountCents: 1000 });
+    expect(off.appointment.balance.totalCents).toBe(32400);
+    expect(off.appointment.priceChanges).toHaveLength(2);
+
+    expect((await change({ requestId: crypto.randomUUID(), label: "Too much", amountCents: -99900 })).status).toBe(422);
+    expect((await change({ requestId: crypto.randomUUID(), label: "Nothing", amountCents: 0 })).status).toBe(422);
+    expect((await change({ requestId: crypto.randomUUID(), label: " ", amountCents: 500 })).status).toBe(422);
+
+    const { invoiceDocument } = await import("@/lib/owner/invoice");
+    const doc = invoiceDocument(off.appointment);
+    expect(doc.lines).toEqual([
+      { label: "Signature Full Detail", amountCents: 29900 },
+      { label: "Pet hair removal", amountCents: 3500 },
+    ]);
+    expect(doc).toMatchObject({ subtotalCents: 33400, discountCents: 1000, totalCents: 32400, balanceDueCents: 32400 });
+    // Nothing about a price change is emailed.
+    expect(await outbox()).toHaveLength(0);
+  });
+
   it("sends the work confirmation only for a completed job, with what was paid and the review link when set", async () => {
     const r = await routes();
     const t = await token();

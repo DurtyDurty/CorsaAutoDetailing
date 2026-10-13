@@ -3,13 +3,14 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { z } from "zod";
-import { noteSchema, OVERRIDABLE, recordPaymentSchema, rescheduleSchema, sendQuoteSchema, statusChangeSchema } from "@shared/api";
+import { changeTotalSchema, noteSchema, OVERRIDABLE, recordPaymentSchema, rescheduleSchema, sendQuoteSchema, statusChangeSchema } from "@shared/api";
+import { formatCents } from "@shared/money";
 import { requireOwner } from "@/lib/auth/owner";
 import { ApiError } from "@/lib/api/http";
 import { getLeadStore } from "@/lib/leads/store";
 import { changeAppointmentStatus, getAppointmentDetail } from "@/lib/owner/appointments";
 import { sendQuote } from "@/lib/quotes/service";
-import { addNote, recordPayment, rescheduleAppointment, sendReceipt, sendWorkConfirmation } from "@/lib/owner/work";
+import { addNote, changeTotal, recordPayment, rescheduleAppointment, sendReceipt, sendWorkConfirmation } from "@/lib/owner/work";
 
 /**
  * Job actions for the web dashboard. Same services as the owner app, so a
@@ -111,6 +112,19 @@ export async function recordPaymentAction(formData: FormData) {
   });
   const res = await attempt(formData, id, async () => recordPayment(await store(), owner.email, id, input));
   backTo(formData, id, { ok: res.unchanged ? "Already recorded." : input.kind === "refund" ? "Refund recorded." : "Payment recorded." });
+}
+
+export async function changeTotalAction(formData: FormData) {
+  const owner = await requireOwner();
+  const id = jobId(formData);
+  const amount = cents(formData.get("amount"));
+  const input = parse(formData, id, changeTotalSchema, {
+    requestId: str(formData, "requestId"),
+    label: str(formData, "label") ?? "",
+    amountCents: Number.isFinite(amount) ? (formData.get("direction") === "off" ? -Math.abs(amount) : Math.abs(amount)) : 0,
+  });
+  const res = await attempt(formData, id, async () => changeTotal(await store(), owner.email, id, input));
+  backTo(formData, id, { ok: res.unchanged ? "Already changed." : `Total is now ${formatCents(res.appointment.balance.totalCents)}.` });
 }
 
 export async function receiptAction(formData: FormData) {

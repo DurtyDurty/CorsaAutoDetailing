@@ -6,6 +6,7 @@ import type {
   AppointmentDetail,
   AppointmentSummary,
   BookingOptions,
+  ChangeTotalInput,
   RecordPaymentInput,
   RescheduleInput,
   WorkResponse,
@@ -265,6 +266,7 @@ function useWork<V>(path: (v: V) => string, body: (v: V) => unknown) {
 export const useReschedule = (id: string) => useWork<RescheduleInput>(() => `/appointments/${id}/reschedule`, (v) => v);
 export const useRecordPayment = (id: string) => useWork<RecordPaymentInput>(() => `/appointments/${id}/payments`, (v) => v);
 export const useSendReceipt = (id: string) => useWork<{ requestId: string }>(() => `/appointments/${id}/receipt`, (v) => v);
+export const useChangeTotal = (id: string) => useWork<ChangeTotalInput>(() => `/appointments/${id}/total`, (v) => v);
 export const useSendWorkConfirmation = (id: string) => useWork<{ requestId: string }>(() => `/appointments/${id}/work-confirmation`, (v) => v);
 export const useAddNote =(id: string) => useWork<{ requestId: string; note: string }>(() => `/appointments/${id}/notes`, (v) => v);
 

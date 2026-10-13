@@ -20,6 +20,7 @@ import { nextStep } from "@/features/appointments/next-step";
 import { PaymentSheet } from "@/features/appointments/PaymentSheet";
 import { QuoteSheet } from "@/features/appointments/QuoteSheet";
 import { RescheduleSheet } from "@/features/appointments/RescheduleSheet";
+import { TotalSheet } from "@/features/appointments/TotalSheet";
 import { addressLine, formatShortDay, formatTime, formatTimeRange, vehicleLine } from "@/lib/format";
 import { callPhone, navigateTo, sendEmail, textPhone } from "@/lib/native";
 
@@ -65,6 +66,9 @@ function useStatusAction(a: AppointmentDetail) {
   return { run, busy: change.isPending };
 }
 
+/** The total can change once the job is booked and hasn't fallen through. */
+const allowedToPrice = (s: AppointmentStatus) => s !== "declined" && s !== "cancelled" && s !== "no_show";
+
 function askReason(title: string, onReason: (reason: string) => void) {
   if (Platform.OS === "ios") {
     Alert.prompt(title, "A short reason, for your records. The customer doesn't see it.", [
@@ -82,6 +86,8 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
   const addNote = useAddNote(a.id);
   const [paying, setPaying] = useState(false);
   const [moving, setMoving] = useState(false);
+  const [pricing, setPricing] = useState(false);
+  const priceable = a.status !== "held" && allowedToPrice(a.status);
   // Arriving from Today's "Send quote" opens the quote straight away.
   const [quoting, setQuoting] = useState(openQuote && a.quoteDraft !== null);
   const [note, setNote] = useState("");
@@ -286,6 +292,11 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
         <Row label="Collected" value={formatCents(b.collectedCents)} />
         <Row label="Still due" value={formatCents(b.balanceDueCents)} />
         {b.refundedCents > 0 && <Row label="Refunded" value={formatCents(b.refundedCents)} />}
+        {(a.priceChanges ?? []).map((c) => (
+          <Text key={`${c.createdAt}-${c.label}`} variant="caption">
+            {formatShortDay(c.createdAt)} · {c.amountCents > 0 ? "Added" : "Took off"} {formatCents(Math.abs(c.amountCents))} · {c.label}
+          </Text>
+        ))}
         {a.payments.map((p) => (
           <Text key={p.id} variant="caption">
             {formatShortDay(p.createdAt)} · {p.kind === "refund" ? "Refund" : p.kind === "deposit" ? "Deposit" : "Payment"} {formatCents(p.amountCents)} ·{" "}
@@ -297,6 +308,7 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
           <Button label="Record payment" variant="secondary" onPress={() => setPaying(true)} disabled={a.status === "held" || a.status === "declined"} style={styles.action} />
           <Button label="Send receipt" variant="secondary" onPress={sendReceipt} loading={receipt.isPending} disabled={b.collectedCents === 0} style={styles.action} />
         </View>
+        {priceable && <Button label="Change total" variant="secondary" onPress={() => setPricing(true)} />}
       </Card>
 
       <Card style={styles.card}>
@@ -362,6 +374,7 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
       </Card>
 
       {paying && <PaymentSheet appt={a} visible={paying} onClose={() => setPaying(false)} />}
+      {pricing && <TotalSheet appt={a} visible={pricing} onClose={() => setPricing(false)} />}
       {moving && <RescheduleSheet appt={a} visible={moving} onClose={() => setMoving(false)} />}
       {quoting && a.quoteDraft && <QuoteSheet appt={a} draft={a.quoteDraft} visible={quoting} onClose={() => setQuoting(false)} />}
     </>

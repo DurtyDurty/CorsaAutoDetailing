@@ -9,6 +9,7 @@ import { requireOwner } from "@/lib/auth/owner";
 import { ApiError } from "@/lib/api/http";
 import { getLeadStore } from "@/lib/leads/store";
 import { getAppointmentDetail } from "@/lib/owner/appointments";
+import { isInvoiceable } from "@/lib/owner/invoice";
 import { conditionFlagLabel } from "@/lib/pricing";
 import { formatEastern } from "@/lib/time";
 import { formatPhone } from "@/lib/utils";
@@ -19,7 +20,7 @@ import { StatusBadge } from "@/components/admin/work/StatusBadge";
 import { StepButton } from "@/components/admin/work/StepButton";
 import { QuoteCard } from "@/components/admin/work/QuoteCard";
 import { nextStepFor } from "@/components/admin/work/next-step";
-import { noteAction, receiptAction, recordPaymentAction, rescheduleAction, changeStatusAction, workConfirmationAction } from "../actions";
+import { changeTotalAction, noteAction, receiptAction, recordPaymentAction, rescheduleAction, changeStatusAction, workConfirmationAction } from "../actions";
 
 export const metadata: Metadata = { title: "Job" };
 
@@ -231,6 +232,44 @@ export default async function JobPage({ params, searchParams }: PageProps<"/admi
                   <input type="radio" name="kind" value="refund" className="checkbox" /> Refund
                 </label>
                 <ConfirmSubmit size="sm">Record</ConfirmSubmit>
+              </div>
+            </form>
+          )}
+          {isInvoiceable(a) && (
+            <form action={changeTotalAction} className="flex flex-col gap-3 border-t border-line pt-3">
+              <input type="hidden" name="id" value={a.id} />
+              <input type="hidden" name="requestId" value={randomUUID()} />
+              <input type="hidden" name="back" value={back} />
+              <p className="text-sm font-medium">Change total</p>
+              {(a.priceChanges ?? []).length > 0 && (
+                <ul className="text-sm text-ink-muted flex flex-col gap-0.5">
+                  {(a.priceChanges ?? []).map((c) => (
+                    <li key={`${c.createdAt}-${c.label}`}>
+                      {when(c.createdAt)} · {c.amountCents > 0 ? "Added" : "Took off"} {formatCents(Math.abs(c.amountCents))} · {c.label}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="font-medium">Change</span>
+                  <select aria-label="Change" name="direction" className="field min-h-10 py-2" defaultValue="add">
+                    <option value="add">Add to total</option>
+                    <option value="off">Take off</option>
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="font-medium">Amount ($)</span>
+                  <input aria-label="Change amount ($)" name="amount" inputMode="decimal" required className="field min-h-10 py-2" />
+                </label>
+              </div>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium">What for</span>
+                <input name="label" required maxLength={80} className="field min-h-10 py-2" placeholder="e.g. Pet hair removal" />
+              </label>
+              <div className="flex flex-wrap items-center gap-3">
+                <ConfirmSubmit variant="secondary" size="sm">Change total</ConfirmSubmit>
+                <span className="text-sm text-ink-muted">The customer isn&apos;t emailed; the invoice picks it up.</span>
               </div>
             </form>
           )}

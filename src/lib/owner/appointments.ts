@@ -14,7 +14,7 @@ import {
   checkTransition,
   type AppointmentStatus,
 } from "@shared/appointment-status";
-import { computeBalance } from "@shared/money";
+import { computeBalance, formatCents } from "@shared/money";
 import { ApiError } from "@/lib/api/http";
 import { appointmentConfirmationEmail, requestDeclinedEmail, sendOwnerEmail } from "./email";
 import { effectiveStatus, isQuotable, quoteDraft, toQuoteSummary, withdrawOpenQuotes } from "@/lib/quotes/service";
@@ -154,7 +154,25 @@ export async function getAppointmentDetail(store: LeadStore, id: string): Promis
     quote: latest ? toQuoteSummary(latest) : null,
     quoteDraft: isQuotable(a) ? quoteDraft(a, lead) : null,
     workConfirmationSentAt: events.findLast((e) => e.type === "note" && e.note === WORK_CONFIRMATION_SENT)?.createdAt ?? null,
+    priceChanges: events.flatMap((e) => {
+      const change = e.type === "note" ? parsePriceChange(e.note) : null;
+      return change ? [{ ...change, createdAt: e.createdAt }] : [];
+    }),
   };
+}
+
+/**
+ * A change to the total is kept as a history note in this exact form, e.g.
+ * "Total change: Pet hair removal (+$35)", and read back for the invoice lines.
+ */
+export const priceChangeNote = (label: string, amountCents: number) =>
+  `Total change: ${label} (${amountCents < 0 ? "-" : "+"}${formatCents(Math.abs(amountCents))})`;
+
+function parsePriceChange(note: string | null): { label: string; amountCents: number } | null {
+  const m = note ? /^Total change: (.+) \(([+-])\$([\d,]+(?:\.\d{2})?)\)$/.exec(note) : null;
+  if (!m) return null;
+  const cents = Math.round(Number(m[3]!.replace(/,/g, "")) * 100);
+  return { label: m[1]!, amountCents: m[2] === "-" ? -cents : cents };
 }
 
 /** History note written when the work confirmation email goes out; the detail reads it back. */

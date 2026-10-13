@@ -150,6 +150,14 @@ export interface AppointmentDetail extends AppointmentSummary {
   quoteDraft: QuoteDraft | null;
   /** When the "your detail is complete" email last went out. Optional: older servers don't send it. */
   workConfirmationSentAt?: string | null;
+  /** Changes to the total made after the job was booked, oldest first (negative = taken off). Optional like the above. */
+  priceChanges?: PriceChange[];
+}
+
+export interface PriceChange {
+  label: string;
+  amountCents: number;
+  createdAt: string;
 }
 
 export interface Page<T> {
@@ -419,6 +427,23 @@ export const noteSchema = z.object({
 });
 
 export const receiptSchema = z.object({ requestId: z.string().uuid() });
+
+/** Add to (or take off) a booked job's total, e.g. extra work the customer asked for on the day. */
+export const changeTotalSchema = z.object({
+  requestId: z.string().uuid(),
+  label: z
+    .string()
+    .transform((s) => s.replace(/\s+/g, " ").trim())
+    .pipe(z.string().min(1, "Say what it's for.").max(80, "Keep it under 80 characters.")),
+  /** Positive adds to the total; negative takes it off as a discount. */
+  amountCents: z.coerce
+    .number()
+    .int()
+    .min(-1_000_000, "That amount looks too large.")
+    .max(1_000_000, "That amount looks too large.")
+    .refine((v) => v !== 0, "Enter an amount."),
+});
+export type ChangeTotalInput = z.infer<typeof changeTotalSchema>;
 
 export interface WorkResponse {
   appointment: AppointmentDetail;
