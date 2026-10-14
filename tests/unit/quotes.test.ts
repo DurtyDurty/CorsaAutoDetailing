@@ -307,6 +307,26 @@ describe("the customer's answer", () => {
     expect(detail.balance.totalCents).toBe(32400);
   });
 
+  it("the owner can book it when the customer agreed by text: the quote's price stands and the link stops working", async () => {
+    const appt = await request("dana@example.com");
+    await sendQuote(appt.id);
+    const token = await linkTokenFor("dana@example.com");
+    const { acceptQuote, loadQuoteByToken } = await import("@/lib/quotes/service");
+    const { changeAppointmentStatus, getAppointmentDetail } = await import("@/lib/owner/appointments");
+    const s = await store();
+
+    const res = await changeAppointmentStatus(s, "owner@example.com", appt.id, { to: "confirmed", reason: "Customer agreed by text or phone", requestId: crypto.randomUUID() });
+    expect(res.customerEmail).toMatchObject({ status: "sent" });
+    expect(await s.getAppointment(appt.id)).toMatchObject({ status: "confirmed", quotedPriceCents: 34900, discountCents: 2500, customerAgreed: true, holdExpiresAt: null });
+    expect((await loadQuoteByToken(s, token))!.status).toBe("accepted");
+    expect(await acceptQuote(s, token)).toMatchObject({ ok: false });
+
+    const confirmation = (await outbox()).filter((m) => m.to === "dana@example.com" && m.subject.includes("is confirmed"));
+    expect(confirmation).toHaveLength(1);
+    expect(confirmation[0]!.text).toContain("$324");
+    expect((await getAppointmentDetail(s, appt.id)).balance.totalCents).toBe(32400);
+  });
+
   it("declining releases the time and passes the reason to the owner", async () => {
     const appt = await request("dana@example.com");
     await sendQuote(appt.id);

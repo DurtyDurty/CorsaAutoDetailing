@@ -124,6 +124,19 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
     } else go();
   };
 
+  // The customer said yes by text or phone instead of through the quote link.
+  const bookAnyway = () => {
+    const quoted = a.quote && (a.quote.status === "sent" || a.quote.status === "expired") ? a.quote.totalCents : null;
+    Alert.alert(
+      "Book this job?",
+      `Use this when ${a.customer.firstName} agreed by text or phone. The job is confirmed at ${formatCents(quoted ?? b.totalCents)}${quoted !== null ? " (the quote's price)" : ""} and they're emailed a confirmation.`,
+      [
+        { text: "Not yet", style: "cancel" },
+        { text: "Book it", onPress: () => status.run("confirmed", { reason: "Customer agreed by text or phone" }) },
+      ],
+    );
+  };
+
   const cancel = () =>
     Alert.alert("Cancel this appointment?", "This frees the time. You can't undo it, but you can book them again.", [
       { text: "Keep it", style: "cancel" },
@@ -201,8 +214,8 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
       </View>
 
       {step && <Button label={step.label} haptic="medium" loading={status.busy} onPress={onStep} fullWidth />}
-      {(a.quote || a.quoteDraft) && (
-        <Card style={[styles.card, a.quoteDraft ? styles.quoteOpen : null]}>
+      {(a.quote || a.quoteDraft || a.status === "held") && (
+        <Card style={[styles.card, a.quoteDraft || a.status === "held" ? styles.quoteOpen : null]}>
           <Text variant="label">Quote</Text>
           {a.quote ? (
             <>
@@ -222,6 +235,12 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
           )}
           {a.quoteDraft && (
             <Button label={a.quote ? "Revise & resend quote" : "Send quote"} haptic="medium" onPress={() => setQuoting(true)} fullWidth />
+          )}
+          {a.status === "held" && allowed.has("confirmed") && (
+            <>
+              <Button label="Customer agreed: book it" variant="secondary" loading={status.busy} onPress={bookAnyway} fullWidth />
+              <Text variant="caption">Agreed by text or phone instead of the quote link? Book it yourself.</Text>
+            </>
           )}
         </Card>
       )}

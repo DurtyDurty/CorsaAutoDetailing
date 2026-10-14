@@ -141,6 +141,25 @@ export default async function JobPage({ params, searchParams }: PageProps<"/admi
       )}
 
       <QuoteCard a={a} back={back} />
+      {a.status === "held" && allowed.has("confirmed") && (
+        <Card title="Customer agreed another way">
+          <p className="text-sm text-ink-muted">
+            Said yes by text or phone instead of the quote link? Book it here: the job is confirmed
+            {a.quote && (a.quote.status === "sent" || a.quote.status === "expired") ? ` at the quote's price (${formatCents(a.quote.totalCents)})` : ` at ${formatCents(b.totalCents)}`} and the
+            customer is emailed a confirmation.
+          </p>
+          <StepButton
+            id={a.id}
+            to="confirmed"
+            label="Customer agreed: book it"
+            back={back}
+            variant="secondary"
+            size="sm"
+            reason="Customer agreed by text or phone"
+            confirm="Book this job? The customer is emailed a confirmation."
+          />
+        </Card>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card title="Customer">

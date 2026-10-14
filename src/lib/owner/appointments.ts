@@ -256,7 +256,14 @@ export async function changeAppointmentStatus(
   const acceptingRequest = appt.status === "held" && input.to === "confirmed" && appt.depositStatus === "none";
   // A time the owner held for his own quote isn't a customer's request: withdrawing it emails nobody.
   const decliningRequest = appt.status === "held" && input.to === "declined" && appt.depositStatus === "none" && appt.source === "online";
+  // The customer agreed to the quote some other way (a text, a call) and the owner books it: the quote's price stands.
+  const agreedQuote = acceptingRequest ? ((await store.listQuotesForAppointments([id])).find((q) => q.status === "sent") ?? null) : null;
   if (acceptingRequest) patch.holdExpiresAt = null;
+  if (agreedQuote) {
+    patch.quotedPriceCents = agreedQuote.subtotalCents;
+    patch.discountCents = agreedQuote.discountCents;
+    patch.customerAgreed = true;
+  }
 
   const updated = await store.updateAppointmentIfStatus(id, appt.status, patch);
   if (!updated) {
@@ -276,6 +283,9 @@ export async function changeAppointmentStatus(
     requestId: input.requestId,
   });
 
+  if (agreedQuote) {
+    await store.updateQuoteIfStatus(agreedQuote.id, "sent", { status: "accepted", respondedAt: new Date().toISOString(), responseNote: "Confirmed by owner" });
+  }
   // Decided without the quote (or the job ended): an open quote can no longer be accepted.
   if (appt.status === "held") await withdrawOpenQuotes(store, id, `Request ${input.to} by ${actor}`);
 
@@ -310,7 +320,7 @@ async function emailCustomerAboutRequest(
           serviceName: (appt.serviceId && getService(appt.serviceId)?.name) || "detail",
           startsAt: appt.startsAt,
           address: [lead.serviceAddress, lead.city, lead.zip].filter(Boolean).join(", ") || null,
-          priceCents: appt.quotedPriceCents,
+          priceCents: appt.quotedPriceCents - appt.discountCents,
         })
       : requestDeclinedEmail({ firstName: lead.firstName, startsAt: appt.startsAt });
   const sent = await sendOwnerEmail(store, lead.id, { ...email, sendKey: `${outcome}-${appt.id}` });
