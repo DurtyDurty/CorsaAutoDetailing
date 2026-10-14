@@ -474,7 +474,7 @@ export const business = {
     {
       quote:
         "This was my first time booking detailing services for my car, and I have to say it was worth the money. I have two golden retrievers who shed a lot, and my car was covered in hair and dirt inside. After booking the signature package with pet hair removal, my car looks brand new, inside and out. Highly recommend!!!",
-      name: "Ana Rosa",
+      name: "Ana R.",
       rating: 5,
       source: "Google",
     },
