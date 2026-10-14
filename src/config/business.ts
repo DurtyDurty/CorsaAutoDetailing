@@ -459,8 +459,26 @@ export const business = {
 
   /** Approved real-work photos. Empty = gallery hidden. */
   gallery: [] as { src: string; alt: string; width: number; height: number }[],
-  /** Verified customer testimonials only. Empty = section hidden. */
-  testimonials: [] as { quote: string; name: string; location: string }[],
+  /**
+   * Real customer reviews only, word for word, with the name shown where they were posted.
+   * Empty = the home page reviews section is hidden. Added 2026-10-13 from the Google Business Profile.
+   */
+  testimonials: [
+    {
+      quote:
+        "Outstanding service from start to finish! The attention to detail was incredible, and my car looks amazing! Professional, reliable, and clearly takes pride in their work. Highly recommend to anyone looking for top-quality car detailing!",
+      name: "Goats Heritage",
+      rating: 5,
+      source: "Google",
+    },
+    {
+      quote:
+        "This was my first time booking detailing services for my car, and I have to say it was worth the money. I have two golden retrievers who shed a lot, and my car was covered in hair and dirt inside. After booking the signature package with pet hair removal, my car looks brand new, inside and out. Highly recommend!!!",
+      name: "Ana Rosa",
+      rating: 5,
+      source: "Google",
+    },
+  ] as { quote: string; name: string; location?: string; rating: number; source: string }[],
   promotions: [] as { title: string; detail: string }[],
   /**
    * Google review link from the Business Profile ("Ask for reviews", e.g. https://g.page/r/.../review).

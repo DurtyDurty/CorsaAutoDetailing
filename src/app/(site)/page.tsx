@@ -7,6 +7,7 @@ import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/Sec
 import { PackageCards } from "@/components/site/PackageCards";
 import { CareJourney } from "@/components/site/CareJourney";
 import { ProcessSteps } from "@/components/site/ProcessSteps";
+import { Reviews } from "@/components/site/Reviews";
 import { HeroVideo } from "@/components/site/HeroVideo";
 import { Faq } from "@/components/site/Faq";
 import { BusinessJsonLd } from "@/components/site/JsonLd";
@@ -216,6 +217,8 @@ export default function HomePage() {
           </div>
         </div>
       </Section>
+
+      <Reviews />
 
       {/* Gallery — only real, approved work */}
       {business.gallery.length > 0 && (
