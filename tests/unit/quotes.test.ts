@@ -324,6 +324,7 @@ describe("the customer's answer", () => {
     const confirmation = (await outbox()).filter((m) => m.to === "dana@example.com" && m.subject.includes("is confirmed"));
     expect(confirmation).toHaveLength(1);
     expect(confirmation[0]!.text).toContain("$324");
+    expect(confirmation[0]!.text).toContain("Final price will be given on site after inspection.");
     expect((await getAppointmentDetail(s, appt.id)).balance.totalCents).toBe(32400);
   });
 

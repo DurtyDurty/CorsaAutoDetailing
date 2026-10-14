@@ -31,14 +31,19 @@ export default async function CalendarPage({ searchParams }: PageProps<"/admin/c
   const weekStart = mondayOf(selected);
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-  const page = await listAppointmentSummaries(
-    store,
-    listAppointmentsQuery.parse({
-      from: easternToUtc(weekStart, "00:00").toISOString(),
-      to: easternToUtc(addDays(weekStart, 7), "00:00").toISOString(),
-      limit: 200,
-    }),
-  );
+  const [page, timeOff] = await Promise.all([
+    listAppointmentSummaries(
+      store,
+      listAppointmentsQuery.parse({
+        from: easternToUtc(weekStart, "00:00").toISOString(),
+        to: easternToUtc(addDays(weekStart, 7), "00:00").toISOString(),
+        limit: 200,
+      }),
+    ),
+    store.listTimeOff({ from: weekStart }),
+  ]);
+  const offByDay = new Map(timeOff.filter((t) => t.day < addDays(weekStart, 7)).map((t) => [t.day, t]));
+  const selectedOff = offByDay.get(selected);
   const byDay = new Map<string, typeof page.items>();
   for (const a of page.items) {
     if (HIDDEN.has(a.status)) continue;
@@ -78,21 +83,24 @@ export default async function CalendarPage({ searchParams }: PageProps<"/admin/c
         {days.map((d) => {
           const on = d === selected;
           const count = byDay.get(d)?.length ?? 0;
+          const off = offByDay.has(d);
           return (
             <Link
               key={d}
               href={href(d)}
               aria-current={on ? "date" : undefined}
-              aria-label={`${fmt(d, { weekday: "long", month: "long", day: "numeric" })}, ${count} ${count === 1 ? "job" : "jobs"}${d === today ? ", today" : ""}`}
+              aria-label={`${fmt(d, { weekday: "long", month: "long", day: "numeric" })}, ${off ? "day off, " : ""}${count} ${count === 1 ? "job" : "jobs"}${d === today ? ", today" : ""}`}
               className={cn(
                 "flex flex-col items-center gap-0.5 rounded-sm border py-2.5",
-                on ? "bg-asphalt border-asphalt text-chalk" : "bg-white border-line hover:border-ink-muted",
+                on ? "bg-asphalt border-asphalt text-chalk" : off ? "bg-chalk border-dashed border-ink-muted hover:border-asphalt" : "bg-white border-line hover:border-ink-muted",
               )}
             >
               <span className={cn("text-[0.65rem] uppercase tracking-[0.14em]", on ? "text-chalk/70" : "text-ink-muted")}>{fmt(d, { weekday: "short" })}</span>
-              <span className={cn("font-display text-2xl leading-none", !on && d === today && "text-apex-deep")}>{fmt(d, { day: "numeric" })}</span>
-              <span className={cn("text-[0.7rem]", on ? "text-chalk/80" : count ? "text-apex-deep font-semibold" : "text-transparent")}>
-                {count ? `${count} ${count === 1 ? "job" : "jobs"}` : "·"}
+              <span className={cn("font-display text-2xl leading-none", !on && d === today && "text-apex-deep", !on && off && "text-ink-muted line-through")}>
+                {fmt(d, { day: "numeric" })}
+              </span>
+              <span className={cn("text-[0.7rem]", on ? "text-chalk/80" : off ? "text-ink-muted font-semibold" : count ? "text-apex-deep font-semibold" : "text-transparent")}>
+                {off ? (count ? `Off · ${count}` : "Off") : count ? `${count} ${count === 1 ? "job" : "jobs"}` : "·"}
               </span>
             </Link>
           );
@@ -103,8 +111,18 @@ export default async function CalendarPage({ searchParams }: PageProps<"/admin/c
         <h2 id="day-title" className="text-xs uppercase tracking-[0.16em] text-ink-muted">
           {selected === today ? "Today" : fmt(selected, { weekday: "long", month: "long", day: "numeric" })}
         </h2>
+        {selectedOff && (
+          <p className="text-sm border border-dashed border-ink-muted bg-chalk rounded-md px-4 py-3">
+            <strong>Day off</strong>
+            {selectedOff.note ? `: ${selectedOff.note}` : ""}. Customers can&apos;t book it.{" "}
+            {jobs.length > 0 && "The jobs below were already booked; move them if you need to. "}
+            <Link href="/admin/time-off" className="underline underline-offset-4">
+              Manage days off
+            </Link>
+          </p>
+        )}
         {jobs.length === 0 ? (
-          <p className="text-sm text-ink-muted border border-dashed border-line rounded-md px-4 py-6 text-center">Nothing booked this day.</p>
+          !selectedOff && <p className="text-sm text-ink-muted border border-dashed border-line rounded-md px-4 py-6 text-center">Nothing booked this day.</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {jobs.map((a) => (
