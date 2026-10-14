@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { business } from "@/config/business";
+import { ON_SITE_PRICE, onSiteLines } from "@shared/api";
 import { formatCents } from "@shared/money";
 import { getLeadStore } from "@/lib/leads/store";
 import { loadQuoteByToken } from "@/lib/quotes/service";
@@ -127,7 +128,9 @@ export default async function QuotePage({ params, searchParams }: PageProps<"/qu
               {q.lines.map((l, i) => (
                 <tr key={i} className="border-b border-line">
                   <td className="px-4 py-3.5">{l.label}</td>
-                  <td className="px-4 py-3.5 text-right tabular-nums">{formatCents(l.amountCents)}</td>
+                  <td className={l.amountCents === 0 ? "px-4 py-3.5 text-right text-sm text-ink-muted" : "px-4 py-3.5 text-right tabular-nums"}>
+                    {l.amountCents === 0 ? ON_SITE_PRICE : formatCents(l.amountCents)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -148,6 +151,9 @@ export default async function QuotePage({ params, searchParams }: PageProps<"/qu
               <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[#9aa0ab]">Total</span>
               <span className="font-display text-3xl tabular-nums">{formatCents(q.totalCents)}</span>
             </p>
+            {onSiteLines(q.lines).length > 0 && (
+              <p className="text-sm text-ink-muted">Items marked &ldquo;{ON_SITE_PRICE}&rdquo; aren&apos;t in this total. We&apos;ll price them after we see the car, and only do them with your OK.</p>
+            )}
           </div>
 
           {q.notes && (

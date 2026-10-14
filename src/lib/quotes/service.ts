@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash, randomInt } from "node:crypto";
 import { business, getService } from "@/config/business";
-import type { QuoteDraft, QuoteSummary, QuoteViewStatus, SendQuoteInput, SendQuoteResponse } from "@shared/api";
+import { onSiteLines, type QuoteDraft, type QuoteSummary, type QuoteViewStatus, type SendQuoteInput, type SendQuoteResponse } from "@shared/api";
 import { formatCents } from "@shared/money";
 import { ApiError } from "@/lib/api/http";
 import { getEmailAdapter } from "@/lib/email";
@@ -237,6 +237,7 @@ export async function sendQuote(
     `Here's your quote for ${name} on ${day(appt.startsAt)} at ${time(appt.startsAt)}.`,
     "",
     `Total: ${formatCents(quote.totalCents)}`,
+    ...(onSiteLines(quote.lines).length ? [`Priced on site after we see the car (not in the total): ${onSiteLines(quote.lines).join(", ")}`] : []),
     "",
     `Review and accept it here to confirm your appointment:`,
     quoteUrl(token),
@@ -360,6 +361,7 @@ export async function acceptQuote(store: LeadStore, token: string): Promise<Quot
       startsAt: a.startsAt,
       address,
       priceCents: quote.totalCents,
+      onSite: onSiteLines(quote.lines),
     });
     // Same key as confirming from the app, so the customer gets one confirmation either way.
     await sendOwnerEmail(store, lead.id, { ...email, sendKey: `confirmed-${a.id}` }).catch(() => null);

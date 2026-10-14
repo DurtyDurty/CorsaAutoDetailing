@@ -139,6 +139,10 @@ export function QuoteCard({ a, back }: { a: AppointmentDetail; back: string }) {
             <textarea name="notes" maxLength={1000} rows={3} defaultValue={revising ? (q.notes ?? "") : ""} className="field" placeholder="e.g. I added pet-hair removal since you mentioned your dog." />
           </label>
           <p className="text-xs text-ink-muted">
+            Haven&apos;t seen the car? Tick a line and leave its amount blank: the customer sees &ldquo;Priced on site&rdquo; and it isn&apos;t in the total. Add the real price after the
+            inspection with Change total.
+          </p>
+          <p className="text-xs text-ink-muted">
             The customer gets an email with the quote as a PDF and a private link to accept it. Accepting confirms the job. The time stays held until the quote expires (never past the
             appointment).
           </p>

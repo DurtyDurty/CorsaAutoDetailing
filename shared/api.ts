@@ -473,8 +473,15 @@ export const QUOTE_STATUS_LABELS: Record<QuoteViewStatus, string> = {
 
 export interface QuoteLineDto {
   label: string;
+  /** 0 = priced on site: the owner hasn't seen the car yet, so it's not in the total. */
   amountCents: number;
 }
+
+/** What a quote line left at $0 shows instead of a price. */
+export const ON_SITE_PRICE = "Priced on site";
+
+/** Lines to be priced after the inspection, by name. */
+export const onSiteLines = (lines: readonly QuoteLineDto[]) => lines.filter((l) => l.amountCents === 0).map((l) => l.label);
 
 export interface QuoteSummary {
   id: string;

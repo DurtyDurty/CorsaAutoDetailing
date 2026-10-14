@@ -14,6 +14,8 @@ export function appointmentConfirmationEmail(a: {
   startsAt: string;
   address: string | null;
   priceCents: number;
+  /** Extras the customer wants that get priced at the inspection (quote lines left at $0). */
+  onSite?: string[];
 }) {
   return {
     subject: `Your ${a.serviceName} is confirmed for ${formatEastern(a.startsAt, { dateStyle: "medium", timeStyle: undefined })}`,
@@ -26,6 +28,7 @@ export function appointmentConfirmationEmail(a: {
       `When: ${formatEastern(a.startsAt, { dateStyle: "full", timeStyle: "short" })} (Eastern)`,
       ...(a.address ? [`Where: ${a.address}`] : []),
       `Quoted price: ${formatCents(a.priceCents)}`,
+      ...(a.onSite?.length ? [`Priced on site, not in the price above: ${a.onSite.join(", ")}`] : []),
       "",
       "Final price will be given on site after inspection.",
       "",

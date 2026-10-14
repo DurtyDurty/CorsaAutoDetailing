@@ -9,6 +9,7 @@ import type {
   Payment,
   StatusChangeInput,
 } from "@shared/api";
+import { onSiteLines } from "@shared/api";
 import {
   allowedTransitions,
   checkTransition,
@@ -291,7 +292,7 @@ export async function changeAppointmentStatus(
 
   let customerEmail: StatusChangeResult["customerEmail"] = null;
   if (acceptingRequest || decliningRequest) {
-    customerEmail = await emailCustomerAboutRequest(store, actor, updated, acceptingRequest ? "confirmed" : "declined");
+    customerEmail = await emailCustomerAboutRequest(store, actor, updated, acceptingRequest ? "confirmed" : "declined", agreedQuote ? onSiteLines(agreedQuote.lines) : []);
   }
 
   if (input.to === "completed") await store.updateLead(appt.leadId, { stage: "completed" });
@@ -310,6 +311,7 @@ async function emailCustomerAboutRequest(
   actor: string,
   appt: AppointmentRecord,
   outcome: "confirmed" | "declined",
+  onSite: string[] = [],
 ): Promise<{ status: "sent" | "failed"; error: string | null }> {
   const lead = await store.getLead(appt.leadId);
   if (!lead) return { status: "failed", error: "Customer not found." };
@@ -321,6 +323,7 @@ async function emailCustomerAboutRequest(
           startsAt: appt.startsAt,
           address: [lead.serviceAddress, lead.city, lead.zip].filter(Boolean).join(", ") || null,
           priceCents: appt.quotedPriceCents - appt.discountCents,
+          onSite,
         })
       : requestDeclinedEmail({ firstName: lead.firstName, startsAt: appt.startsAt });
   const sent = await sendOwnerEmail(store, lead.id, { ...email, sendKey: `${outcome}-${appt.id}` });

@@ -328,6 +328,30 @@ describe("the customer's answer", () => {
     expect((await getAppointmentDetail(s, appt.id)).balance.totalCents).toBe(32400);
   });
 
+  it("a line left at $0 is priced on site: out of the total, named in the emails, replaced on the invoice by what was added", async () => {
+    const appt = await request("dana@example.com");
+    const lines = [LINES[0], { label: "Stain & odor treatment", amountCents: 0 }];
+    expect((await sendQuote(appt.id, { lines, discountCents: 0 })).status).toBe(200);
+    const quoteMail = (await outbox()).find((m) => m.subject.startsWith("Your quote"))!;
+    expect(quoteMail.text).toContain("Total: $299");
+    expect(quoteMail.text).toContain("Priced on site after we see the car (not in the total): Stain & odor treatment");
+
+    const { changeAppointmentStatus, getAppointmentDetail } = await import("@/lib/owner/appointments");
+    const s = await store();
+    await changeAppointmentStatus(s, "owner@example.com", appt.id, { to: "confirmed", reason: "Customer agreed by text or phone", requestId: crypto.randomUUID() });
+    const confirmation = (await outbox()).find((m) => m.subject.includes("is confirmed"))!;
+    expect(confirmation.text).toContain("Quoted price: $299");
+    expect(confirmation.text).toContain("Priced on site, not in the price above: Stain & odor treatment");
+
+    // After the inspection the owner adds the real price; the invoice lists that, not the $0 line.
+    const { changeTotal } = await import("@/lib/owner/work");
+    await changeTotal(s, "owner@example.com", appt.id, { requestId: crypto.randomUUID(), label: "Stain & odor treatment", amountCents: 6000 });
+    const { invoiceDocument } = await import("@/lib/owner/invoice");
+    const invoice = invoiceDocument(await getAppointmentDetail(s, appt.id));
+    expect(invoice.lines).toEqual([LINES[0], { label: "Stain & odor treatment", amountCents: 6000 }]);
+    expect(invoice.totalCents).toBe(35900);
+  });
+
   it("declining releases the time and passes the reason to the owner", async () => {
     const appt = await request("dana@example.com");
     await sendQuote(appt.id);

@@ -1,6 +1,7 @@
 import "server-only";
 import { PDFDocument, PDFName, PDFString, StandardFonts, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
 import { business } from "@/config/business";
+import { ON_SITE_PRICE } from "@shared/api";
 import { formatCents } from "@shared/money";
 import { webColors } from "@shared/brand";
 import { formatEastern } from "@/lib/time";
@@ -217,7 +218,7 @@ async function render(q: Doc): Promise<Uint8Array> {
       tableHead();
     }
     rows.forEach((r, i) => text(r, M + 12, y - i * 14, { size: 10.5 }));
-    text(formatCents(line.amountCents), amountX, y, { size: 10.5, align: "right" });
+    text(line.amountCents === 0 ? ON_SITE_PRICE : formatCents(line.amountCents), amountX, y, { size: 10.5, align: "right", ...(line.amountCents === 0 && { color: C.muted }) });
     y -= rows.length * 14 + 2;
     rule(y + 2);
     y -= 12;
@@ -322,6 +323,9 @@ async function render(q: Doc): Promise<Uint8Array> {
   const terms =
     q.kind === "quote"
       ? [
+          ...(q.lines.some((l) => l.amountCents === 0)
+            ? [`Items marked "${ON_SITE_PRICE}" aren't in the total. We'll price them after we see the car, and only do them with your OK.`]
+            : []),
           business.disclosures.inspection,
           `${business.finalQuoteNotice} ${business.taxNotice}`,
           `This quote is valid until ${day(q.expiresAt, "long")}. If weather prevents the service, we'll reschedule at no charge.`,

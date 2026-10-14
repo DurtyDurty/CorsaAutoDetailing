@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { QUOTE_MAX_LINES, type AppointmentDetail, type QuoteDraft } from "@shared/api";
+import { ON_SITE_PRICE, QUOTE_MAX_LINES, type AppointmentDetail, type QuoteDraft } from "@shared/api";
 import { formatCents } from "@shared/money";
 import { ApiClientError } from "@/api/client";
 import { newRequestId, useSendQuote } from "@/api/queries";
@@ -133,7 +133,7 @@ export function QuoteSheet({ appt, draft, visible, onClose }: { appt: Appointmen
                   <Field label={`Line ${i + 1}`} value={l.label} onChangeText={(v) => update(l.key, { label: v })} maxLength={80} placeholder="Description" />
                 </View>
                 <View style={styles.lineAmount}>
-                  <Field label="$" value={l.amount} onChangeText={(v) => update(l.key, { amount: v })} keyboardType="decimal-pad" placeholder="0" />
+                  <Field label="$" value={l.amount} onChangeText={(v) => update(l.key, { amount: v })} keyboardType="decimal-pad" placeholder="On site" />
                 </View>
                 <Pressable
                   accessibilityRole="button"
@@ -168,6 +168,7 @@ export function QuoteSheet({ appt, draft, visible, onClose }: { appt: Appointmen
               </View>
             )}
             {lines.length < QUOTE_MAX_LINES && <Button label="+ Add a line" variant="secondary" onPress={() => setLines((ls) => [...ls, line("", 0)])} />}
+            <Text variant="caption">Haven&apos;t seen the car? Leave a line&apos;s $ blank: the customer sees &ldquo;{ON_SITE_PRICE}&rdquo; and it isn&apos;t in the total. Add the real price after the inspection with Change total.</Text>
 
             <Field label="Discount ($)" value={discount} onChangeText={setDiscount} keyboardType="decimal-pad" placeholder="0" />
             <Field label="Note to the customer (optional)" value={notes} onChangeText={setNotes} multiline maxLength={1000} placeholder="Shown on the quote" />

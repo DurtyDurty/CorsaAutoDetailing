@@ -23,8 +23,8 @@ export function invoiceDocument(a: AppointmentDetail, issuedAt = new Date().toIS
   const addedCents = added.reduce((s, c) => s + c.amountCents, 0);
   // If the history and the price ever disagree, one line at the full price is always right.
   const bookedCents = addedCents < a.quotedPriceCents ? a.quotedPriceCents - addedCents : null;
-  // The accepted quote lists the booked work line by line.
-  const quoted = a.quote?.status === "accepted" && a.quote.subtotalCents === bookedCents ? a.quote.lines : null;
+  // The accepted quote lists the booked work line by line. Lines left to price on site come in as added work (Change total), or weren't done.
+  const quoted = a.quote?.status === "accepted" && a.quote.subtotalCents === bookedCents ? a.quote.lines.filter((l) => l.amountCents > 0) : null;
   const payments = a.payments.map((p) => ({
     label: `${p.kind === "refund" ? "Refund" : p.kind === "deposit" ? "Deposit" : "Paid"} ${formatEastern(p.createdAt, { dateStyle: "medium", timeStyle: undefined })} (${PAYMENT_METHOD_LABELS[p.method].replace(/ \(.*$/, "")})`,
     amountCents: p.kind === "refund" ? -p.amountCents : p.amountCents,
