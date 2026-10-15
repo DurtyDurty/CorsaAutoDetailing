@@ -1,5 +1,5 @@
 import "server-only";
-import { getService } from "@/config/business";
+import { business, getService } from "@/config/business";
 import type {
   ConversationDetail,
   ConversationKind,
@@ -170,6 +170,10 @@ export async function getConversation(store: LeadStore, leadId: string): Promise
     appointment: focus
       ? { id: focus.id, startsAt: focus.startsAt, endsAt: focus.endsAt, balanceDueCents: focus.balance.balanceDueCents }
       : null,
+    offer:
+      isOfferSignup(lead) && business.firstTimeOffer.enabled
+        ? { percent: business.firstTimeOffer.percent, url: `${business.brand.canonicalDomain}/request?offer=first-time` }
+        : null,
     defaultSubject: defaultEmailSubject(lead),
     signature: ownerSignature(),
     canSend: getEmailAdapter().kind !== "disabled",

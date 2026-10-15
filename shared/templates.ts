@@ -12,9 +12,12 @@ export interface TemplateFields {
   date: string | null;
   time: string | null;
   balance: string | null;
+  /** Set for first-time offer signups only. */
+  offerPercent: number | null;
+  offerUrl: string | null;
 }
 
-export type TemplateNeed = "appointment" | "balance";
+export type TemplateNeed = "appointment" | "balance" | "offer";
 
 export interface EmailTemplate {
   id: string;
@@ -27,7 +30,34 @@ export interface EmailTemplate {
 const service = (f: TemplateFields) => f.serviceName ?? "detail";
 const when = (f: TemplateFields) => [f.date, f.time ? `at ${f.time}` : null].filter(Boolean).join(" ");
 
+const percent = (f: TemplateFields) => `${f.offerPercent ?? 10}%`;
+
 export const EMAIL_TEMPLATES: EmailTemplate[] = [
+  // First-time offer signups leave only a first name and email, so these ask for what a quote needs.
+  {
+    id: "offer_follow_up",
+    label: "Offer: follow-up",
+    needs: ["offer"],
+    subject: () => "Your first detail",
+    body: (f) =>
+      `Hi ${f.firstName},\n\nThanks for signing up for ${percent(f)} off your first detail. I wanted to follow up myself in case you have any questions.\n\nI come to your home or work, and you don't need to have water or power for me. You can see the packages and book here, with the discount already applied:\n${f.offerUrl ?? ""}\n\nOr just reply with what you drive and a day that works for you, and I'll take it from there.`,
+  },
+  {
+    id: "offer_vehicle",
+    label: "Offer: ask about the car",
+    needs: ["offer"],
+    subject: () => "Quick question about your car",
+    body: (f) =>
+      `Hi ${f.firstName},\n\nSo I can give you a price with your ${percent(f)} off, what are you driving (year, make and model)? And is there anything I should know before I come out, like a lot of pet hair or sand?\n\nAlso, where would I be coming to? A town or ZIP code is enough for now.`,
+  },
+  {
+    id: "offer_check_in",
+    label: "Offer: last check-in",
+    needs: ["offer"],
+    subject: (f) => `Still want your ${percent(f)} off?`,
+    body: (f) =>
+      `Hi ${f.firstName},\n\nChecking in one last time. Your ${percent(f)} off your first detail is still good whenever your car's ready for a cleaning:\n${f.offerUrl ?? ""}\n\nIf now isn't a good time, no problem. I won't keep emailing you about it.`,
+  },
   {
     id: "booking_received",
     label: "Request received",
@@ -99,6 +129,6 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
 ];
 
 /** Templates whose details are available for this customer. */
-export function availableTemplates(has: { appointment: boolean; balance: boolean }): EmailTemplate[] {
+export function availableTemplates(has: { appointment: boolean; balance: boolean; offer: boolean }): EmailTemplate[] {
   return EMAIL_TEMPLATES.filter((t) => t.needs.every((n) => has[n]));
 }

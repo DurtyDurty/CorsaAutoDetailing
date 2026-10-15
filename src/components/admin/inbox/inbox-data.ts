@@ -30,8 +30,10 @@ export function renderTemplates(c: ConversationDetail): RenderedTemplate[] {
     date: c.appointment ? formatEastern(c.appointment.startsAt, { dateStyle: "full", timeStyle: undefined }) : null,
     time: c.appointment ? formatEastern(c.appointment.startsAt, { dateStyle: undefined, timeStyle: "short" }) : null,
     balance: c.appointment ? formatCents(c.appointment.balanceDueCents) : null,
+    offerPercent: c.offer?.percent ?? null,
+    offerUrl: c.offer?.url ?? null,
   };
-  return availableTemplates({ appointment: !!c.appointment, balance: (c.appointment?.balanceDueCents ?? 0) > 0 }).map((t) => ({
+  return availableTemplates({ appointment: !!c.appointment, balance: (c.appointment?.balanceDueCents ?? 0) > 0, offer: !!c.offer }).map((t) => ({
     id: t.id,
     label: t.label,
     subject: t.subject(fields),

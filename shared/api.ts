@@ -281,6 +281,8 @@ export interface ConversationDetail {
   serviceName: string | null;
   /** The appointment templates refer to: underway or next, else the most recent. */
   appointment: { id: string; startsAt: string; endsAt: string; balanceDueCents: number } | null;
+  /** First-time offer signups only: what the offer templates fill in. */
+  offer?: { percent: number; url: string } | null;
   defaultSubject: string;
   /** Appended by the server to every email; shown under the composer. */
   signature: string;

@@ -71,8 +71,8 @@ function Composer({ c, businessName }: { c: ConversationDetail; businessName: st
   useEffect(() => save(c.leadId, draft), [c.leadId, draft, save]);
 
   const templates = useMemo(
-    () => availableTemplates({ appointment: !!c.appointment, balance: (c.appointment?.balanceDueCents ?? 0) > 0 }),
-    [c.appointment],
+    () => availableTemplates({ appointment: !!c.appointment, balance: (c.appointment?.balanceDueCents ?? 0) > 0, offer: !!c.offer }),
+    [c.appointment, c.offer],
   );
 
   const applyTemplate = (t: EmailTemplate) => {
@@ -83,6 +83,8 @@ function Composer({ c, businessName }: { c: ConversationDetail; businessName: st
       date: c.appointment ? longDay.format(new Date(c.appointment.startsAt)) : null,
       time: c.appointment ? formatTime(c.appointment.startsAt) : null,
       balance: c.appointment ? formatCents(c.appointment.balanceDueCents) : null,
+      offerPercent: c.offer?.percent ?? null,
+      offerUrl: c.offer?.url ?? null,
     };
     const replace = () => setDraft((d) => ({ ...d, subject: t.subject(f), message: t.body(f) }));
     setPicking(false);
