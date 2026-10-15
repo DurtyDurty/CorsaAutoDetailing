@@ -21,7 +21,7 @@ export default function PrivacyPage() {
       <Container className="py-12 sm:py-16 max-w-3xl prose-basic">
         <h2>Who we are</h2>
         <p>
-          {business.brand.name} is a mobile auto detailing business owned by {business.owner.name}, serving {business.serviceAreas.region}.
+          {business.brand.name} is a mobile auto detailing business serving {business.serviceAreas.region}.
           {business.contact.email ? (
             <>
               {" "}
