@@ -200,7 +200,8 @@ test.describe("quotes: request, quote, accept (LIVE mode)", () => {
     // The arrival time starts at the time held for the request (moving it is covered by unit tests).
     const arrival = quote.getByLabel("Arrival time (Eastern, same day)");
     await expect(arrival).toHaveValue(/^\d{2}:\d{2}$/);
-    await quote.getByLabel("Include Excessive pet-hair removal").check();
+    await quote.getByRole("button", { name: /^\+ Excessive pet-hair removal/ }).click();
+    await expect(quote.getByLabel("Line 2 description")).toHaveValue("Excessive pet-hair removal");
     await quote.getByLabel("Discount ($)").fill("10");
     await quote.getByLabel(/What the car needs/).fill("Thanks for choosing Corsa!");
     page.once("dialog", (d) => void d.accept());

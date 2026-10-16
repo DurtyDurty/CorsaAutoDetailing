@@ -177,9 +177,10 @@ export async function sendQuoteAction(formData: FormData) {
   const lines: { label: string; amountCents: number }[] = [];
   for (let i = 0; i < rows; i++) {
     const label = String(formData.get(`label_${i}`) ?? "").trim();
-    // Ticked rows (the package, earlier lines, extras), plus any blank row the owner filled in.
-    const include = formData.get(`on_${i}`) === "on" || (formData.get(`custom_${i}`) === "1" && label !== "");
-    if (include) lines.push({ label, amountCents: cents(formData.get(`amount_${i}`)) });
+    const amountCents = cents(formData.get(`amount_${i}`));
+    // Every line the owner filled in; a completely blank one is skipped. A price with no description fails validation.
+    const include = formData.get(`on_${i}`) === "on" || (formData.get(`custom_${i}`) === "1" && (label !== "" || amountCents !== 0));
+    if (include) lines.push({ label, amountCents });
   }
   const input = parse(formData, id, sendQuoteSchema, {
     requestId: str(formData, "requestId"),
