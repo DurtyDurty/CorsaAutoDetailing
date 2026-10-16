@@ -74,7 +74,9 @@ export function ComposeEmail({
           onChange={(e) => setMessage(e.target.value)}
           maxLength={8000}
           required
-          className="field min-h-44"
+          // rows, not a min-h utility: the unlayered .field min-height outranks Tailwind's utilities.
+          rows={14}
+          className="field resize-y leading-relaxed"
         />
         <p className="text-xs text-ink-muted whitespace-pre-line">Signed automatically:{"\n"}{signature}</p>
       </div>

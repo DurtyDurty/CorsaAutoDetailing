@@ -110,7 +110,7 @@ export function InboxComposer({
         <label htmlFor="inbox-message" className="text-sm font-medium">
           Message
         </label>
-        <textarea id="inbox-message" name="message" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={8000} required className="field min-h-44" />
+        <textarea id="inbox-message" name="message" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={8000} required rows={14} className="field resize-y leading-relaxed" />
         <p className="text-xs text-ink-muted whitespace-pre-line">Signed automatically:{"\n"}{signature}</p>
       </div>
       {state.status === "error" && state.message && (
