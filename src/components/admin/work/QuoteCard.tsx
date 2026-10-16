@@ -135,8 +135,15 @@ export function QuoteCard({ a, back }: { a: AppointmentDetail; back: string }) {
             </label>
           </div>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Note to the customer (optional, shown on the quote)</span>
-            <textarea name="notes" maxLength={1000} rows={3} defaultValue={revising ? (q.notes ?? "") : ""} className="field" placeholder="e.g. I added pet-hair removal since you mentioned your dog." />
+            <span className="font-medium">What the car needs &amp; what will be done (the customer sees this at the top of the quote)</span>
+            <textarea
+              name="notes"
+              maxLength={1000}
+              rows={5}
+              defaultValue={revising ? (q.notes ?? "") : ""}
+              className="field"
+              placeholder={"e.g. Heavy pet hair in the back seats and cargo area, light water spots on the glass.\nFull interior vacuum and shampoo, pet-hair removal, hand wash and spot treatment on the windows."}
+            />
           </label>
           <p className="text-xs text-ink-muted">
             Haven&apos;t seen the car? Tick a line and leave its amount blank: the customer sees &ldquo;Priced on site&rdquo; and it isn&apos;t in the total. Add the real price after the

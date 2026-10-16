@@ -261,7 +261,7 @@ async function render(q: Doc): Promise<Uint8Array> {
     const boxH = rows.length * 14 + 30;
     page.drawRectangle({ x: M, y: y - boxH + 14, width: RIGHT - M, height: boxH, color: C.wash });
     page.drawRectangle({ x: M, y: y - boxH + 14, width: 3, height: boxH, color: C.accent });
-    label(`A note from ${business.owner.name.split(" ")[0]}`, M + 14, y);
+    label("What your car needs & what we'll do", M + 14, y);
     rows.forEach((r, i) => text(r, M + 14, y - 16 - i * 14, { size: 10 }));
     y -= boxH + 12;
   }

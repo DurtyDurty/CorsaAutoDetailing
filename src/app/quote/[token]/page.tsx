@@ -113,6 +113,14 @@ export default async function QuotePage({ params, searchParams }: PageProps<"/qu
             </div>
           </div>
 
+          {/* The scope of work comes before the prices, so the customer reads what's being done first. */}
+          {q.notes && (
+            <div className="border-l-[3px] border-apex bg-chalk px-5 py-4">
+              <Label>What your car needs &amp; what we&apos;ll do</Label>
+              <p className="mt-2 whitespace-pre-line leading-relaxed">{q.notes}</p>
+            </div>
+          )}
+
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-chalk">
@@ -155,13 +163,6 @@ export default async function QuotePage({ params, searchParams }: PageProps<"/qu
               <p className="text-sm text-ink-muted">Items marked &ldquo;{ON_SITE_PRICE}&rdquo; aren&apos;t in this total. We&apos;ll price them after we see the car, and only do them with your OK.</p>
             )}
           </div>
-
-          {q.notes && (
-            <div className="border-l-[3px] border-apex bg-chalk px-5 py-4">
-              <Label>A note from {business.owner.name.split(" ")[0]}</Label>
-              <p className="mt-2 whitespace-pre-line leading-relaxed">{q.notes}</p>
-            </div>
-          )}
 
           {status === "sent" && (
             <section aria-label="Your answer" className="flex flex-col gap-4 border-t border-line pt-8">

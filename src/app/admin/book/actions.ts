@@ -56,6 +56,7 @@ export async function bookAction(_prev: BookState, fd: FormData): Promise<BookSt
     notes: str(fd, "notes"),
     override: fd.get("override") === "on",
     sendConfirmation: fd.get("sendConfirmation") === "on",
+    quoteFirst: fd.get("after") === "quote",
   };
   if (!raw.customer) return { error: "Choose a customer, or switch to New customer.", canOverride: false };
   const parsed = createAppointmentSchema.safeParse(raw);
@@ -70,6 +71,11 @@ export async function bookAction(_prev: BookState, fd: FormData): Promise<BookSt
   }
   revalidatePath("/admin");
   revalidatePath("/admin/calendar");
+  // Time held: straight to the job's quote form, the same one a website request gets.
+  if (result.appointment.status === "held") {
+    const note = result.alreadyBooked ? "Already holding this time." : "Time held. Finish the quote below and send it.";
+    redirect(`/admin/jobs/${result.appointment.id}?ok=${encodeURIComponent(note)}#quote`);
+  }
   const email =
     result.confirmation === "sent" ? " Confirmation emailed." : result.confirmation === "failed" ? ` The confirmation email didn't send: ${result.confirmationError}` : "";
   redirect(`/admin/jobs/${result.appointment.id}?ok=${encodeURIComponent(`${result.alreadyBooked ? "Already booked." : "Booked."}${email}`)}`);

@@ -171,7 +171,14 @@ export function QuoteSheet({ appt, draft, visible, onClose }: { appt: Appointmen
             <Text variant="caption">Haven&apos;t seen the car? Leave a line&apos;s $ blank: the customer sees &ldquo;{ON_SITE_PRICE}&rdquo; and it isn&apos;t in the total. Add the real price after the inspection with Change total.</Text>
 
             <Field label="Discount ($)" value={discount} onChangeText={setDiscount} keyboardType="decimal-pad" placeholder="0" />
-            <Field label="Note to the customer (optional)" value={notes} onChangeText={setNotes} multiline maxLength={1000} placeholder="Shown on the quote" />
+            <Field
+              label="What the car needs & what will be done"
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              maxLength={1000}
+              placeholder="The customer sees this at the top of the quote"
+            />
             <Text variant="label">Customer has to answer within</Text>
             <Segmented
               label="Quote valid for"

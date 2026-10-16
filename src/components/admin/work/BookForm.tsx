@@ -47,11 +47,15 @@ export function BookForm({
   const [serviceId, setServiceId] = useState("");
   const [price, setPrice] = useState("");
   const [duration, setDuration] = useState(options.defaultDurationMinutes);
+  // Quote first by default, like the app: the time is held and the customer accepting the quote confirms it.
+  const [after, setAfter] = useState<"quote" | "book">("quote");
+  const quoting = after === "quote";
 
   return (
     <form action={action} className="flex flex-col gap-5 max-w-3xl">
       <input type="hidden" name="requestId" value={requestId} />
       <input type="hidden" name="mode" value={mode} />
+      <input type="hidden" name="after" value={after} />
 
       <section className="border border-line bg-white rounded-md p-5 flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -103,7 +107,7 @@ export function BookForm({
           <div className="grid gap-3 sm:grid-cols-2">
             <Input label="First name" name="firstName" required autoComplete="off" />
             <Input label="Last name" name="lastName" autoComplete="off" />
-            <Input label="Email (confirmation goes here)" name="email" type="email" required />
+            <Input label="Email (the quote and confirmation go here)" name="email" type="email" required />
             <Input label="Phone" name="phone" type="tel" />
             <Input label="Service address" name="serviceAddress" required />
             <div className="grid grid-cols-[1fr_7rem] gap-3">
@@ -158,7 +162,12 @@ export function BookForm({
               ))}
             </select>
           </Labeled>
-          <Input label="Price ($)" name="price" inputMode="decimal" required value={price} onChange={(e) => setPrice(e.target.value)} />
+          <div className="flex flex-col gap-1">
+            <Input label="Price ($)" name="price" inputMode="decimal" required value={price} onChange={(e) => setPrice(e.target.value)} />
+            <span className="text-xs text-ink-muted">
+              {quoting ? "Starts at the package price; add extras or a discount on the quote." : "Starts at the package price; change it to what you quoted."}
+            </span>
+          </div>
         </div>
         <p className="text-xs text-ink-muted">
           Keeps {options.travelBufferMinutes} minutes free after the job for travel. Working hours {options.workHours.start}–{options.workHours.end}.
@@ -167,12 +176,37 @@ export function BookForm({
           <span className="font-medium">Notes (only you see these)</span>
           <textarea name="notes" maxLength={1000} className="field min-h-20" />
         </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="sendConfirmation" defaultChecked className="checkbox" /> Email a confirmation from your business address
-        </label>
         {state.canOverride && (
           <label className="flex items-center gap-2 text-sm text-[#8a5a12]">
-            <input type="checkbox" name="override" className="checkbox" /> Book anyway (outside working hours or a day off)
+            <input type="checkbox" name="override" className="checkbox" /> {quoting ? "Hold it anyway" : "Book anyway"} (outside working hours or a day off)
+          </label>
+        )}
+      </section>
+
+      <section className="border border-line bg-white rounded-md p-5 flex flex-col gap-4">
+        <h2 className="text-xs uppercase tracking-[0.16em] text-ink-muted">What the customer gets</h2>
+        <div className="grid grid-cols-2 border border-line rounded-sm p-0.5 text-sm sm:w-96" role="radiogroup" aria-label="What the customer gets">
+          {(["quote", "book"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              role="radio"
+              aria-checked={after === m}
+              onClick={() => setAfter(m)}
+              className={`px-3 py-1.5 rounded-sm ${after === m ? "bg-asphalt text-chalk" : "text-ink-muted"}`}
+            >
+              {m === "quote" ? "A quote to accept" : "Booked now"}
+            </button>
+          ))}
+        </div>
+        {quoting ? (
+          <p className="text-sm text-ink-muted">
+            Holds the time and opens the quote for you to finish and send. The customer gets it by email with a PDF and a link, and accepting it confirms the job.
+          </p>
+        ) : (
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="sendConfirmation" defaultChecked className="checkbox" /> Email a confirmation from your business address (no quote: the job is confirmed right
+            away)
           </label>
         )}
       </section>
@@ -184,7 +218,7 @@ export function BookForm({
       )}
       <div>
         <Button type="submit" variant="apex" size="lg" disabled={pending}>
-          {pending ? "Booking…" : "Book appointment"}
+          {pending ? (quoting ? "Holding the time…" : "Booking…") : quoting ? "Next: write the quote" : "Book appointment"}
         </Button>
       </div>
     </form>

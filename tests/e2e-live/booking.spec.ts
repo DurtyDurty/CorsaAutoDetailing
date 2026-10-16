@@ -202,7 +202,7 @@ test.describe("quotes: request, quote, accept (LIVE mode)", () => {
     await expect(arrival).toHaveValue(/^\d{2}:\d{2}$/);
     await quote.getByLabel("Include Excessive pet-hair removal").check();
     await quote.getByLabel("Discount ($)").fill("10");
-    await quote.getByLabel(/Note to the customer/).fill("Thanks for choosing Corsa!");
+    await quote.getByLabel(/What the car needs/).fill("Thanks for choosing Corsa!");
     page.once("dialog", (d) => void d.accept());
     await quote.getByRole("button", { name: "Send quote" }).click();
     await expect(page.getByRole("status")).toContainText(/Quote Q-[A-Z0-9]{6} sent/);
@@ -267,6 +267,8 @@ test.describe("owner dashboard laid out like the app (LIVE mode)", () => {
     while (d.getUTCDay() !== (testInfo.project.name.includes("mobile") ? 2 : 3)) d.setUTCDate(d.getUTCDate() + 1);
     await page.getByLabel("Date").fill(d.toISOString().slice(0, 10));
     await page.getByLabel("Time (Eastern)").fill("09:30");
+    // The form starts on "A quote to accept"; this walk-through books outright.
+    await page.getByRole("radio", { name: "Booked now" }).click();
     await page.getByRole("button", { name: "Book appointment" }).click();
 
     await expect(page).toHaveURL(/\/admin\/jobs\/[0-9a-f-]{36}\?ok=/);
