@@ -114,7 +114,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/admin">) {
             <h2 id="focus" className="text-xs uppercase tracking-[0.16em] text-ink-muted">
               {underway ? "Current job" : "Next job"}
             </h2>
-            <StatusBadge status={f.status} />
+            <StatusBadge status={f.status} quoteStatus={f.quoteStatus} />
           </div>
           <div>
             <p className="font-display text-3xl">{f.customerName}</p>
@@ -211,7 +211,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/admin">) {
                   <span className="flex flex-col gap-1 min-w-0">
                     <span className="font-medium">{a.customerName}</span>
                     <span className="text-sm text-ink-muted">{a.serviceName ?? "Service not set"}</span>
-                    <StatusBadge status={a.status} />
+                    <StatusBadge status={a.status} quoteStatus={a.quoteStatus} />
                   </span>
                 </Link>
               </li>

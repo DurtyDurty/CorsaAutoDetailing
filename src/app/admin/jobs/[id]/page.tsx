@@ -89,7 +89,7 @@ export default async function JobPage({ params, searchParams }: PageProps<"/admi
       </Link>
 
       <header className="flex flex-col gap-1.5">
-        <StatusBadge status={a.status} />
+        <StatusBadge status={a.status} quoteStatus={a.quote?.status} />
         <h1 className="font-display text-4xl">{a.customerName}</h1>
         <p className="font-medium">{a.serviceName ?? "Service not set"}</p>
         <p className="text-sm text-ink-muted">

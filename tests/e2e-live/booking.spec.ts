@@ -205,8 +205,9 @@ test.describe("quotes: request, quote, accept (LIVE mode)", () => {
     await quote.getByLabel(/What the car needs/).fill("Thanks for choosing Corsa!");
     page.once("dialog", (d) => void d.accept());
     await quote.getByRole("button", { name: "Send quote" }).click();
-    await expect(page.getByRole("status")).toContainText(/Quote Q-[A-Z0-9]{6} sent/);
-    await expect(quote).toContainText("Quote sent, waiting for the customer");
+    await expect(page.getByRole("status")).toContainText(/Quote Q-[A-Z0-9]{6} sent\. Waiting on the customer/);
+    await expect(quote).toContainText("Sent. Waiting on the customer");
+    await expect(page.getByText("Quote sent · waiting on customer")).toBeVisible();
 
     // The customer opens the link from the email.
     const { readFile } = await import("node:fs/promises");

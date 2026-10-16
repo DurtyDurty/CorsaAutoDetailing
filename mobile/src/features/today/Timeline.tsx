@@ -26,7 +26,7 @@ export function Timeline({ items, focusId }: { items: AppointmentSummary[]; focu
           <View style={styles.body}>
             <Text variant="bodyStrong">{a.customerName}</Text>
             <Text variant="caption">{a.serviceName ?? "Service not set"}</Text>
-            <StatusPill status={a.status} />
+            <StatusPill status={a.status} quoteStatus={a.quoteStatus} />
           </View>
         </Pressable>
       ))}

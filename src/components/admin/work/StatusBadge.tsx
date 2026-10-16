@@ -1,4 +1,4 @@
-import { APPOINTMENT_STATUS_LABELS, type AppointmentStatus } from "@shared/appointment-status";
+import { statusLabel, type AppointmentStatus } from "@shared/appointment-status";
 import { cn } from "@/lib/utils";
 
 /** Same shapes and words as the app: the glyph and label carry meaning, color reinforces it. */
@@ -14,12 +14,13 @@ const TONE: Record<AppointmentStatus, { cls: string; glyph: string }> = {
   declined: { cls: "border-line text-ink-muted", glyph: "✕" },
 };
 
-export function StatusBadge({ status }: { status: AppointmentStatus }) {
+/** A held job's badge says where its quote stands (pass the latest quote's status). */
+export function StatusBadge({ status, quoteStatus }: { status: AppointmentStatus; quoteStatus?: string | null }) {
   const t = TONE[status];
   return (
     <span className={cn("inline-flex w-fit items-center gap-1 rounded-sm border px-2 py-0.5 text-[0.68rem] font-medium uppercase tracking-[0.12em]", t.cls)}>
-      <span aria-hidden="true">{t.glyph}</span>
-      {APPOINTMENT_STATUS_LABELS[status]}
+      <span aria-hidden="true">{status === "held" && quoteStatus === "sent" ? "✉" : t.glyph}</span>
+      {statusLabel(status, quoteStatus)}
     </span>
   );
 }

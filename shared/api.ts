@@ -466,7 +466,7 @@ export interface WorkResponse {
 export type QuoteViewStatus = "sent" | "accepted" | "declined" | "withdrawn" | "expired";
 
 export const QUOTE_STATUS_LABELS: Record<QuoteViewStatus, string> = {
-  sent: "Quote sent, waiting for the customer",
+  sent: "Quote sent, waiting on the customer to accept",
   accepted: "Quote accepted",
   declined: "Quote declined",
   withdrawn: "Quote replaced or withdrawn",

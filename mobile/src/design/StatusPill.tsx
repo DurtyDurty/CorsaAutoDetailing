@@ -1,5 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import { APPOINTMENT_STATUS_LABELS, type AppointmentStatus } from "@shared/appointment-status";
+import { statusLabel, type AppointmentStatus } from "@shared/appointment-status";
 import { Text } from "./Text";
 import { colors, fonts, radius, space } from "./theme";
 
@@ -16,13 +16,15 @@ const TONE: Record<AppointmentStatus, { color: string; glyph: string }> = {
   declined: { color: colors.textMuted, glyph: "✕" },
 };
 
-export function StatusPill({ status }: { status: AppointmentStatus }) {
+/** A held job's pill says where its quote stands (pass the latest quote's status). */
+export function StatusPill({ status, quoteStatus }: { status: AppointmentStatus; quoteStatus?: string | null }) {
   const tone = TONE[status];
-  const label = APPOINTMENT_STATUS_LABELS[status];
+  const label = statusLabel(status, quoteStatus);
+  const glyph = status === "held" && quoteStatus === "sent" ? "✉" : tone.glyph;
   return (
     <View style={[styles.pill, { borderColor: tone.color }]} accessible accessibilityLabel={`Status: ${label}`}>
       <Text style={[styles.text, { color: tone.color }]} importantForAccessibility="no-hide-descendants">
-        {tone.glyph} {label}
+        {glyph} {label}
       </Text>
     </View>
   );

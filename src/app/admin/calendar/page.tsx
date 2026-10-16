@@ -138,14 +138,18 @@ export default async function CalendarPage({ searchParams }: PageProps<"/admin/c
                     <span className="font-semibold">
                       {time(a.startsAt)} – {time(a.endsAt)}
                     </span>
-                    <StatusBadge status={a.status} />
+                    <StatusBadge status={a.status} quoteStatus={a.quoteStatus} />
                   </span>
                   <span className="block font-medium mt-1">{a.customerName}</span>
                   <span className="block text-sm text-ink-muted">
                     {a.serviceName ?? "Service not set"}
                     {[a.vehicle.year, a.vehicle.make, a.vehicle.model].some(Boolean) && ` · ${[a.vehicle.year, a.vehicle.make, a.vehicle.model].filter(Boolean).join(" ")}`}
                   </span>
-                  {a.status === "held" && <span className="block text-sm text-[#8a5a12] mt-1">To confirm: open to confirm or decline</span>}
+                  {a.status === "held" && (
+                    <span className="block text-sm text-[#8a5a12] mt-1">
+                      {a.quoteStatus === "sent" ? "Waiting on the customer to accept the quote" : "Open to send a quote or decline"}
+                    </span>
+                  )}
                 </Link>
               </li>
             ))}

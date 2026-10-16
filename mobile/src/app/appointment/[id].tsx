@@ -4,7 +4,7 @@ import { router, Stack, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { QUOTE_STATUS_LABELS, type AppointmentDetail } from "@shared/api";
-import { APPOINTMENT_STATUS_LABELS, type AppointmentStatus } from "@shared/appointment-status";
+import { APPOINTMENT_STATUS_LABELS, statusLabel, type AppointmentStatus } from "@shared/appointment-status";
 import { formatCents, PAYMENT_METHOD_LABELS } from "@shared/money";
 import { ApiClientError } from "@/api/client";
 import { newRequestId, useAddNote, useAppointment, useChangeStatus, usePreviewWorkConfirmation, useSendReceipt, useSendWorkConfirmation } from "@/api/queries";
@@ -205,7 +205,7 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
   return (
     <>
       <View style={styles.top}>
-        <StatusPill status={a.status} />
+        <StatusPill status={a.status} quoteStatus={a.quote?.status} />
         <Text variant="title">{a.customerName}</Text>
         <Text variant="bodyStrong">{a.serviceName ?? "Service not set"}</Text>
         <Text variant="caption">
@@ -417,7 +417,7 @@ export default function AppointmentScreen() {
   const { data, error, isPending, refetch, isRefetching } = useAppointment(id);
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      <Stack.Screen options={{ title: data ? APPOINTMENT_STATUS_LABELS[data.status] : "Job" }} />
+      <Stack.Screen options={{ title: data ? statusLabel(data.status, data.quote?.status) : "Job" }} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={100}>
         <ScrollView
           contentContainerStyle={styles.content}

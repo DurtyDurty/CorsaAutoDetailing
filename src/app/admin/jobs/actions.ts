@@ -195,6 +195,6 @@ export async function sendQuoteAction(formData: FormData) {
     id,
     res.customerEmail.status === "failed"
       ? { error: `Quote ${res.quote.number} saved, but the email didn't send: ${res.customerEmail.error}` }
-      : { ok: res.unchanged ? "Already sent." : `Quote ${res.quote.number} sent to the customer.` },
+      : { ok: res.unchanged ? "Already sent." : `Quote ${res.quote.number} sent. Waiting on the customer to accept it.` },
   );
 }

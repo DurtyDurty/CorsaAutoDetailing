@@ -69,7 +69,7 @@ export function FocusCard({ appt, isToday }: { appt: AppointmentSummary; isToday
     <Card accent style={styles.card}>
       <View style={styles.top}>
         <Text variant="label">{underway ? "Current job" : isToday ? "Next job" : `Next job · ${formatShortDay(appt.startsAt)}`}</Text>
-        <StatusPill status={appt.status} />
+        <StatusPill status={appt.status} quoteStatus={appt.quoteStatus} />
       </View>
       <View style={styles.block}>
         <Text variant="title">{appt.customerName}</Text>

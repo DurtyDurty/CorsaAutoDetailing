@@ -53,14 +53,16 @@ function JobRow({ a }: { a: AppointmentSummary }) {
       <Card accent={a.status !== "held"} style={[styles.job, a.status === "held" && styles.held]}>
         <View style={styles.jobTop}>
           <Text variant="bodyStrong">{formatTimeRange(a.startsAt, a.endsAt)}</Text>
-          <StatusPill status={a.status} />
+          <StatusPill status={a.status} quoteStatus={a.quoteStatus} />
         </View>
         <Text variant="heading">{a.customerName}</Text>
         <Text variant="caption">
           {a.serviceName ?? "Service not set"}
           {vehicle ? ` · ${vehicle}` : ""}
         </Text>
-        {a.status === "held" && <Text style={styles.heldText}>To confirm: tap to confirm or decline</Text>}
+        {a.status === "held" && (
+          <Text style={styles.heldText}>{a.quoteStatus === "sent" ? "Waiting on the customer to accept the quote" : "Tap to send a quote or decline"}</Text>
+        )}
       </Card>
     </Pressable>
   );

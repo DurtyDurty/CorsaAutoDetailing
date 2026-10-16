@@ -2,7 +2,7 @@
  * Appointment status rules, shared by the website, the owner API and the
  * mobile app. Pure TypeScript: no Node, Next or React Native imports.
  *
- * Lifecycle: (request = a lead, no appointment yet) → held (deposit pending)
+ * Lifecycle: (request = a lead, no appointment yet) → held (waiting on a quote)
  * → confirmed → en_route → arrived → in_progress → completed. "Paid" is not a
  * status: it's derived from the payments ledger (see money.ts).
  */
@@ -21,7 +21,7 @@ export const APPOINTMENT_STATUSES = [
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
 
 export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
-  held: "Deposit pending",
+  held: "To confirm",
   confirmed: "Confirmed",
   en_route: "En route",
   arrived: "Arrived",
@@ -31,6 +31,25 @@ export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
   no_show: "No-show",
   declined: "Declined",
 };
+
+/**
+ * The label to show for a job. A held time is waiting on a quote (deposits are
+ * off), so it says where the quote stands: still to send, or sent and waiting
+ * on the customer. `quoteStatus` is the latest quote's QuoteViewStatus.
+ */
+export function statusLabel(status: AppointmentStatus, quoteStatus?: string | null): string {
+  if (status !== "held") return APPOINTMENT_STATUS_LABELS[status];
+  switch (quoteStatus) {
+    case "sent":
+      return "Quote sent · waiting on customer";
+    case "expired":
+      return "Quote expired";
+    case "declined":
+      return "Quote declined";
+    default:
+      return "Needs a quote";
+  }
+}
 
 /** Statuses that occupy calendar time (with the travel buffer). Mirrors the database exclusion constraint. */
 export const BLOCKING_STATUSES: readonly AppointmentStatus[] = ["held", "confirmed", "en_route", "arrived", "in_progress"];
