@@ -26,7 +26,8 @@ describe("offer templates", () => {
       expect(text).not.toMatch(/undefined|null|\$\{/);
       expect(t.body(fields)).toMatch(/^Hi Ana,/);
     }
-    expect(offer.find((t) => t.id === "offer_follow_up")!.body(fields)).toContain(fields.offerUrl);
+    expect(offer.find((t) => t.id === "offer_follow_up")!.body(fields)).toBe("Hi Ana,\n\nThanks for signing up for 10% off your first detail.");
+    expect(offer.find((t) => t.id === "offer_check_in")!.body(fields)).toContain(fields.offerUrl);
     expect(offer.find((t) => t.id === "offer_check_in")!.subject(fields)).toBe("Still want your 10% off?");
   });
 });

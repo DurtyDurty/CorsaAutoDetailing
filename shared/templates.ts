@@ -39,8 +39,8 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
     label: "Offer: follow-up",
     needs: ["offer"],
     subject: () => "Your first detail",
-    body: (f) =>
-      `Hi ${f.firstName},\n\nThanks for signing up for ${percent(f)} off your first detail. I wanted to follow up myself in case you have any questions.\n\nI come to your home or work, and you don't need to have water or power for me. You can see the packages and book here, with the discount already applied:\n${f.offerUrl ?? ""}\n\nOr just reply with what you drive and a day that works for you, and I'll take it from there.`,
+    // Just the opener: the owner writes the rest.
+    body: (f) => `Hi ${f.firstName},\n\nThanks for signing up for ${percent(f)} off your first detail.`,
   },
   {
     id: "offer_vehicle",
