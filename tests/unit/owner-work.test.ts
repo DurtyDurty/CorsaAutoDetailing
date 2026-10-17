@@ -223,6 +223,26 @@ describe("working a job", () => {
     expect(mails[0]!.text).toContain("Total: $299");
     expect(mails[0]!.text).toContain("Paid (Cash): $200");
     expect(mails[0]!.text).toContain("Balance due: $99");
+    const invoiceLink = mails[0]!.text.match(/https?:\/\/\S+\/invoice\/([A-Za-z0-9_-]{43})/);
+    expect(invoiceLink).toBeTruthy();
+    const invoiceToken = invoiceLink![1]!;
+    const { loadInvoiceByToken } = await import("@/lib/owner/invoice");
+    const { getLeadStore } = await import("@/lib/leads/store");
+    const leadStore = (await getLeadStore())!;
+    expect((await loadInvoiceByToken(leadStore, invoiceToken))?.id).toBe(a.id);
+
+    const { default: InvoicePage } = await import("@/app/invoice/[token]/page");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const pageProps = {
+      params: Promise.resolve({ token: invoiceToken }),
+      searchParams: Promise.resolve({}),
+    } as Parameters<typeof InvoicePage>[0];
+    const invoiceHtml = renderToStaticMarkup(await InvoicePage(pageProps));
+    expect(invoiceHtml).toContain("INV-");
+    expect(invoiceHtml).toContain("Balance due");
+    expect(invoiceHtml).toContain("$99");
+    expect(invoiceHtml).not.toContain("9047203161");
+
     // No review link configured in tests: the request is left out rather than sent without a link.
     expect(mails[0]!.text).not.toContain("Google review");
 

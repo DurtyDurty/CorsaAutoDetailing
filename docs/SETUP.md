@@ -37,6 +37,10 @@ Website requests are answered with a quote (dashboard job page, or the owner app
 - While a quote is open the requested time stays held, until the quote expires (never past the start time). Sending a revised quote, declining the request, or moving it withdraws the open quote.
 - `/quote/*` is outside the site layout (no analytics), `no-store`, `noindex`, and sends no referrer.
 
+## Invoices
+
+When the owner sends the work-completion email, the customer receives the invoice PDF plus a private `/invoice/<token>` link to view the current invoice and balance online. The PDF remains downloadable from that page. The database stores only the token hash; `/invoice/*` is `no-store`, `noindex`, and sends no referrer. Apply `supabase/migrations/0011_invoice_access_tokens.sql` before enabling this flow with Supabase.
+
 ## Cron: notification retries
 
 `POST /api/cron/retry-notifications` with header `Authorization: Bearer <CRON_SECRET>`. Returns `{ retried: n }`. Disabled when `CRON_SECRET` is unset. Vercel Cron, GitHub Actions, or any scheduler works.

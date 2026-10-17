@@ -570,6 +570,17 @@ export class SupabaseLeadStore implements LeadStore {
     return data ? quoteFromRow(data) : null;
   }
 
+  async createInvoiceAccessToken(appointmentId: string, tokenHash: string) {
+    const { error } = await this.client.from("invoice_access_tokens").insert({ appointment_id: appointmentId, token_hash: tokenHash });
+    if (error) throw new Error(error.message);
+  }
+
+  async findInvoiceAppointmentIdByTokenHash(tokenHash: string) {
+    const { data, error } = await this.client.from("invoice_access_tokens").select("appointment_id").eq("token_hash", tokenHash).maybeSingle();
+    if (error) throw new Error(error.message);
+    return (data?.appointment_id as string | undefined) ?? null;
+  }
+
   async listQuotesForAppointments(appointmentIds: string[]) {
     const results = await Promise.all(
       batchesOf(appointmentIds).map(async (batch) => {

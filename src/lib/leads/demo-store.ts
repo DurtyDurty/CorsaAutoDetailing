@@ -78,6 +78,7 @@ interface DemoData {
   inboundEmails: InboundEmailRecord[];
   adConversions: AdConversionRecord[];
   quotes: QuoteRecord[];
+  invoiceAccessTokens: { appointmentId: string; tokenHash: string }[];
 }
 
 // Resolved per call so the working directory can be swapped in tests.
@@ -122,9 +123,10 @@ async function load(): Promise<DemoData> {
       inboundEmails: parsed.inboundEmails ?? [],
       adConversions: parsed.adConversions ?? [],
       quotes: parsed.quotes ?? [],
+      invoiceAccessTokens: parsed.invoiceAccessTokens ?? [],
     };
   } catch {
-    return { leads: [], appointments: [], notifications: [], timeOff: [], outboundEmails: [], appointmentEvents: [], payments: [], inboundEmails: [], adConversions: [], quotes: [] };
+    return { leads: [], appointments: [], notifications: [], timeOff: [], outboundEmails: [], appointmentEvents: [], payments: [], inboundEmails: [], adConversions: [], quotes: [], invoiceAccessTokens: [] };
   }
 }
 
@@ -435,6 +437,18 @@ export class DemoLeadStore implements LeadStore {
 
   async getQuoteByTokenHash(tokenHash: string) {
     return (await load()).quotes.find((q) => q.tokenHash === tokenHash) ?? null;
+  }
+
+  createInvoiceAccessToken(appointmentId: string, tokenHash: string) {
+    return serialized(async () => {
+      const data = await load();
+      data.invoiceAccessTokens.push({ appointmentId, tokenHash });
+      await save(data);
+    });
+  }
+
+  async findInvoiceAppointmentIdByTokenHash(tokenHash: string) {
+    return (await load()).invoiceAccessTokens.find((t) => t.tokenHash === tokenHash)?.appointmentId ?? null;
   }
 
   async listQuotesForAppointments(appointmentIds: string[]) {

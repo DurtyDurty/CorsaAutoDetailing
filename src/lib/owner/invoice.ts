@@ -1,9 +1,35 @@
 import "server-only";
+import { createHash, randomBytes } from "node:crypto";
+import { business } from "@/config/business";
 import type { AppointmentDetail } from "@shared/api";
 import { PAYMENT_METHOD_LABELS } from "@shared/money";
+import type { LeadStore } from "@/lib/leads/types";
 import { renderInvoicePdf, type InvoiceDocument } from "@/lib/quotes/pdf";
 import { ZELLE } from "@/lib/quotes/zelle";
 import { formatEastern } from "@/lib/time";
+import { getAppointmentDetail } from "./appointments";
+
+const INVOICE_TOKEN = /^[A-Za-z0-9_-]{43}$/;
+
+export const invoiceTokenHash = (token: string) => createHash("sha256").update(token).digest("hex");
+
+export function invoiceUrl(token: string): string {
+  return `${business.brand.canonicalDomain.replace(/\/$/, "")}/invoice/${token}`;
+}
+
+export async function createInvoiceUrl(store: LeadStore, appointmentId: string): Promise<string> {
+  const token = randomBytes(32).toString("base64url");
+  await store.createInvoiceAccessToken(appointmentId, invoiceTokenHash(token));
+  return invoiceUrl(token);
+}
+
+export async function loadInvoiceByToken(store: LeadStore, token: string): Promise<AppointmentDetail | null> {
+  if (!INVOICE_TOKEN.test(token)) return null;
+  const appointmentId = await store.findInvoiceAppointmentIdByTokenHash(invoiceTokenHash(token));
+  if (!appointmentId) return null;
+  const appointment = await getAppointmentDetail(store, appointmentId);
+  return appointment.status === "completed" ? appointment : null;
+}
 
 /** A job can be invoiced once it's a firm booking (not a request still waiting, and not one that fell through). */
 export const isInvoiceable = (a: Pick<AppointmentDetail, "status">) =>

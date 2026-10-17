@@ -7,7 +7,7 @@ import { SlotTakenError, type AppointmentRecord, type LeadStore } from "@/lib/le
 import { formatEastern } from "@/lib/time";
 import { getAppointmentDetail, logAppointmentEvent, priceChangeNote, WORK_CONFIRMATION_SENT } from "./appointments";
 import { sendOwnerEmail } from "./email";
-import { invoiceDocument, invoiceFilename, isInvoiceable, renderInvoice } from "./invoice";
+import { createInvoiceUrl, invoiceDocument, invoiceFilename, isInvoiceable, renderInvoice } from "./invoice";
 import { getEmailAdapter, type EmailAttachment } from "@/lib/email";
 import { composeOwnerEmail } from "@/lib/owner-email";
 import { assertCanSchedule, overlapMessage } from "./schedule";
@@ -217,7 +217,12 @@ export async function sendWorkConfirmation(store: LeadStore, actor: string, id: 
     throw new ApiError("conflict", "Mark the job complete first, then send the confirmation.");
   }
   const detail = await getAppointmentDetail(store, id);
-  const email = await workConfirmationEmail(appt, detail);
+  // The PDF is attached either way, so a link that can't be created doesn't block the email.
+  const customerInvoiceUrl = await createInvoiceUrl(store, id).catch((err: unknown) => {
+    console.error("[work-confirmation] invoice link not created:", err instanceof Error ? err.message : err);
+    return null;
+  });
+  const email = await workConfirmationEmail(appt, detail, customerInvoiceUrl);
   const customerEmail = await emailCustomer(store, appt.leadId, email.subject, email.message, `work-confirmation-${requestId}`, email.attachments);
   await store.addAppointmentEvent({
     appointmentId: id,
@@ -241,7 +246,7 @@ export async function previewWorkConfirmation(store: LeadStore, ownerEmail: stri
   const adapter = getEmailAdapter();
   if (adapter.kind === "disabled") throw new ApiError("unavailable", "Email isn't configured on the server (Resend).");
   const detail = await getAppointmentDetail(store, id);
-  const email = await workConfirmationEmail(appt, detail);
+  const email = await workConfirmationEmail(appt, detail, null);
   try {
     await adapter.send({
       to: ownerEmail,
@@ -255,7 +260,7 @@ export async function previewWorkConfirmation(store: LeadStore, ownerEmail: stri
   return { sentTo: ownerEmail };
 }
 
-async function workConfirmationEmail(appt: AppointmentRecord, detail: AppointmentDetail): Promise<{ subject: string; message: string; attachments: EmailAttachment[] }> {
+async function workConfirmationEmail(appt: AppointmentRecord, detail: AppointmentDetail, customerInvoiceUrl: string | null): Promise<{ subject: string; message: string; attachments: EmailAttachment[] }> {
   const { balance } = detail;
   const vehicle = [detail.vehicle.year, detail.vehicle.make, detail.vehicle.model].filter(Boolean).join(" ");
   const address = [detail.serviceAddress, detail.city, detail.zip].filter(Boolean).join(", ");
@@ -285,6 +290,7 @@ async function workConfirmationEmail(appt: AppointmentRecord, detail: Appointmen
       : "Paid in full.",
     ...(review ? ["", "If you're happy with the result, a quick Google review would mean a lot to a new local business:", review] : []),
     "",
+    ...(customerInvoiceUrl ? [`View your invoice online: ${customerInvoiceUrl}`, ""] : []),
     "Your invoice is attached. If anything doesn't look right, just reply to this email.",
   ];
   return {

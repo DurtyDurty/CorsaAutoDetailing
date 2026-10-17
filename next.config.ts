@@ -47,9 +47,9 @@ const nextConfig: NextConfig = {
       },
       { source: "/api/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex" }] },
       { source: "/thanks/:path*", headers: [{ key: "Cache-Control", value: "private, no-store" }] },
-      // A customer's quote: reached only by its private link, never cached, indexed or passed on as a referrer.
+      // Customer quotes and invoices are reached only by private links.
       {
-        source: "/:prefix(quote|q)/:path*",
+        source: "/:prefix(quote|q|invoice)/:path*",
         headers: [
           { key: "Cache-Control", value: "private, no-store" },
           { key: "X-Robots-Tag", value: "noindex, nofollow" },

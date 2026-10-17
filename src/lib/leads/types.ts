@@ -450,6 +450,8 @@ export interface LeadStore {
   createQuote(input: NewQuote): Promise<QuoteRecord | null>;
   findQuoteByRequestId(requestId: string): Promise<QuoteRecord | null>;
   getQuoteByTokenHash(tokenHash: string): Promise<QuoteRecord | null>;
+  createInvoiceAccessToken(appointmentId: string, tokenHash: string): Promise<void>;
+  findInvoiceAppointmentIdByTokenHash(tokenHash: string): Promise<string | null>;
   /** Newest first. */
   listQuotesForAppointments(appointmentIds: string[]): Promise<QuoteRecord[]>;
   /** Change a quote only if its status is still `expected` (accept/decline/withdraw race safely). */
