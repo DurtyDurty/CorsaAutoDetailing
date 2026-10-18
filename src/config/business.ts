@@ -167,7 +167,7 @@ export const business = {
    * Bump whenever a price or service scope changes. Stored with each lead's
    * estimate so old inquiries can be understood later.
    */
-  pricingVersion: "2026-10-v13",
+  pricingVersion: "2026-10-v14",
   /** Shown next to all prices while in PRELAUNCH mode. */
   priceLabel: {
     PRELAUNCH: "Planned starting prices",
@@ -195,8 +195,11 @@ export const business = {
     { id: "other", label: "Other" },
   ] satisfies VehicleCategory[],
 
-  /** Smallest first. Packages with a `sizeStep` cost that much more for each size up (owner decision 2026-10-07). */
-  vehicleSizes: ["Sedan", "SUV", "Truck"],
+  /**
+   * Smallest first. Packages with a `sizeStep` cost that much more for each size up (owner decision 2026-10-07).
+   * Minivans are priced with SUVs, e.g. Essential from $170 (owner, 2026-10-18).
+   */
+  vehicleSizes: ["Sedan", "SUV/Minivan", "Truck"],
 
   packageGroups: [
     { id: "popular", title: "Detailing packages", subtitle: "Interior and exterior together" },
@@ -328,7 +331,7 @@ export const business = {
 
   /** Requires a custom quote regardless of package. */
   customQuoteConditions: [
-    "Minivans, oversized or lifted trucks, and unusual vehicles (send us a message through the contact page)",
+    "Oversized or lifted trucks, and unusual vehicles (send us a message through the contact page)",
     "Heavily soiled or neglected vehicles",
   ],
 

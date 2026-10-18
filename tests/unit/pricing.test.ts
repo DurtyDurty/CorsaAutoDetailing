@@ -55,9 +55,9 @@ describe("computeEstimate", () => {
 
   it("prices the full packages per vehicle size and leaves the others at one price", () => {
     const ladder = (id: string) => sizePrices(getService(id)!)?.map((p) => `${p.size} ${p.price}`);
-    expect(ladder("basic-full")).toEqual(["Sedan 90", "SUV 105", "Truck 120"]);
-    expect(ladder("signature-full")).toEqual(["Sedan 150", "SUV 170", "Truck 190"]);
-    expect(ladder("platinum-full")).toEqual(["Sedan 200", "SUV 225", "Truck 250"]);
+    expect(ladder("basic-full")).toEqual(["Sedan 90", "SUV/Minivan 105", "Truck 120"]);
+    expect(ladder("signature-full")).toEqual(["Sedan 150", "SUV/Minivan 170", "Truck 190"]);
+    expect(ladder("platinum-full")).toEqual(["Sedan 200", "SUV/Minivan 225", "Truck 250"]);
     expect(getService("signature-interior")).toBeUndefined();
     expect(sizePrices(getService("monthly-maintenance")!)).toBeNull();
   });

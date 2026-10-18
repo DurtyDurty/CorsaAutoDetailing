@@ -1,7 +1,7 @@
 # Corsa Auto Detailing — first Google Search campaign.
 # Single source of truth for `python -m corsa_ads`. Validate after every edit:
 #   python -m corsa_ads validate-config
-# Prices and claims here must match src/config/business.ts (pricingVersion 2026-10-v13).
+# Prices and claims here must match src/config/business.ts (pricingVersion 2026-10-v14).
 
 site: https://corsaautodetailing.com
 

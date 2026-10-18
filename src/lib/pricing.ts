@@ -139,7 +139,7 @@ export function formatServicePrice(service: Pick<ServiceDefinition, "price" | "b
   return `${formatUsd(service.price)}${billingSuffix(service.billing)}`;
 }
 
-/** Price per vehicle size ("Sedan" $90, "SUV" $105, "Truck" $120), or null when the package has one price for every size. */
+/** Price per vehicle size ("Sedan" $90, "SUV/Minivan" $105, "Truck" $120), or null when the package has one price for every size. */
 export function sizePrices(service: Pick<ServiceDefinition, "price" | "sizeStep">): { size: string; price: number }[] | null {
   const step = service.sizeStep;
   if (!step) return null;

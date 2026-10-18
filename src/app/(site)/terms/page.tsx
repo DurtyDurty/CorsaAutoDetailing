@@ -33,7 +33,7 @@ export default function TermsPage() {
           <li>Prices shown online are {business.priceLabel[business.mode].toLowerCase()} for vehicles in average condition.</li>
           <li>{business.disclosures.inspection}</li>
           <li>{business.taxNotice}</li>
-          <li>Minivans, oversized trucks, heavily soiled and unusual vehicles are quoted individually.</li>
+          <li>Oversized trucks, heavily soiled and unusual vehicles are quoted individually.</li>
           <li>No payment is collected until availability and final pricing are confirmed.</li>
         </ul>
 
