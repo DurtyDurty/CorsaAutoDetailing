@@ -100,9 +100,9 @@ class ConfigTests(unittest.TestCase):
             self.assertTrue(errors, bad)
         self.assertIn("Se Habla Español", config.load().callouts)
 
-    def test_locations_are_the_three_verified_towns_only(self):
+    def test_locations_are_the_verified_areas_only(self):
         c = config.load()
-        self.assertEqual({l["id"] for l in c.campaign["locations"]}, {1015119, 1015041, 9196545})
+        self.assertEqual({l["id"] for l in c.campaign["locations"]}, {1015119, 1015041, 9196545, 9197497, 9011488})
         clay_county = [{"id": 9057255, "name": "Clay County, Florida, United States", "type": "County"}]
         self.assertIn("not one of the verified", " ".join(cfg_with(**{"campaign.locations": clay_county}).errors))
         self.assertIn("PRESENCE", " ".join(cfg_with(**{"campaign.location_matching": "PRESENCE_OR_INTEREST"}).errors))
@@ -179,7 +179,7 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(steps, plan.desired(c))
         kinds = [s.kind for s in steps]
         self.assertEqual(kinds[:2], ["budget", "campaign"])
-        self.assertEqual(kinds.count("location"), 3)
+        self.assertEqual(kinds.count("location"), 5)
         self.assertEqual(kinds.count("keyword"), 17)
         self.assertEqual(kinds.count("call"), 1)
         no_phone = cfg_with(**{"assets.call.phone": None})
@@ -247,7 +247,7 @@ class BuildTests(unittest.TestCase):
     def test_criteria(self):
         crit = self.kind("campaign_criterion_operation")
         geos = sorted(c.location.geo_target_constant for c in crit if c.location.geo_target_constant)
-        self.assertEqual(geos, ["geoTargetConstants/1015041", "geoTargetConstants/1015119", "geoTargetConstants/9196545"])
+        self.assertEqual(geos, ["geoTargetConstants/1015041", "geoTargetConstants/1015119", "geoTargetConstants/9011488", "geoTargetConstants/9196545", "geoTargetConstants/9197497"])
         self.assertEqual([c.language.language_constant for c in crit if c.language.language_constant], ["languageConstants/1000"])
         sched = [c.ad_schedule for c in crit if c.ad_schedule.start_hour or c.ad_schedule.end_hour]
         self.assertEqual(len(sched), 7)

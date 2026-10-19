@@ -34,6 +34,10 @@ VERIFIED_GEO = {
     1015119: "Middleburg, Florida, United States",
     1015041: "Green Cove Springs, Florida, United States",
     9196545: "Fleming Island, Florida, United States",
+    # Added 2026-10-19 (owner): the St. Johns County core areas. Google has no World Golf Village or
+    # Orangedale target, so World Golf Village is its ZIP (business.ts); checked via geo_target_constant.
+    9197497: "Saint Johns, Florida, United States",
+    9011488: "32092, Florida, United States",
 }
 ENGLISH = 1000
 SPANISH = 1003

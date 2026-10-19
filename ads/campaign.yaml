@@ -30,6 +30,9 @@ campaign:
     - { id: 1015119, name: "Middleburg, Florida, United States", type: City }
     - { id: 1015041, name: "Green Cove Springs, Florida, United States", type: City }
     - { id: 9196545, name: "Fleming Island, Florida, United States", type: City }
+    # Added 2026-10-19: St. Johns County core areas from the site. 32092 = World Golf Village's ZIP.
+    - { id: 9197497, name: "Saint Johns, Florida, United States", type: City }
+    - { id: 9011488, name: "32092, Florida, United States", type: Postal Code }
   # PRESENCE = people in or regularly in these towns (not people merely searching about them).
   location_matching: PRESENCE
   languages:
