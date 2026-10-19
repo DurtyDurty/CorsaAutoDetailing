@@ -96,8 +96,11 @@ ad_groups:
     ad:
       path1: Mobile
       path2: Detailing
+      # 2026-10-19: Google rated ad relevance below average on the "near me" keywords, so four headlines
+      # now carry the search words (were Clay County Mobile Detailing, Mobile Auto Detailing,
+      # Premium Mobile Car Care, Detailing at Home or Work).
       headlines:
-        - Clay County Mobile Detailing
+        - Mobile Detailing Near You
         - We Come to You
         - Detailing From $90
         - Veteran-Owned Detailing
@@ -108,15 +111,15 @@ ad_groups:
         - Green Cove Springs Detailing
         - Full Detail From $150
         - Interior & Exterior Detailing
-        - Mobile Auto Detailing
+        - Mobile Auto Detailing Near You
         - Se Habla Español
-        - Premium Mobile Car Care
-        - Detailing at Home or Work
+        - Mobile Car Detailing
+        - Car Detailing Near You
       descriptions:
-        - Mobile auto detailing at your home or work in Middleburg, Fleming Island & Green Cove.
+        - Mobile car detailing at your home or work in Clay County and northern St. Johns County.
         - Basic, Essential and Signature packages, inside and out in one visit. From $90.
-        - Veteran-owned and self-contained, so we need no water or power hookup from you.
-        - Pick a date online and we confirm by email. Now booking in Clay County.
+        - Veteran-owned mobile auto detailing. We need no water or power hookup from you.
+        - Car detailing near you. Pick a date online and we confirm by email.
 
   - name: Interior & Exterior Detailing
     final_url: /services
@@ -148,10 +151,11 @@ ad_groups:
         - Book Your Detail Online
         - No Water or Power Needed
       descriptions:
-        - Interior and exterior detailed together, at your home or work. Packages from $90.
+        # 2026-10-19: descriptions 1 and 4 now name the keywords (car / auto / interior car detailing).
+        - Car detailing inside and out, at your home or work. Interior car detailing from $90.
         - Signature adds clay bar, sanitation, interior deep clean and a 1 month protectant wax.
         - Exterior hand wash, sealant application, wheels cleaned, tire shine and windows.
-        - Veteran-owned mobile detailing in Clay County. Pick a date online; we confirm by email.
+        - Veteran-owned mobile auto detailing. Pick a date online; we confirm by email.
 
 assets:
   callouts:
@@ -168,6 +172,8 @@ assets:
     - { text: "Contact Us", url: /contact, line1: "Questions before you book?", line2: "Send us a message" }
     # Added 2026-10-12. Must match business.firstTimeOffer (percent and terms); the link ticks the offer on the booking form.
     - { text: "10% Off First Detail", url: "/request?offer=first-time", line1: "First-time customers only", line2: "Applied to your final quote" }
+    # Added 2026-10-19 (Google asked for a 6th). Price must match business.ts monthly-maintenance.
+    - { text: "Monthly Maintenance", url: /maintenance-plans, line1: "Exterior and interior wash monthly", line2: "Priority booking, $150 a month" }
   # Added only once a business phone number exists (NEXT_PUBLIC_CONTACT_PHONE). null = no call asset.
   call:
     phone: "904-649-0739"

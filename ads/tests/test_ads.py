@@ -211,7 +211,7 @@ class PlanTests(unittest.TestCase):
         self.assertIn("PAUSED", text)
         self.assertIn("10000000 micros", text)
         self.assertIn("Middleburg, Florida, United States [1015119]", text)
-        self.assertRegex(text, r"H1\s+28/30  Clay County Mobile Detailing")
+        self.assertRegex(text, r"H1\s+25/30  Mobile Detailing Near You")
 
 
 class BuildTests(unittest.TestCase):
@@ -269,7 +269,7 @@ class BuildTests(unittest.TestCase):
         links = self.kind("campaign_asset_operation")
         self.assertEqual(len(assets), len(links), "every asset is linked to the campaign")
         self.assertEqual(len(assets), len(self.cfg.callouts) + len(self.cfg.sitelinks) + 1, "callouts, sitelinks and the call asset")
-        self.assertEqual(len(self.cfg.sitelinks), 5)
+        self.assertEqual(len(self.cfg.sitelinks), 6)
         # The offer sitelink keeps its query string, so the booking form opens with the offer ticked.
         urls = [a.final_urls[0] for a in assets if a.sitelink_asset.link_text]
         self.assertIn("https://corsaautodetailing.com/request?offer=first-time", urls)

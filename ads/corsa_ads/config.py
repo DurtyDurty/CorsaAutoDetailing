@@ -51,6 +51,7 @@ KNOWN_PATHS = {
     "/request",
     "/contact",
     "/about",
+    "/maintenance-plans",
     "/service-areas",
     "/service-areas/middleburg",
     "/service-areas/fleming-island",
