@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { business, primaryCta } from "@/config/business";
+import { business, isPrelaunch, primaryCta } from "@/config/business";
+import { photos } from "@/config/photos";
 import { Arrow, ButtonLink } from "@/components/ui/Button";
 import { Section, SectionHeading } from "@/components/ui/Section";
 import { PageHero } from "@/components/site/PageHero";
@@ -22,14 +23,15 @@ export default function ServiceAreasPage() {
     <>
       <PageHero
         eyebrow="Service areas"
-        title="Mobile detailing where you are."
+        title="Where we work"
         lede={`Serving ${business.serviceAreas.region}. A deliberately focused footprint so each visit gets the time it deserves.`}
+        photo={photos.stingerDriveway}
       />
 
       <Section tone="white">
         <div className="grid lg:grid-cols-[1fr_1fr] gap-12">
           <div>
-            <SectionHeading eyebrow="Core coverage" title="Communities we serve fully." />
+            <SectionHeading title="Core service area" />
             <ul className="mt-8 divide-y divide-line border-y border-line">
               {core.map((c) => (
                 <li key={c.slug} className="py-5">
@@ -49,7 +51,7 @@ export default function ServiceAreasPage() {
             </ul>
           </div>
           <div>
-            <SectionHeading eyebrow="Travel confirmation" title="Selected locations." />
+            <SectionHeading title="Travel confirmed on review" />
             <ul className="mt-8 divide-y divide-line border-y border-line">
               {confirm.map((c) => (
                 <li key={c.slug} className="py-5">
@@ -77,7 +79,6 @@ export default function ServiceAreasPage() {
       <Section tone="chalk">
         <div className="grid lg:grid-cols-2 gap-12 items-start">
           <SectionHeading
-            eyebrow="ZIP check"
             title="Can we reach you?"
             lede="Enter your ZIP for an instant, informal answer. Final eligibility is confirmed when we review your request."
           />
@@ -87,7 +88,9 @@ export default function ServiceAreasPage() {
 
       <Section tone="dark">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-          <h2 className="font-display text-3xl text-balance">Live nearby? Get on the list.</h2>
+          <h2 className="font-display text-3xl text-balance">
+            {isPrelaunch ? "Live nearby? Get on the list." : "Live nearby? Book a detail."}
+          </h2>
           <ButtonLink href={cta.href} variant="apex" size="lg">
             {cta.label}
           </ButtonLink>

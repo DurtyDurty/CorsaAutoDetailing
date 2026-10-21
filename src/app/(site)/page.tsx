@@ -2,13 +2,15 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { business, isPrelaunch, primaryCta } from "@/config/business";
+import { gallery, photos } from "@/config/photos";
+import { formatUsd, groupStartingPrice } from "@/lib/pricing";
+import { cn } from "@/lib/utils";
 import { Arrow, ButtonLink } from "@/components/ui/Button";
-import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/Section";
+import { Container, Section, SectionHeading } from "@/components/ui/Section";
 import { PackageCards } from "@/components/site/PackageCards";
 import { CareJourney } from "@/components/site/CareJourney";
 import { ProcessSteps } from "@/components/site/ProcessSteps";
 import { Reviews } from "@/components/site/Reviews";
-import { HeroVideo } from "@/components/site/HeroVideo";
 import { Faq } from "@/components/site/Faq";
 import { BusinessJsonLd } from "@/components/site/JsonLd";
 import { LaunchListForm } from "@/components/forms/LaunchListForm";
@@ -22,195 +24,173 @@ export const metadata: Metadata = {
   // No openGraph override here: it would drop the site-wide share image (app/opengraph-image.png).
 };
 
+/** Grid placement for the "Our work" photos, by position (see `gallery`). */
+const GALLERY_TILES = [
+  "col-span-2 aspect-[4/5] lg:col-span-1 lg:row-span-2 lg:aspect-auto",
+  "aspect-[4/5] lg:aspect-auto",
+  "aspect-[4/5] lg:aspect-auto",
+  "col-span-2 aspect-[16/10] lg:aspect-auto",
+];
+
 export default function HomePage() {
   const cta = primaryCta();
-  const core = business.serviceAreas.communities.filter((c) => c.coverage === "core");
-  const confirm = business.serviceAreas.communities.filter((c) => c.coverage === "confirm");
-  // Multi-sentence taglines break one sentence per line.
-  const [taglineLead, ...taglineRest] = business.brand.tagline.split(/(?<=\.)\s+/);
-  const ticker = [
-    ...business.services.map((s) => s.name),
-    "Interior & exterior",
-    "At your home or workplace",
-    ...core.map((c) => c.name),
-    "Jacksonville",
-  ];
+  const { communities, region } = business.serviceAreas;
+  const core = communities.filter((c) => c.coverage === "core");
+  const confirm = communities.filter((c) => c.coverage === "confirm");
+  const fromPrice = formatUsd(groupStartingPrice("popular"));
+  const reviews = business.testimonials;
+  const fiveStarGoogle = reviews.length > 0 && reviews.every((r) => r.rating === 5 && r.source === "Google");
 
   return (
     <>
       <BusinessJsonLd withOffers={false} />
 
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-asphalt text-chalk on-dark">
-        <div className="relative min-h-[88svh] lg:min-h-[92svh] flex flex-col">
-          <HeroVideo />
-          {/* Scrims: darken for legibility, heavier at the bottom and left where the text sits. */}
-          <div className="absolute inset-0 bg-asphalt/55 sm:bg-asphalt/35" aria-hidden="true" />
-          <div
-            className="absolute inset-0 bg-gradient-to-t from-asphalt via-asphalt/45 to-asphalt/0"
-            aria-hidden="true"
+      {/*
+        Hero. Phones: a photo strip above the text, so the car isn't hidden behind it.
+        Desktop: text on the left, photo on the right.
+      */}
+      <section className="overflow-hidden bg-asphalt text-chalk on-dark lg:grid lg:grid-cols-2">
+        <div className="relative h-[34svh] min-h-60 sm:h-[46svh] lg:order-2 lg:h-auto lg:min-h-[44rem]">
+          <Image
+            src={photos.stingerRear.src}
+            alt={photos.stingerRear.alt}
+            fill
+            priority
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            className="object-cover"
+            style={{ objectPosition: photos.stingerRear.focus }}
           />
           <div
-            className="absolute inset-0 hidden sm:block bg-gradient-to-r from-asphalt/75 via-asphalt/15 to-transparent"
+            className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-asphalt to-asphalt/0 lg:hidden"
             aria-hidden="true"
           />
-
-          <Container className="relative z-10 mt-auto pt-32 pb-10 sm:pb-14">
-            <div className="max-w-3xl [text-shadow:0_2px_24px_rgb(12_13_16/0.6)]">
-              {/* The keyword line is part of the H1 so search engines read "Mobile auto detailing in …" as the page topic. */}
-              <h1>
-                <span className="inline-flex items-center gap-2.5 font-mono not-italic text-[0.72rem] font-medium uppercase tracking-[0.16em] text-apex">
-                  <span aria-hidden="true" className="h-[3px] w-5 bg-current" />
-                  Mobile auto detailing in {business.serviceAreas.region}
-                </span>
-                <span className="mt-6 block font-display italic font-extrabold text-[3.5rem] leading-[0.9] sm:text-8xl lg:text-[7rem] text-balance">
-                  {taglineLead}
-                  {taglineRest.length > 0 && <span className="block">{taglineRest.join(" ")}</span>}
-                </span>
-              </h1>
-              <div className="mt-6 flex items-center gap-4" aria-hidden="true">
-                <span className="kerb h-1.5 w-24" />
-              </div>
-              <p className="mt-6 text-lg sm:text-xl text-chalk/80 max-w-xl leading-relaxed">
-                Interior and exterior car detailing, brought to your home or workplace. Mobile auto detailing in Clay
-                County and Jacksonville, done by hand and finished with real protection.
-              </p>
-              <div className="mt-9 flex flex-col sm:flex-row gap-3">
-                <ButtonLink href={cta.href} variant="apex" size="lg">
-                  {cta.label}
-                  <Arrow />
-                </ButtonLink>
-                <ButtonLink href="/services" size="lg" variant="outline-light">
-                  Explore services
-                </ButtonLink>
-              </div>
-            </div>
-          </Container>
         </div>
 
-        <Container className="relative">
-          {/* Telemetry strip */}
-          <dl className="grid grid-cols-2 lg:grid-cols-4 border-t border-line-dark">
-            <div className="py-5 pr-4 border-b lg:border-b-0 border-line-dark">
-              <dt className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-chalk/50">01 / We come to you</dt>
-              <dd className="mt-1.5 font-display italic font-extrabold text-3xl leading-tight">Home or workplace</dd>
-            </div>
-            <div className="py-5 pl-4 lg:pr-4 border-b lg:border-b-0 border-l border-line-dark">
-              <dt className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-chalk/50">02 / Where</dt>
-              <dd className="mt-2 text-chalk text-sm leading-relaxed">
-                {core.map((c) => c.name).join(", ")}
-                {confirm.length > 0 && (
-                  <span className="text-chalk/60"> · {confirm.map((c) => c.name).join(", ")} (travel confirmed)</span>
-                )}
-              </dd>
-            </div>
-            <div className="py-5 pr-4 lg:pl-4 lg:border-l border-line-dark">
-              <dt className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-chalk/50">03 / Packages</dt>
-              <dd className="mt-2 text-chalk text-sm leading-relaxed">
-                {business.services.map((s) => (
-                  <span key={s.id} className="block">
-                    {s.name}
-                  </span>
-                ))}
-              </dd>
-            </div>
-            <div className="py-5 pl-4 border-l border-line-dark">
-              <dt className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-chalk/50">04 / Status</dt>
-              <dd className="mt-2 flex items-center gap-2 text-chalk text-sm">
-                <span className="relative flex h-2 w-2" aria-hidden="true">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-apex opacity-60" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-apex" />
-                </span>
-                {isPrelaunch ? "Preparing to launch" : "Taking requests"}
-              </dd>
-            </div>
-          </dl>
-        </Container>
-
-        {/* Ticker */}
-        <div className="relative border-y border-line-dark bg-asphalt-soft overflow-hidden" aria-hidden="true">
-          <div className="ticker-track flex w-max">
-            {[0, 1].map((dup) => (
-              <div key={dup} className="flex shrink-0 items-center">
-                {[...ticker, ...ticker].map((t, i) => (
-                  <span
-                    key={`${dup}-${i}`}
-                    className="flex items-center gap-6 px-6 py-3.5 font-display italic font-bold text-lg uppercase tracking-wide text-chalk/60"
-                  >
-                    {t}
-                    <span className="h-1.5 w-1.5 -skew-x-[20deg] bg-chalk/30" />
-                  </span>
-                ))}
-              </div>
-            ))}
+        <div className="relative px-5 pb-12 pt-4 sm:px-8 sm:pb-14 lg:flex lg:flex-col lg:justify-center lg:py-20 lg:pr-14 lg:pl-[max(2rem,calc((100vw-72rem)/2+2rem))]">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-apex">
+            {business.brand.tagline.replace(/\.$/, "")}
+          </p>
+          {/* The keyword phrase is the H1 so search engines read "Mobile auto detailing in …" as the page topic. */}
+          <h1 className="mt-3 lg:mt-4">
+            <span className="block font-display text-[2.9rem] leading-[0.92] sm:text-7xl xl:text-[5.5rem] text-balance">
+              Mobile auto detailing
+            </span>
+            <span className="mt-2 block text-lg font-semibold sm:mt-3 sm:text-xl text-chalk/90">in {region}</span>
+          </h1>
+          <p className="mt-4 max-w-xl text-lg leading-relaxed text-chalk/80 sm:mt-5">
+            Interior and exterior car detailing at your home or workplace. You don&rsquo;t need to provide water or
+            power. {isPrelaunch ? "Planned packages" : "Packages"} start at {fromPrice}.
+          </p>
+          <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row">
+            <ButtonLink href={cta.href} variant="apex" size="lg">
+              {cta.label}
+              <Arrow />
+            </ButtonLink>
+            <ButtonLink href="/services" size="lg" variant="outline-light">
+              See packages &amp; prices
+            </ButtonLink>
           </div>
+          <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-chalk/75">
+            {fiveStarGoogle && (
+              <li>
+                <a href="#reviews" className="hover:text-chalk">
+                  <span className="text-apex" aria-hidden="true">
+                    ★★★★★{" "}
+                  </span>
+                  5-star reviews on Google
+                </a>
+              </li>
+            )}
+            <li>Nothing charged online</li>
+            <li>Done by hand</li>
+          </ul>
         </div>
-        <div className="kerb h-[3px] opacity-80" aria-hidden="true" />
       </section>
+
+      <Reviews tone="white" />
 
       {/* Packages + pricing */}
       <Section tone="chalk" id="packages" className="scroll-mt-20">
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
           <SectionHeading
-            eyebrow="Detailing packages"
-            title="Popular packages. Built to perform."
-            lede="Every package covers the inside and the outside. Prices are on the services page."
+            title="Detailing packages"
+            lede="Every package covers the inside and the outside. Prices start with sedans and go up by vehicle size; the final price is confirmed when we see the car."
           />
-          <div className="flex flex-col gap-3 shrink-0 lg:items-end">
-            <Link
-              href="/services#quote"
-              className="group inline-flex items-center gap-2 font-semibold uppercase tracking-[0.1em] text-sm text-apex-deep"
-            >
-              Get an instant quote
-              <Arrow />
-            </Link>
-            <Link
-              href="/services"
-              className="group inline-flex items-center gap-2 font-semibold uppercase tracking-[0.1em] text-sm text-ink hover:text-apex-deep"
-            >
-              Pricing &amp; full details
-              <Arrow />
-            </Link>
-          </div>
+          <Link
+            href="/services#quote"
+            className="group inline-flex shrink-0 items-center gap-2 font-semibold text-apex-deep"
+          >
+            Get an instant quote
+            <Arrow />
+          </Link>
         </div>
         <div className="mt-12">
-          <PackageCards showPrices={false} groups={["popular"]} />
+          <PackageCards groups={["popular"]} />
         </div>
       </Section>
 
+      {/* Our work: only real, approved photos (src/config/photos.ts). */}
+      {gallery.length > 0 && (
+        <Section tone="white">
+          <SectionHeading title="Our work" lede="Real cars we've detailed. Every photo here is our own work." />
+          {/* Desktop rows are fixed so the tall first tile keeps about the before/after image's 4:5 shape. */}
+          <ul className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-[1.5fr_1fr_1fr] lg:grid-rows-[17rem_17rem]">
+            {gallery.map((g, i) => (
+              <li key={g.src} className={cn("relative overflow-hidden rounded-lg bg-chalk-deep", GALLERY_TILES[i])}>
+                <Image
+                  src={g.src}
+                  alt={g.alt}
+                  fill
+                  sizes="(min-width: 1024px) 26rem, (min-width: 640px) 50vw, 100vw"
+                  className="object-cover"
+                  style={{ objectPosition: g.focus ?? "center" }}
+                />
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+
       <CareJourney />
 
-      {/* Service area */}
+      {/* Process */}
       <Section tone="white">
-        <div className="grid lg:grid-cols-[1fr_1.1fr] gap-12 items-start">
+        <SectionHeading title="How booking works" />
+        <div className="mt-12">
+          <ProcessSteps />
+        </div>
+      </Section>
+
+      {/* Service area */}
+      <Section tone="chalk">
+        <div className="grid lg:grid-cols-[1fr_1.1fr] gap-10 lg:gap-12 items-start">
           <SectionHeading
-            eyebrow="Service area"
-            title={`${business.serviceAreas.region}.`}
+            title="Where we work"
             lede="Our home base is Clay County. Jacksonville mobile detailing is available too; we confirm travel for your exact location when we review your request."
           />
           <div>
-            <h3 className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-apex-deep">Core coverage</h3>
-            <ul className="mt-3 border-t-2 border-asphalt">
-              {core.map((c, i) => (
-                <li key={c.slug} className="flex items-baseline gap-4 border-b border-line py-3">
-                  <span className="font-mono text-xs text-ink-muted" aria-hidden="true">
-                    0{i + 1}
-                  </span>
-                  <span className="font-display text-3xl sm:text-4xl">{c.name}</span>
+            <ul className="grid gap-x-6 sm:grid-cols-2">
+              {core.map((c) => (
+                <li key={c.slug} className="border-b border-line">
+                  <TownLink town={c} />
                 </li>
               ))}
             </ul>
             {confirm.length > 0 && (
               <div className="mt-8">
-                <h3 className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-apex-deep">Travel confirmed on review</h3>
-                <p className="mt-2 font-display text-3xl">{confirm.map((c) => c.name).join(" · ")}</p>
-                <p className="mt-2 text-sm text-ink-muted">We confirm travel for your exact location when we review your request.</p>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-muted">
+                  Travel confirmed on review
+                </h3>
+                <ul className="mt-1 grid gap-x-6 sm:grid-cols-2">
+                  {confirm.map((c) => (
+                    <li key={c.slug} className="border-b border-line">
+                      <TownLink town={c} />
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
-            <Link
-              href="/service-areas"
-              className="group mt-8 inline-flex items-center gap-2 font-semibold uppercase tracking-[0.1em] text-sm text-apex-deep"
-            >
+            <Link href="/service-areas" className="group mt-8 inline-flex items-center gap-2 font-semibold text-apex-deep">
               Check your ZIP
               <Arrow />
             </Link>
@@ -218,57 +198,21 @@ export default function HomePage() {
         </div>
       </Section>
 
-      <Reviews />
-
-      {/* Gallery — only real, approved work */}
-      {business.gallery.length > 0 && (
-        <Section tone="white">
-          <SectionHeading eyebrow="Recent work" title="Real vehicles, real results." />
-          <div className="mt-10 grid grid-cols-2 md:grid-cols-3 gap-4">
-            {business.gallery.map((g) => (
-              <Image key={g.src} src={g.src} alt={g.alt} width={g.width} height={g.height} className="w-full h-auto rounded-sm" />
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* Process */}
-      <Section tone="dark" className="relative overflow-hidden">
-        <SectionHeading eyebrow="How it works" title="Three steps. No phone tag." onDark />
-        <div className="mt-12">
-          <ProcessSteps />
-        </div>
-      </Section>
-
       {/* FAQ */}
       <Section tone="white">
         <div className="grid lg:grid-cols-[1fr_1.6fr] gap-10">
-          <SectionHeading eyebrow="Questions" title="Things people ask before they book." />
+          <SectionHeading title="Questions before you book" />
           <Faq items={HOME_FAQ} />
         </div>
       </Section>
 
       {/* Final CTA / launch list */}
-      <section id="launch-list" className="relative overflow-hidden bg-asphalt text-chalk on-dark scroll-mt-20">
-        <div className="grid-lines absolute inset-0" aria-hidden="true" />
-        <div
-          className="absolute -left-40 bottom-[-30%] h-[32rem] w-[32rem] rounded-full bg-chalk/[0.04] blur-[120px]"
-          aria-hidden="true"
-        />
-        <Container className="relative py-16 sm:py-24">
+      <section id="launch-list" className="bg-asphalt text-chalk on-dark scroll-mt-20">
+        <Container className="py-16 sm:py-24">
           <div className="grid lg:grid-cols-[1fr_1.1fr] gap-12 items-center">
             <div>
-              <Eyebrow onDark>{isPrelaunch ? "Launch list" : "Get started"}</Eyebrow>
-              <h2 className="font-display italic font-extrabold text-6xl sm:text-7xl mt-5 text-balance">
-                {isPrelaunch ? (
-                  <>
-                    Be first in line when we open.
-                  </>
-                ) : (
-                  <>
-                    Ready when you are.
-                  </>
-                )}
+              <h2 className="font-display text-5xl sm:text-6xl text-balance">
+                {isPrelaunch ? "Be first in line when we open." : "Book a detail in about two minutes"}
               </h2>
               <p className="mt-6 text-lg text-chalk/75 leading-relaxed max-w-lg">
                 {isPrelaunch
@@ -276,8 +220,7 @@ export default function HomePage() {
                   : "Pick a service and an open time on the calendar. We hold it for you and confirm by email."}
               </p>
             </div>
-            <div className="relative bg-white text-ink rounded-sm p-6 sm:p-8 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.8)]">
-              <span className="absolute inset-x-0 top-0 h-1 bg-apex" aria-hidden="true" />
+            <div className="rounded-lg bg-white text-ink p-6 sm:p-8">
               {isPrelaunch ? (
                 <LaunchListForm />
               ) : (
@@ -296,5 +239,17 @@ export default function HomePage() {
         </Container>
       </section>
     </>
+  );
+}
+
+/** A served community: links to its town page when it has one. */
+function TownLink({ town }: { town: { slug: string; name: string; page: boolean } }) {
+  const label = <span className="text-lg font-medium">{town.name}</span>;
+  if (!town.page) return <span className="flex py-3.5">{label}</span>;
+  return (
+    <Link href={`/service-areas/${town.slug}`} className="group flex items-center justify-between gap-4 py-3.5 hover:text-apex-deep">
+      {label}
+      <Arrow />
+    </Link>
   );
 }

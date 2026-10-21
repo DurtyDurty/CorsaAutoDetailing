@@ -460,8 +460,6 @@ export const business = {
     ],
   },
 
-  /** Approved real-work photos. Empty = gallery hidden. */
-  gallery: [] as { src: string; alt: string; width: number; height: number }[],
   /**
    * Real customer reviews only, word for word, with the name shown where they were posted.
    * Empty = the home page reviews section is hidden. Added 2026-10-13 from the Google Business Profile.

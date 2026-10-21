@@ -24,10 +24,10 @@ test.describe("public site", () => {
 
   test("primary CTAs and navigation reach their destinations", async ({ page, isMobile }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Driven by Detail");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Mobile auto detailing");
     await expect(page.getByText("Preparing to launch").first()).toBeVisible();
 
-    await page.getByRole("link", { name: "Explore services" }).first().click();
+    await page.getByRole("link", { name: "See packages & prices" }).first().click();
     await expect(page).toHaveURL(/\/services$/);
 
     if (isMobile) {
@@ -82,15 +82,28 @@ test.describe("public site", () => {
     await expect(page).toHaveURL(/\/service-areas\/fleming-island$/);
   });
 
-  test("home page shows packages but no prices", async ({ page }) => {
+  // Prices came back to the home page in the 2026-10-21 redesign (owner approved); structured data still has no offers.
+  test("home page shows packages with starting prices and real work photos", async ({ page }) => {
     await page.goto("/");
-    const text = (await page.textContent("main")) ?? "";
-    expect(text).toContain("Essential Full Detail");
-    expect(text).toContain("Signature Full Detail");
-    expect(text).toContain("Monthly Maintenance");
-    expect(text).not.toMatch(/\$\s?\d/);
+    const main = page.locator("main");
+    for (const [name, price] of [
+      ["Basic Package", "$90"],
+      ["Essential Full Detail", "$150"],
+      ["Signature Full Detail", "$200"],
+      ["Monthly Maintenance", "$150/mo"],
+    ]) {
+      await expect(main.locator("article", { has: page.getByRole("heading", { name, exact: true }) })).toContainText(price);
+    }
+    await expect(main.getByRole("heading", { level: 1 }).locator("..")).toContainText("start at $90");
+    await expect(main.locator('img[src*="interior-before-after"]')).toHaveCount(1);
     const jsonLd = (await page.locator('script[type="application/ld+json"]').allTextContents()).join("");
     expect(jsonLd).not.toMatch(/"(price|minPrice|priceRange)"/);
+    await page.getByRole("link", { name: "Get an instant quote" }).first().click();
+    await expect(page).toHaveURL(/\/services#quote$/);
+  });
+
+  test("town pages link package cards to their pricing", async ({ page }) => {
+    await page.goto("/service-areas/middleburg");
     await page.getByRole("link", { name: "See pricing & details" }).first().click();
     await expect(page).toHaveURL(/\/services#basic-full$/);
   });

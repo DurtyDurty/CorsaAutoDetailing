@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { business, absoluteUrl, primaryCta } from "@/config/business";
+import { photos } from "@/config/photos";
 import { Arrow, ButtonLink } from "@/components/ui/Button";
 import { Section, SectionHeading } from "@/components/ui/Section";
 import { PageHero } from "@/components/site/PageHero";
@@ -68,12 +69,16 @@ export default async function TownPage({ params }: PageProps<"/service-areas/[sl
         // Static, server-generated content from configuration — no user input.
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
-      <PageHero eyebrow={`Service area · ${town.county} County`} title={`Mobile auto detailing in ${town.name}, FL`} lede={town.intro} />
+      <PageHero
+        eyebrow={`Service area · ${town.county} County`}
+        title={`Mobile auto detailing in ${town.name}, FL`}
+        lede={town.intro}
+        photo={photos.stingerDriveway}
+      />
 
       <Section tone="chalk">
         <SectionHeading
-          eyebrow={`Packages in ${town.name}`}
-          title="Pick a package. We come to you."
+          title={`Detailing packages in ${town.name}`}
           lede={`Every package is done by hand at your home or workplace in ${town.name}. See the services page for starting prices by vehicle size.`}
         />
         <div className="mt-12">
@@ -84,7 +89,7 @@ export default async function TownPage({ params }: PageProps<"/service-areas/[sl
       <Section tone="white">
         <div className="grid lg:grid-cols-2 gap-12 items-start">
           <div>
-            <SectionHeading eyebrow="Coverage" title={`Serving ${town.name}`} />
+            <SectionHeading title={`Serving ${town.name}`} />
             <dl className="mt-8 divide-y divide-line border-y border-line">
               <div className="flex flex-col gap-1 py-4 sm:flex-row sm:gap-6">
                 <dt className="w-40 shrink-0 font-mono text-[0.72rem] uppercase tracking-[0.16em] text-ink-muted">Coverage</dt>
@@ -101,13 +106,13 @@ export default async function TownPage({ params }: PageProps<"/service-areas/[sl
               {town.zips.length > 0 && (
                 <div className="flex flex-col gap-1 py-4 sm:flex-row sm:gap-6">
                   <dt className="w-40 shrink-0 font-mono text-[0.72rem] uppercase tracking-[0.16em] text-ink-muted">ZIP codes</dt>
-                  <dd className="font-mono text-sm leading-relaxed">{town.zips.join(", ")}</dd>
+                  <dd className="text-sm leading-relaxed">{town.zips.join(", ")}</dd>
                 </div>
               )}
             </dl>
           </div>
           <div>
-            <SectionHeading eyebrow="ZIP check" title="Can we reach you?" lede="Enter your ZIP for an instant answer. Final eligibility is confirmed when we review your request." />
+            <SectionHeading title="Can we reach you?" lede="Enter your ZIP for an instant answer. Final eligibility is confirmed when we review your request." />
             <div className="mt-6">
               <ZipChecker />
             </div>
@@ -116,7 +121,7 @@ export default async function TownPage({ params }: PageProps<"/service-areas/[sl
       </Section>
 
       <Section tone="chalk">
-        <SectionHeading eyebrow="Nearby" title="Other areas we serve" />
+        <SectionHeading title="Other areas we serve" />
         <ul className="mt-8 grid gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
           {nearby.map((c) => (
             <li key={c.slug}>

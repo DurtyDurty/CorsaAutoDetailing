@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Barlow_Condensed, Inter, JetBrains_Mono } from "next/font/google";
+import { Barlow_Condensed, Inter } from "next/font/google";
 import "./globals.css";
 import { business, absoluteUrl } from "@/config/business";
 
@@ -11,7 +11,6 @@ const display = Barlow_Condensed({
   weight: ["600", "700", "800"],
   style: ["normal", "italic"],
 });
-const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-code", display: "swap", weight: ["400", "500"] });
 
 const noindex = business.brand.siteEnv === "staging";
 
@@ -52,7 +51,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${body.variable} ${display.variable} ${mono.variable} h-full`}>
+    <html lang="en" className={`${body.variable} ${display.variable} h-full`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

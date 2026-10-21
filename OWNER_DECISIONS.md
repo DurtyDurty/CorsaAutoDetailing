@@ -68,8 +68,8 @@ Things the website is deliberately silent or provisional about until you decide.
 
 ## Photos & proof
 
-- [ ] **Real work photos** (before/after of practice jobs on your IS F / FJ Cruiser or consenting friends). Gallery is hidden until `business.gallery` has entries. Do not use stock or AI images as work samples.
-- [ ] **Hero video.** The home page background is a license-free Pexels clip (video 6157780, black car reflections, no people) used as mood only, never presented as our work. Replace it with your own 10–15 s landscape clip: drop it in `public/media/` (720p + 360p MP4, no audio, plus a poster JPG) and update the paths in `src/components/site/HeroVideo.tsx`.
+- [x] **Real work photos.** Five photos added 2026-10-21 (Kia Stinger after a detail, interior before/after, trailer and generator on site): home hero, "Our work" grid, and the Services, About and Service Areas page headers. Plate and house numbers blurred, location data stripped. Send more before/after pairs any time; do not use stock or AI images as work samples. → `src/config/photos.ts`, `public/media/work/`
+- [x] **Hero video.** The Pexels stock clip was replaced by your own Stinger photo on 2026-10-21 (redesign). A clip of your own could still go there later.
 - [ ] **Testimonials.** Section hidden until real, permissioned quotes exist. → `business.testimonials`
 - [ ] **Customer photo uploads.** Enable only after creating the private Supabase bucket. → `SUPABASE_STORAGE_BUCKET`
 

@@ -20,7 +20,7 @@ export function SiteHeader() {
             <a
               key={l.href}
               href={l.href}
-              className="relative whitespace-nowrap py-2 text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-chalk/80 hover:text-chalk after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-left after:scale-x-0 after:bg-apex after:transition-transform hover:after:scale-x-100"
+              className="relative whitespace-nowrap py-2 text-[0.95rem] font-medium text-chalk/80 hover:text-chalk after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-left after:scale-x-0 after:bg-apex after:transition-transform hover:after:scale-x-100"
             >
               {l.label}
             </a>

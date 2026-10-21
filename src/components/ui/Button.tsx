@@ -6,7 +6,7 @@ type Variant = "primary" | "secondary" | "ghost" | "apex" | "outline-light" | "d
 type Size = "md" | "lg" | "sm";
 
 const base =
-  "group inline-flex items-center justify-center gap-2 font-semibold uppercase tracking-[0.08em] rounded-sm border transition-colors disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap";
+  "group inline-flex items-center justify-center gap-2 font-semibold rounded-sm border transition-colors disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap";
 
 const variants: Record<Variant, string> = {
   primary: "bg-asphalt text-chalk border-asphalt hover:bg-apex-deep hover:border-apex-deep hover:text-white",
@@ -18,9 +18,9 @@ const variants: Record<Variant, string> = {
 };
 
 const sizes: Record<Size, string> = {
-  sm: "text-[0.8rem] px-3.5 py-2 min-h-10",
-  md: "text-sm px-5 py-3 min-h-12",
-  lg: "text-[0.95rem] px-7 py-3.5 min-h-14",
+  sm: "text-sm px-4 py-2 min-h-10",
+  md: "text-[0.95rem] px-5 py-3 min-h-12",
+  lg: "text-base px-7 py-3.5 min-h-14",
 };
 
 interface CommonProps {

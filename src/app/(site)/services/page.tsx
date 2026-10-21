@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { business } from "@/config/business";
+import { photos } from "@/config/photos";
 import { Section, SectionHeading } from "@/components/ui/Section";
 import { PageHero } from "@/components/site/PageHero";
 import { PackageCards } from "@/components/site/PackageCards";
@@ -27,14 +28,14 @@ export default function ServicesPage() {
       <ServiceViewTracker />
       <PageHero
         eyebrow="Packages & pricing"
-        title="Every package. Clear starting prices."
+        title="Detailing packages and prices"
         lede="Interior and exterior car detailing in one visit, done by hand at your home or workplace. Every package shows its starting price, and full packages are priced by vehicle size; the final price is confirmed at an in-person inspection before any work begins."
+        photo={photos.stingerFront}
       />
 
       <Section tone="white" id="quote" className="scroll-mt-20">
         <SectionHeading
-          eyebrow="Instant quote"
-          title="Get your price in seconds."
+          title="Get your price in seconds"
           lede="Pick a package to see its starting price. No contact details needed."
         />
         <InstantQuote className="mt-10 max-w-3xl" />
@@ -47,7 +48,6 @@ export default function ServicesPage() {
 
       <Section tone="white">
         <SectionHeading
-          eyebrow="Add-ons"
           title="Additional services"
           lede="For vehicles that need more than a package covers. Each is priced after we see the vehicle and only added with your approval."
         />
@@ -55,7 +55,7 @@ export default function ServicesPage() {
           <AdditionalServices />
         </div>
         <div className="mt-10 max-w-2xl">
-          <h3 className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-apex-deep">Quoted individually</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-apex-deep">Quoted individually</h3>
           <ul className="mt-3 space-y-2 text-ink-muted">
             {business.customQuoteConditions.map((c) => (
               <li key={c} className="flex gap-3">
@@ -70,7 +70,7 @@ export default function ServicesPage() {
       <CareJourney />
 
       <Section tone="chalk">
-        <SectionHeading eyebrow="Questions" title="Service details." />
+        <SectionHeading title="Service questions" />
         <div className="mt-10 max-w-3xl">
           <Faq items={SERVICES_FAQ} />
         </div>

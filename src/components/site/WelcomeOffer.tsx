@@ -15,8 +15,8 @@ const SEEN_KEY = "corsa-offer-seen";
 const JOINED_KEY = "corsa-offer-joined";
 
 /**
- * First-time customer offer with an email signup, shown once per visit (browser session) a moment after
- * the first page loads. A banner at the bottom of the screen on phones and a centered one on larger
+ * First-time customer offer with an email signup, shown once per visit (browser session) after the visitor
+ * has spent some time on the site. A banner at the bottom of the screen on phones and a centered one on larger
  * screens; it never covers the whole page on phones, where a full-screen pop-up on arrival counts
  * against the site in Google search. Not shown where the visitor is already booking, or before launch.
  */
@@ -37,7 +37,11 @@ export function WelcomeOffer() {
     } catch {
       return; // Storage blocked: better no pop-up than one on every page.
     }
-    const timer = setTimeout(() => {
+    // Wait until the visitor has seen the page: 25 s on the site or halfway down this page, whichever comes first.
+    let shown = false;
+    const show = () => {
+      if (shown) return;
+      shown = true;
       try {
         sessionStorage.setItem(SEEN_KEY, "1");
       } catch {
@@ -45,8 +49,17 @@ export function WelcomeOffer() {
       }
       setOpen(true);
       track("offer_shown");
-    }, 1500);
-    return () => clearTimeout(timer);
+    };
+    const onScroll = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      if (max > 0 && window.scrollY / max >= 0.5) show();
+    };
+    const timer = setTimeout(show, 25_000);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, [skip]);
 
   useEffect(() => {
@@ -136,7 +149,7 @@ function OfferBanner({ onClose }: { onClose: () => void }) {
         {/* Offer and signup. */}
         <div className="px-6 pt-4 sm:p-8" style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}>
           <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-apex-deep font-semibold">First-time customers</p>
-          <h2 id="welcome-offer-title" className="mt-2 pr-8 font-display italic font-extrabold text-3xl leading-[0.95] sm:pr-0 sm:text-4xl">
+          <h2 id="welcome-offer-title" className="mt-2 pr-8 font-display text-3xl leading-[0.95] sm:pr-0 sm:text-4xl">
             {joined ? "You're in." : offer.headline}
           </h2>
           {joined ? (

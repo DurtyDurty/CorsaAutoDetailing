@@ -28,7 +28,7 @@ export function Section({
   );
 }
 
-/** Telemetry-style label: a short red bar plus monospaced caps. */
+/** Small label above a page title: spaced caps in the brand red. */
 export function Eyebrow({
   children,
   className,
@@ -41,25 +41,23 @@ export function Eyebrow({
   return (
     <p
       className={cn(
-        "inline-flex items-center gap-2.5 font-mono text-[0.72rem] font-medium uppercase tracking-[0.16em]",
+        "text-xs font-semibold uppercase tracking-[0.14em]",
         onDark ? "text-apex" : "text-apex-deep",
         className,
       )}
     >
-      <span aria-hidden="true" className="h-[3px] w-5 bg-current" />
       {children}
     </p>
   );
 }
 
+/** Section title and lede. Sections carry no label above the title; the title says what the section is. */
 export function SectionHeading({
-  eyebrow,
   title,
   lede,
   className,
   onDark,
 }: {
-  eyebrow?: string;
   title: string;
   lede?: string;
   className?: string;
@@ -67,8 +65,7 @@ export function SectionHeading({
 }) {
   return (
     <div className={cn("max-w-2xl", className)}>
-      {eyebrow && <Eyebrow onDark={onDark}>{eyebrow}</Eyebrow>}
-      <h2 className="font-display text-4xl sm:text-5xl mt-4 text-balance">{title}</h2>
+      <h2 className="font-display text-4xl sm:text-5xl text-balance">{title}</h2>
       {lede && <p className={cn("mt-5 text-lg leading-relaxed", onDark ? "text-chalk/75" : "text-ink-muted")}>{lede}</p>}
     </div>
   );

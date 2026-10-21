@@ -22,10 +22,14 @@
 
   --font-sans: var(--font-body), system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: var(--font-brand), "Arial Narrow", "Helvetica Neue", sans-serif;
-  --font-mono: var(--font-code), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  /*
+    `font-mono` labels (small spaced caps) render in the body font: the monospace "telemetry" look
+    was retired in the 2026-10-21 redesign. No code font is loaded.
+  */
+  --font-mono: var(--font-body), system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  --radius-sm: 2px;
-  --radius-md: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
 }
 
 :root {
@@ -78,27 +82,12 @@ body {
     background: repeating-linear-gradient(-60deg, var(--color-apex) 0 10px, #fff 10px 20px);
   }
 
-  /* Faint telemetry grid for dark panels. */
+  /* Faint grid, now only behind the first-time offer's art panel. */
   .grid-lines {
     background-image:
       linear-gradient(to right, rgb(255 255 255 / 0.045) 1px, transparent 1px),
       linear-gradient(to bottom, rgb(255 255 255 / 0.045) 1px, transparent 1px);
     background-size: 56px 56px;
-  }
-}
-
-/* Ticker strip — the track is duplicated in markup, so -50% loops seamlessly. */
-@keyframes ticker {
-  to {
-    transform: translateX(-50%);
-  }
-}
-.ticker-track {
-  animation: ticker 40s linear infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .ticker-track {
-    animation: none;
   }
 }
 
@@ -304,6 +293,10 @@ body {
 }
 .on-dark :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline-color: var(--color-apex);
+}
+/* Headings focused by script (form steps) are not controls: no ring, or it reads as an error box. */
+[tabindex="-1"]:focus-visible {
+  outline: none;
 }
 
 /* Form controls */

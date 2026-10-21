@@ -73,7 +73,7 @@ export default async function BookingConfirmedPage({ searchParams }: PageProps<"
   return (
     <Container className="py-16 sm:py-20 max-w-2xl">
       <p className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-apex-deep">Reference {shortRef(lead.id)}</p>
-      <h1 className="font-display italic font-extrabold text-5xl sm:text-6xl mt-3">You&rsquo;re booked.</h1>
+      <h1 className="font-display text-5xl sm:text-6xl mt-3">You&rsquo;re booked.</h1>
       <p className="mt-4 text-lg text-ink-muted">A confirmation is on its way to {lead.email}.</p>
 
       <dl className="mt-8 divide-y divide-line border-y-2 border-asphalt bg-white">

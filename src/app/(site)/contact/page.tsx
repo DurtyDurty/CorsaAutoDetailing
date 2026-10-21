@@ -24,13 +24,13 @@ export default function ContactPage() {
     <>
       <PageHero
         eyebrow="Contact"
-        title="Ask us anything."
+        title="Contact us"
         lede="Every message goes straight to the owner. Requests are reviewed before anything is scheduled. Sending a message doesn't create an appointment."
       />
       <Section tone="white">
         <div className="grid lg:grid-cols-[1fr_1.4fr] gap-12">
           <div>
-            <SectionHeading eyebrow="Reach us" title="Direct lines." />
+            <SectionHeading title="Call or email" />
             {hasDirect ? (
               <ul className="mt-6 space-y-3 text-lg">
                 {contact.email && (

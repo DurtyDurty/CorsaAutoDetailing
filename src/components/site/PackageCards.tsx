@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import Link from "next/link";
 import { business, getService, isPrelaunch, type PackageGroupId, type ServiceDefinition } from "@/config/business";
 import { formatServicePrice, formatUsd, sizePrices } from "@/lib/pricing";
@@ -44,10 +45,10 @@ export function PackageCards({
           {showGroupHeadings && (
             <div className="mb-8 flex items-center gap-5">
               <div className="shrink-0">
-                <GroupHeading id={`group-${g.id}`} className="font-display italic font-extrabold text-3xl sm:text-4xl leading-none">
+                <GroupHeading id={`group-${g.id}`} className="font-display text-3xl sm:text-4xl leading-none">
                   {g.title}
                 </GroupHeading>
-                <p className="mt-1.5 font-mono text-[0.7rem] uppercase tracking-[0.16em] text-apex-deep">{g.subtitle}</p>
+                <p className="mt-1.5 text-sm font-medium text-apex-deep">{g.subtitle}</p>
               </div>
               <span aria-hidden="true" className="h-px flex-1 bg-line" />
             </div>
@@ -77,6 +78,8 @@ function PackageCard({
   showPrices: boolean;
 }) {
   const featured = Boolean(s.badge);
+  // The monthly plan spans the full row under the per-visit packages.
+  const wide = s.billing === "monthly";
   const base = s.includesEverythingIn ? getService(s.includesEverythingIn) : null;
   const sizes = sizePrices(s);
   const headingId = `pkg-${s.id}`;
@@ -87,61 +90,58 @@ function PackageCard({
       id={s.id}
       aria-labelledby={headingId}
       className={cn(
-        "group relative flex scroll-mt-28 flex-col bg-white p-6 sm:p-7 transition-[transform,box-shadow] duration-300 motion-safe:hover:-translate-y-1",
+        "relative flex scroll-mt-28 flex-col rounded-lg bg-white p-6 sm:p-7 transition-shadow duration-300",
         featured
-          ? "border-2 border-apex-deep shadow-[0_24px_60px_-28px_rgba(200,21,11,0.45)] hover:shadow-[0_30px_70px_-28px_rgba(200,21,11,0.6)]"
-          : "border border-line hover:shadow-[0_24px_60px_-30px_rgba(12,13,16,0.35)]",
+          ? "border-2 border-apex-deep shadow-[0_24px_60px_-28px_rgba(200,21,11,0.45)]"
+          : "border border-line hover:shadow-[0_24px_60px_-30px_rgba(12,13,16,0.3)]",
+        wide &&
+          "md:col-span-2 lg:col-span-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_auto] lg:items-center lg:gap-12",
       )}
     >
-      {/* Racing stripe: grows on hover */}
-      <span
-        aria-hidden="true"
-        className={cn(
-          "absolute left-0 top-0 h-1 transition-[width] duration-500",
-          featured ? "w-full bg-apex-deep" : "w-16 bg-asphalt group-hover:w-full",
-        )}
-      />
       {s.badge && (
-        <p className="absolute -top-3.5 right-6 bg-apex-deep px-3 py-1.5 font-mono text-[0.68rem] font-medium uppercase tracking-[0.16em] text-white">
+        <p className="absolute -top-3 right-6 rounded-sm bg-apex-deep px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white">
           {s.badge}
         </p>
       )}
 
-      <H id={headingId} className="font-display italic font-extrabold text-3xl sm:text-[2.1rem] leading-[0.95]">
-        {s.name}
-      </H>
-      {s.tagline && (
-        <p className={cn("mt-2 font-mono text-[0.72rem] uppercase tracking-[0.16em]", featured ? "text-apex-deep" : "text-ink-muted")}>
-          {s.tagline}
-        </p>
-      )}
+      <div>
+        <H id={headingId} className="font-display text-3xl sm:text-[2.1rem] leading-[0.95]">
+          {s.name}
+        </H>
+        {s.tagline && (
+          <p className={cn("mt-2 text-sm font-medium", featured ? "text-apex-deep" : "text-ink-muted")}>{s.tagline}</p>
+        )}
 
-      {showPrices && (
-        <div className="mt-5 border-y border-line py-3">
-          <p className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-ink-muted">{priceLabel}</p>
-          <p className={cn("mt-1 font-display text-4xl", featured && "text-apex-deep")}>
-            <span className="sr-only">starting at </span>
-            {formatServicePrice(s)}
-            <span className="align-top text-base text-ink-muted">+</span>
-          </p>
-          {s.billing === "monthly" && <p className="text-sm text-ink-muted">Billed monthly.</p>}
-          {sizes && (
-            <p className="mt-1 text-sm text-ink-muted">
-              {sizes.map((p, i) => (
-                <span key={p.size} className="whitespace-nowrap">
-                  {i > 0 && " · "}
-                  {p.size} {formatUsd(p.price)}
-                </span>
-              ))}
+        {showPrices && (
+          <div className={cn("mt-5 border-y border-line py-3", wide && "lg:border-0 lg:py-0")}>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-muted">{priceLabel}</p>
+            <p className={cn("mt-1 font-display text-4xl", featured && "text-apex-deep")}>
+              <span className="sr-only">starting at </span>
+              {formatServicePrice(s)}
+              <span className="align-top text-base text-ink-muted">+</span>
             </p>
-          )}
-        </div>
-      )}
+            {s.billing === "monthly" && <p className="text-sm text-ink-muted">Billed monthly.</p>}
+            {sizes && (
+              <p className="mt-1 text-sm text-ink-muted">
+                {sizes.map((p, i) => (
+                  // The separator sits outside the no-wrap span so the line can break between sizes.
+                  <Fragment key={p.size}>
+                    {i > 0 && " · "}
+                    <span className="whitespace-nowrap">
+                      {p.size} {formatUsd(p.price)}
+                    </span>
+                  </Fragment>
+                ))}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Included */}
-      <div className="mt-6 flex-1">
-        <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-ink">{listHeading}</p>
-        <ul className="mt-3 grid gap-2.5">
+      <div className={cn("mt-6 flex-1", wide && "lg:mt-0")}>
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-ink">{listHeading}</p>
+        <ul className={cn("mt-3 grid gap-2.5", wide && "lg:grid-cols-2 lg:gap-x-8")}>
           {s.includes.map((item) => (
             <li key={item} className="flex gap-3 text-[0.95rem] leading-snug">
               <Check className={featured ? "text-apex-deep" : "text-ink"} />
@@ -151,29 +151,31 @@ function PackageCard({
         </ul>
       </div>
 
-      <Link
-        href={`/request?service=${s.id}`}
-        onClick={() => track("book_package_clicked", { service: s.id })}
-        className={cn(
-          "mt-7 inline-flex min-h-14 items-center justify-center gap-2 rounded-sm border px-6 py-3.5 text-[0.95rem] font-semibold uppercase tracking-[0.08em] transition-colors",
-          featured
-            ? "border-apex-deep bg-apex-deep text-white hover:bg-[#a51109] hover:border-[#a51109]"
-            : "border-asphalt bg-asphalt text-chalk hover:bg-apex-deep hover:border-apex-deep hover:text-white",
-        )}
-      >
-        {/* Before launch the same link collects an email for updates (the /request page switches forms). */}
-        {isPrelaunch ? "Get launch updates" : "Book now"}
-        <Arrow />
-      </Link>
-      {!showPrices && (
+      <div className={cn("mt-7 flex flex-col", wide && "lg:mt-0 lg:min-w-52")}>
         <Link
-          href={`/services#${s.id}`}
-          className="mt-3 inline-flex items-center justify-center gap-2 text-sm font-semibold uppercase tracking-[0.1em] text-ink hover:text-apex-deep"
+          href={`/request?service=${s.id}`}
+          onClick={() => track("book_package_clicked", { service: s.id })}
+          className={cn(
+            "group inline-flex min-h-14 items-center justify-center gap-2 rounded-sm border px-6 py-3.5 text-base font-semibold transition-colors",
+            featured
+              ? "border-apex-deep bg-apex-deep text-white hover:bg-[#a51109] hover:border-[#a51109]"
+              : "border-asphalt bg-asphalt text-chalk hover:bg-apex-deep hover:border-apex-deep hover:text-white",
+          )}
         >
-          See pricing &amp; details
+          {/* Before launch the same link collects an email for updates (the /request page switches forms). */}
+          {isPrelaunch ? "Get launch updates" : "Book now"}
           <Arrow />
         </Link>
-      )}
+        {!showPrices && (
+          <Link
+            href={`/services#${s.id}`}
+            className="group mt-3 inline-flex items-center justify-center gap-2 text-sm font-semibold text-ink hover:text-apex-deep"
+          >
+            See pricing &amp; details
+            <Arrow />
+          </Link>
+        )}
+      </div>
     </article>
   );
 }

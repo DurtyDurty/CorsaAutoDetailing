@@ -54,7 +54,7 @@ export default async function RequestPage({ searchParams }: PageProps<"/request"
     <>
       <PageHero
         eyebrow={booking || calendar ? "Book a detail" : "Request an appointment"}
-        title={booking ? "Pick your time. Lock it in." : calendar ? "Pick your time. We'll confirm it." : "Tell us about your car."}
+        title={booking ? "Pick a time to book your detail" : calendar ? "Pick a time and we'll confirm it" : "Tell us about your car"}
         lede={
           booking
             ? "Four short steps: your vehicle, its condition, where and when, then a small deposit to hold the time. Prices shown are starting estimates; the final price is confirmed at an in-person inspection before any work begins."
