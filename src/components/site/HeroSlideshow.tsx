@@ -8,9 +8,9 @@ import { LogoSlide } from "./LogoSlide";
 
 export type HeroSlide = { type: "photo"; photo: WorkPhoto } | { type: "logo" };
 
-/** How long each slide shows. The logo slide runs one full lap of its animation. */
+/** How long each slide shows. The logo slide runs its whole animation once (globals.css, 3 s). */
 const PHOTO_MS = 5500;
-const LOGO_MS = 8000;
+const LOGO_MS = 3000;
 
 /**
  * Home hero slideshow: slides crossfade on their own while each photo slowly zooms. The bars at the
@@ -91,7 +91,8 @@ export function HeroSlideshow({ slides, label }: { slides: HeroSlide[]; label: s
                   src={s.photo.src}
                   alt={s.photo.alt}
                   fill
-                  priority={i === 0}
+                  // The first photo loads up front: it's the first one shown after the logo.
+                  priority={slides.findIndex((x) => x.type === "photo") === i}
                   sizes="(min-width: 1024px) 50vw, 100vw"
                   className={cn("object-cover", zooming && "hero-kenburns")}
                   // Inline: the keyframe classes in globals.css are unlayered and would beat a utility class.

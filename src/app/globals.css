@@ -310,7 +310,7 @@ body {
 }
 
 /*
-  Logo slide in the home hero slideshow (LogoSlide.tsx), one 8 s run that ends on the clean logo: mud
+  Logo slide in the home hero slideshow (LogoSlide.tsx), one 3 s run that ends on the clean logo: mud
   melts off and drips away, a streak of water runs across it, then it squats, spins up smoke, launches
   off the right edge, comes back around from the left and brakes into place. The slideshow remounts the
   slide each time it comes up, so it starts muddy again. The mud, drips and shine use the logo file as
@@ -409,7 +409,7 @@ body {
   }
 }
 .ls-car {
-  animation: ls-drive 8s linear 1 both;
+  animation: ls-drive 3s linear 1 both;
 }
 .ls-logo {
   position: relative;
@@ -430,7 +430,7 @@ body {
 .ls-dirt {
   background: linear-gradient(180deg, #a57e4c 0%, #7a5a36 60%, #5a3f25 100%);
   transform-origin: top;
-  animation: ls-dirt 8s ease-in 1 both;
+  animation: ls-dirt 3s ease-in 1 both;
 }
 .ls-shine-clip {
   overflow: hidden;
@@ -439,7 +439,7 @@ body {
   position: absolute;
   inset: 0;
   background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.95) 50%, transparent 65%);
-  animation: ls-shine 8s ease-out 1 both;
+  animation: ls-shine 3s ease-out 1 both;
 }
 .ls-drip {
   position: absolute;
@@ -451,7 +451,7 @@ body {
   transform-origin: top;
   opacity: 0;
   pointer-events: none;
-  animation: ls-drip 8s ease-in 1 both;
+  animation: ls-drip 3s ease-in 1 both;
 }
 /* Spans 1 and 2 are the mud and the shine, so the drips are spans 3 to 5. */
 .ls-drip:nth-of-type(3) {
@@ -459,12 +459,12 @@ body {
 }
 .ls-drip:nth-of-type(4) {
   left: 47%;
-  animation-delay: 0.35s;
+  animation-delay: 0.13s;
   height: 0.75em;
 }
 .ls-drip:nth-of-type(5) {
   left: 81%;
-  animation-delay: 0.15s;
+  animation-delay: 0.06s;
 }
 .ls-smoke {
   position: absolute;
@@ -475,23 +475,23 @@ body {
   filter: blur(7px);
   opacity: 0;
   pointer-events: none;
-  animation: ls-smoke 8s ease-out 1 both;
+  animation: ls-smoke 3s ease-out 1 both;
 }
 .ls-smoke:nth-of-type(2) {
-  animation-delay: 0.1s;
+  animation-delay: 0.04s;
   margin-top: -0.25em;
 }
 .ls-smoke:nth-of-type(3) {
-  animation-delay: 0.2s;
+  animation-delay: 0.08s;
   margin-left: 0.3em;
 }
 .ls-smoke:nth-of-type(4) {
-  animation-delay: 0.3s;
+  animation-delay: 0.11s;
   margin-top: -0.4em;
   margin-left: 0.15em;
 }
 .ls-smoke:nth-of-type(5) {
-  animation-delay: 0.45s;
+  animation-delay: 0.17s;
   margin-left: 0.55em;
 }
 .logo-slide:not([data-playing]) :is(.ls-car, .ls-dirt, .ls-shine, .ls-drip, .ls-smoke) {

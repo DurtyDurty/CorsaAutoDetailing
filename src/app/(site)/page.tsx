@@ -23,10 +23,10 @@ export const metadata: Metadata = {
   // No openGraph override here: it would drop the site-wide share image (app/opengraph-image.png).
 };
 
-/** Hero slideshow order: the strongest photo first (it's also the first thing to load), then the logo. */
+/** Hero slideshow order: the animated logo opens (owner's choice), then the strongest photo. */
 const heroSlides: HeroSlide[] = [
-  { type: "photo", photo: photos.stingerRear },
   { type: "logo" },
+  { type: "photo", photo: photos.stingerRear },
   { type: "photo", photo: photos.interiorBeforeAfter },
   { type: "photo", photo: photos.stingerFront },
   { type: "photo", photo: photos.stingerDriveway },

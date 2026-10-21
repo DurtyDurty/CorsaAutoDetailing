@@ -102,6 +102,7 @@ test.describe("public site", () => {
     await expect(slideshow.locator('img[alt="Corsa Auto Detailing logo"]')).toHaveCount(1);
     await slideshow.getByRole("button", { name: "Pause slideshow" }).click();
     await expect(slideshow.getByRole("button", { name: "Play slideshow" })).toBeVisible();
+    await expect(slideshow.getByRole("button", { name: "Show slide 1: Corsa logo animation" })).toHaveCount(1);
     const third = slideshow.getByRole("button", { name: /^Show slide 3:/ });
     await third.click();
     await expect(third).toHaveAttribute("aria-current", "true");
