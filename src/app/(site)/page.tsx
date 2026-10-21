@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { business, isPrelaunch, primaryCta } from "@/config/business";
-import { gallery, photos } from "@/config/photos";
+import { photos } from "@/config/photos";
 import { formatUsd, groupStartingPrice } from "@/lib/pricing";
 import { Arrow, ButtonLink } from "@/components/ui/Button";
-import { PhotoCarousel } from "@/components/site/PhotoCarousel";
-import { LogoSlide } from "@/components/site/LogoSlide";
+import { HeroSlideshow, type HeroSlide } from "@/components/site/HeroSlideshow";
 import { Container, Section, SectionHeading } from "@/components/ui/Section";
 import { PackageCards } from "@/components/site/PackageCards";
 import { CareJourney } from "@/components/site/CareJourney";
@@ -25,6 +23,16 @@ export const metadata: Metadata = {
   // No openGraph override here: it would drop the site-wide share image (app/opengraph-image.png).
 };
 
+/** Hero slideshow order: the strongest photo first (it's also the first thing to load), then the logo. */
+const heroSlides: HeroSlide[] = [
+  { type: "photo", photo: photos.stingerRear },
+  { type: "logo" },
+  { type: "photo", photo: photos.interiorBeforeAfter },
+  { type: "photo", photo: photos.stingerFront },
+  { type: "photo", photo: photos.stingerDriveway },
+  { type: "photo", photo: photos.onSiteSetup },
+];
+
 export default function HomePage() {
   const cta = primaryCta();
   const { communities, region } = business.serviceAreas;
@@ -39,24 +47,12 @@ export default function HomePage() {
       <BusinessJsonLd withOffers={false} />
 
       {/*
-        Hero. Phones: a photo strip above the text, so the car isn't hidden behind it.
-        Desktop: text on the left, photo on the right.
+        Hero. Phones: a slideshow strip above the text, so the car isn't hidden behind it.
+        Desktop: text on the left, slideshow on the right.
       */}
       <section className="overflow-hidden bg-asphalt text-chalk on-dark lg:grid lg:grid-cols-2">
-        <div className="relative h-[34svh] min-h-60 sm:h-[46svh] lg:order-2 lg:h-auto lg:min-h-[44rem]">
-          <Image
-            src={photos.stingerRear.src}
-            alt={photos.stingerRear.alt}
-            fill
-            priority
-            sizes="(min-width: 1024px) 50vw, 100vw"
-            className="object-cover"
-            style={{ objectPosition: photos.stingerRear.focus }}
-          />
-          <div
-            className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-asphalt to-asphalt/0 lg:hidden"
-            aria-hidden="true"
-          />
+        <div className="relative h-[38svh] min-h-64 sm:h-[46svh] lg:order-2 lg:h-auto lg:min-h-[44rem]">
+          <HeroSlideshow slides={heroSlides} label="Photos of our work" />
         </div>
 
         <div className="relative px-5 pb-12 pt-4 sm:px-8 sm:pb-14 lg:flex lg:flex-col lg:justify-center lg:py-20 lg:pr-14 lg:pl-[max(2rem,calc((100vw-72rem)/2+2rem))]">
@@ -121,16 +117,6 @@ export default function HomePage() {
           <PackageCards groups={["popular"]} />
         </div>
       </Section>
-
-      {/* Our work: only real, approved photos (src/config/photos.ts). */}
-      {gallery.length > 0 && (
-        <Section tone="white">
-          <SectionHeading title="Our work" lede="Real cars we've detailed. Every photo here is our own work." />
-          <div className="mt-10">
-            <PhotoCarousel photos={gallery} label="Photos of our work" lead={<LogoSlide />} />
-          </div>
-        </Section>
-      )}
 
       <CareJourney />
 

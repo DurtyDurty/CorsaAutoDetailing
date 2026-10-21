@@ -48,12 +48,3 @@ export const photos = {
     focus: "50% 42%",
   },
 } satisfies Record<string, WorkPhoto>;
-
-/** Home page "Our work" carousel, in display order. */
-export const gallery: WorkPhoto[] = [
-  photos.interiorBeforeAfter,
-  photos.stingerRear,
-  photos.stingerFront,
-  photos.stingerDriveway,
-  photos.onSiteSetup,
-];

@@ -68,7 +68,7 @@ Things the website is deliberately silent or provisional about until you decide.
 
 ## Photos & proof
 
-- [x] **Real work photos.** Five photos added 2026-10-21 (Kia Stinger after a detail, interior before/after, trailer and generator on site): home hero, "Our work" grid, and the Services, About and Service Areas page headers. Plate and house numbers blurred, location data stripped. Send more before/after pairs any time; do not use stock or AI images as work samples. → `src/config/photos.ts`, `public/media/work/`
+- [x] **Real work photos.** Five photos added 2026-10-21 (Kia Stinger after a detail, interior before/after, trailer and generator on site): the home hero slideshow (with the animated logo), and the Services, About and Service Areas page headers. Plate and house numbers blurred, location data stripped. Send more before/after pairs any time; do not use stock or AI images as work samples. → `src/config/photos.ts`, `public/media/work/`
 - [x] **Hero video.** The Pexels stock clip was replaced by your own Stinger photo on 2026-10-21 (redesign). A clip of your own could still go there later.
 - [ ] **Testimonials.** Section hidden until real, permissioned quotes exist. → `business.testimonials`
 - [ ] **Customer photo uploads.** Enable only after creating the private Supabase bucket. → `SUPABASE_STORAGE_BUCKET`

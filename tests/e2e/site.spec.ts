@@ -95,14 +95,16 @@ test.describe("public site", () => {
       await expect(main.locator("article", { has: page.getByRole("heading", { name, exact: true }) })).toContainText(price);
     }
     await expect(main.getByRole("heading", { level: 1 }).locator("..")).toContainText("start at $90");
-    await expect(main.locator('img[src*="interior-before-after"]')).toHaveCount(1);
-    const carousel = main.getByRole("region", { name: "Photos of our work" });
-    await expect(carousel.getByRole("group", { name: /of 6$/ })).toHaveCount(6);
-    await expect(carousel.getByRole("img", { name: "Corsa Auto Detailing logo" })).toHaveCount(1);
-    const prev = carousel.getByRole("button", { name: "Previous photo" });
-    await expect(prev).toBeDisabled();
-    await carousel.getByRole("button", { name: "Next photo" }).click();
-    await expect(prev).toBeEnabled();
+    // Hero slideshow: 5 photos plus the animated logo, a pause button, and bars that jump to a slide.
+    const slideshow = main.getByRole("region", { name: "Photos of our work" });
+    await expect(slideshow.locator('img[src*="interior-before-after"]')).toHaveCount(1);
+    await expect(slideshow.locator('[aria-roledescription="slide"]')).toHaveCount(6);
+    await expect(slideshow.locator('img[alt="Corsa Auto Detailing logo"]')).toHaveCount(1);
+    await slideshow.getByRole("button", { name: "Pause slideshow" }).click();
+    await expect(slideshow.getByRole("button", { name: "Play slideshow" })).toBeVisible();
+    const third = slideshow.getByRole("button", { name: /^Show slide 3:/ });
+    await third.click();
+    await expect(third).toHaveAttribute("aria-current", "true");
     const jsonLd = (await page.locator('script[type="application/ld+json"]').allTextContents()).join("");
     expect(jsonLd).not.toMatch(/"(price|minPrice|priceRange)"/);
     await page.getByRole("link", { name: "Get an instant quote" }).first().click();
