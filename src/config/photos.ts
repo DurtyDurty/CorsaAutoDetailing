@@ -49,5 +49,11 @@ export const photos = {
   },
 } satisfies Record<string, WorkPhoto>;
 
-/** Home page "Our work" grid, in display order. */
-export const gallery: WorkPhoto[] = [photos.interiorBeforeAfter, photos.stingerFront, photos.stingerDriveway, photos.onSiteSetup];
+/** Home page "Our work" carousel, in display order. */
+export const gallery: WorkPhoto[] = [
+  photos.interiorBeforeAfter,
+  photos.stingerRear,
+  photos.stingerFront,
+  photos.stingerDriveway,
+  photos.onSiteSetup,
+];

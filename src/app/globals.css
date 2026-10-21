@@ -285,6 +285,215 @@ body {
   animation-delay: 0.15s;
 }
 
+/*
+  Logo slide in the "Our work" carousel (LogoSlide.tsx), one 8 s loop: mud melts off the logo and drips
+  away, a streak of water runs across it, then it squats, spins up smoke, launches off the right edge,
+  comes back around from the left and brakes into place, and the mud splashes back for the next lap.
+  The mud, drips and shine use the logo file as a mask (--ls-logo). Paused while the slide is out of view.
+*/
+@keyframes ls-dirt {
+  0%,
+  8% {
+    opacity: 0.95;
+    transform: translateY(0) scaleY(1);
+    filter: blur(0);
+  }
+  42% {
+    opacity: 0;
+    transform: translateY(55%) scaleY(2.4);
+    filter: blur(2.5px);
+  }
+  90% {
+    opacity: 0;
+    transform: translateY(0) scaleY(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0.95;
+    transform: translateY(0) scaleY(1);
+    filter: blur(0);
+  }
+}
+@keyframes ls-drip {
+  0%,
+  10% {
+    opacity: 0;
+    transform: translateY(0) scaleY(0.3);
+  }
+  18% {
+    opacity: 0.9;
+  }
+  45%,
+  100% {
+    opacity: 0;
+    transform: translateY(2.6em) scaleY(1.6);
+  }
+}
+@keyframes ls-shine {
+  0%,
+  44% {
+    transform: translateX(-120%);
+    opacity: 0;
+  }
+  47% {
+    opacity: 0.9;
+  }
+  56%,
+  100% {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+}
+@keyframes ls-drive {
+  0%,
+  54% {
+    transform: translateX(0) skewX(0);
+    opacity: 1;
+  }
+  59%,
+  63% {
+    transform: translateX(-6%) skewX(8deg);
+    animation-timing-function: cubic-bezier(0.7, 0, 1, 0.6);
+  }
+  70% {
+    transform: translateX(140%) skewX(-22deg);
+    opacity: 1;
+  }
+  70.5%,
+  72% {
+    transform: translateX(-140%) skewX(-22deg);
+    opacity: 0;
+  }
+  72.5% {
+    transform: translateX(-140%) skewX(-22deg);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0, 0.6, 0.3, 1);
+  }
+  88% {
+    transform: translateX(4%) skewX(6deg);
+  }
+  94%,
+  100% {
+    transform: translateX(0) skewX(0);
+  }
+}
+@keyframes ls-smoke {
+  0%,
+  58% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.4);
+  }
+  64% {
+    opacity: 0.85;
+  }
+  82%,
+  100% {
+    opacity: 0;
+    transform: translate(-1.6em, -0.7em) scale(3.2);
+  }
+}
+.ls-car {
+  animation: ls-drive 8s linear infinite both;
+}
+.ls-logo {
+  position: relative;
+}
+.ls-logo img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.ls-dirt,
+.ls-shine-clip {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-mask: var(--ls-logo) center / contain no-repeat;
+  mask: var(--ls-logo) center / contain no-repeat;
+}
+.ls-dirt {
+  background: linear-gradient(180deg, #a57e4c 0%, #7a5a36 60%, #5a3f25 100%);
+  transform-origin: top;
+  animation: ls-dirt 8s ease-in infinite both;
+}
+.ls-shine-clip {
+  overflow: hidden;
+}
+.ls-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.95) 50%, transparent 65%);
+  animation: ls-shine 8s ease-out infinite both;
+}
+.ls-drip {
+  position: absolute;
+  top: 78%;
+  width: 0.14em;
+  height: 0.55em;
+  border-radius: 9999px;
+  background: #8a6238;
+  transform-origin: top;
+  opacity: 0;
+  pointer-events: none;
+  animation: ls-drip 8s ease-in infinite both;
+}
+/* Spans 1 and 2 are the mud and the shine, so the drips are spans 3 to 5. */
+.ls-drip:nth-of-type(3) {
+  left: 16%;
+}
+.ls-drip:nth-of-type(4) {
+  left: 47%;
+  animation-delay: 0.35s;
+  height: 0.75em;
+}
+.ls-drip:nth-of-type(5) {
+  left: 81%;
+  animation-delay: 0.15s;
+}
+.ls-smoke {
+  position: absolute;
+  width: 0.85em;
+  height: 0.85em;
+  border-radius: 9999px;
+  background: rgb(243 243 241 / 0.7);
+  filter: blur(7px);
+  opacity: 0;
+  pointer-events: none;
+  animation: ls-smoke 8s ease-out infinite both;
+}
+.ls-smoke:nth-of-type(2) {
+  animation-delay: 0.1s;
+  margin-top: -0.25em;
+}
+.ls-smoke:nth-of-type(3) {
+  animation-delay: 0.2s;
+  margin-left: 0.3em;
+}
+.ls-smoke:nth-of-type(4) {
+  animation-delay: 0.3s;
+  margin-top: -0.4em;
+  margin-left: 0.15em;
+}
+.ls-smoke:nth-of-type(5) {
+  animation-delay: 0.45s;
+  margin-left: 0.55em;
+}
+.logo-slide:not([data-playing]) :is(.ls-car, .ls-dirt, .ls-shine, .ls-drip, .ls-smoke) {
+  animation-play-state: paused;
+}
+/* Reduced motion: a still, clean logo (the blanket rule above would otherwise freeze it muddy). */
+@media (prefers-reduced-motion: reduce) {
+  .ls-car {
+    animation: none;
+  }
+  .ls-dirt,
+  .ls-shine-clip,
+  .ls-drip,
+  .ls-smoke {
+    display: none;
+  }
+}
+
 /* Visible, consistent focus ring for keyboard users. */
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--color-apex-deep);

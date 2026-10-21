@@ -96,6 +96,13 @@ test.describe("public site", () => {
     }
     await expect(main.getByRole("heading", { level: 1 }).locator("..")).toContainText("start at $90");
     await expect(main.locator('img[src*="interior-before-after"]')).toHaveCount(1);
+    const carousel = main.getByRole("region", { name: "Photos of our work" });
+    await expect(carousel.getByRole("group", { name: /of 6$/ })).toHaveCount(6);
+    await expect(carousel.getByRole("img", { name: "Corsa Auto Detailing logo" })).toHaveCount(1);
+    const prev = carousel.getByRole("button", { name: "Previous photo" });
+    await expect(prev).toBeDisabled();
+    await carousel.getByRole("button", { name: "Next photo" }).click();
+    await expect(prev).toBeEnabled();
     const jsonLd = (await page.locator('script[type="application/ld+json"]').allTextContents()).join("");
     expect(jsonLd).not.toMatch(/"(price|minPrice|priceRange)"/);
     await page.getByRole("link", { name: "Get an instant quote" }).first().click();

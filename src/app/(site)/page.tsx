@@ -4,8 +4,9 @@ import Link from "next/link";
 import { business, isPrelaunch, primaryCta } from "@/config/business";
 import { gallery, photos } from "@/config/photos";
 import { formatUsd, groupStartingPrice } from "@/lib/pricing";
-import { cn } from "@/lib/utils";
 import { Arrow, ButtonLink } from "@/components/ui/Button";
+import { PhotoCarousel } from "@/components/site/PhotoCarousel";
+import { LogoSlide } from "@/components/site/LogoSlide";
 import { Container, Section, SectionHeading } from "@/components/ui/Section";
 import { PackageCards } from "@/components/site/PackageCards";
 import { CareJourney } from "@/components/site/CareJourney";
@@ -23,14 +24,6 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   // No openGraph override here: it would drop the site-wide share image (app/opengraph-image.png).
 };
-
-/** Grid placement for the "Our work" photos, by position (see `gallery`). */
-const GALLERY_TILES = [
-  "col-span-2 aspect-[4/5] lg:col-span-1 lg:row-span-2 lg:aspect-auto",
-  "aspect-[4/5] lg:aspect-auto",
-  "aspect-[4/5] lg:aspect-auto",
-  "col-span-2 aspect-[16/10] lg:aspect-auto",
-];
 
 export default function HomePage() {
   const cta = primaryCta();
@@ -133,21 +126,9 @@ export default function HomePage() {
       {gallery.length > 0 && (
         <Section tone="white">
           <SectionHeading title="Our work" lede="Real cars we've detailed. Every photo here is our own work." />
-          {/* Desktop rows are fixed so the tall first tile keeps about the before/after image's 4:5 shape. */}
-          <ul className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-[1.5fr_1fr_1fr] lg:grid-rows-[17rem_17rem]">
-            {gallery.map((g, i) => (
-              <li key={g.src} className={cn("relative overflow-hidden rounded-lg bg-chalk-deep", GALLERY_TILES[i])}>
-                <Image
-                  src={g.src}
-                  alt={g.alt}
-                  fill
-                  sizes="(min-width: 1024px) 26rem, (min-width: 640px) 50vw, 100vw"
-                  className="object-cover"
-                  style={{ objectPosition: g.focus ?? "center" }}
-                />
-              </li>
-            ))}
-          </ul>
+          <div className="mt-10">
+            <PhotoCarousel photos={gallery} label="Photos of our work" lead={<LogoSlide />} />
+          </div>
         </Section>
       )}
 
