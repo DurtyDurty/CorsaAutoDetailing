@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View, type TextInputInstance } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { signInSchema, type SignInInput } from "@shared/api";
 import { ApiClientError } from "@/api/client";
@@ -13,7 +13,7 @@ import { useSession } from "@/lib/session-store";
 
 export default function SignInScreen() {
   const [formError, setFormError] = useState<string | null>(null);
-  const password = useRef<TextInput>(null);
+  const password = useRef<TextInputInstance>(null);
   const {
     control,
     handleSubmit,

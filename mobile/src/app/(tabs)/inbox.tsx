@@ -131,7 +131,7 @@ export default function InboxScreen() {
             if (query.hasNextPage && !query.isFetchingNextPage) void query.fetchNextPage();
           }}
           refreshControl={<RefreshControl refreshing={query.isRefetching && !query.isFetchingNextPage} onRefresh={() => void query.refetch()} tintColor={colors.accent} />}
-          ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator color={colors.accent} style={styles.more} /> : null}
+          ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator color={colors.accent} style={styles.more} /> : undefined}
           ListEmptyComponent={
             <EmptyState
               title={q ? "No matches" : filter === "unread" ? "All caught up" : filter === "archived" ? "Nothing archived" : "No conversations yet"}

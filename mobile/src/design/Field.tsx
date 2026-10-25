@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { StyleSheet, TextInput, View, type TextInputProps } from "react-native";
+import { StyleSheet, TextInput, View, type TextInputInstance, type TextInputProps } from "react-native";
 import { Text } from "./Text";
 import { colors, fonts, MIN_TOUCH, radius, space } from "./theme";
 
@@ -10,7 +10,7 @@ interface Props extends TextInputProps {
 }
 
 /** Labelled text input; the label is announced with the field. */
-export const Field = forwardRef<TextInput, Props>(function Field({ label, error, hint, style, multiline, ...rest }, ref) {
+export const Field = forwardRef<TextInputInstance, Props>(function Field({ label, error, hint, style, multiline, ...rest }, ref) {
   return (
     <View style={styles.wrap}>
       <Text variant="label">{label}</Text>
