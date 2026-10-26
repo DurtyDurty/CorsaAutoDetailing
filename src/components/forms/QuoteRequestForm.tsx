@@ -87,7 +87,7 @@ export function QuoteRequestForm({
 }: Props) {
   const { onSubmit, pending, errors, message, onStart } = useLeadForm(
     booking ? submitBooking : calendar ? submitCalendarRequest : submitQuoteRequest,
-    { formName: booking ? "booking" : calendar ? "calendar_request" : "quote_request", leadType: "quote_request" },
+    { formName: booking ? "booking" : calendar ? "calendar_request" : "quote_request", leadType: "quote_request", bookingConversion: true },
   );
   const STEPS = booking ? BOOKING_STEPS : calendar ? CALENDAR_STEPS : REQUEST_STEPS;
   // Both booking styles make the customer pick a real open time from the calendar.

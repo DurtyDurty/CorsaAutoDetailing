@@ -48,3 +48,13 @@ export const photos = {
     focus: "50% 42%",
   },
 } satisfies Record<string, WorkPhoto>;
+
+/**
+ * Before/after shots for the "Real results" section (/book and the home page). Our own work only.
+ * To add one: put the image in public/media/work (resized, location data stripped, plates blurred)
+ * and add an entry here with a caption. Order = display order. Empty = the section shows reviews only.
+ */
+export const beforeAfter: { photo: WorkPhoto; caption: string }[] = [
+  { photo: photos.interiorBeforeAfter, caption: "Front seat and console, before and after" },
+  // { photo: { src: "/media/work/your-photo.jpg", alt: "Describe what the photo shows", width: 1080, height: 1350 }, caption: "Short caption" },
+];

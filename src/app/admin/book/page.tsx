@@ -22,7 +22,7 @@ export default async function BookPage({ searchParams }: PageProps<"/admin/book"
     const lead = await store.getLead(presetLeadId);
     if (lead) {
       customers = [
-        { leadId: lead.id, name: [lead.firstName, lead.lastName].filter(Boolean).join(" "), email: lead.email, phone: lead.phone, address: null, vehicle: null, serviceId: lead.serviceId },
+        { leadId: lead.id, name: [lead.firstName, lead.lastName].filter(Boolean).join(" "), email: lead.email ?? "", phone: lead.phone, address: null, vehicle: null, serviceId: lead.serviceId },
         ...customers,
       ];
     }

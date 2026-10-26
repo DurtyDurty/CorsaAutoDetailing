@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { business, isPrelaunch } from "@/config/business";
 import { Container } from "@/components/ui/Section";
 import { PageHero } from "@/components/site/PageHero";
@@ -50,6 +51,13 @@ export default async function RequestPage({ searchParams }: PageProps<"/request"
 
   const booking = bookingEnabled();
   const calendar = calendarRequestsEnabled();
+  // Deposits off: everyone books on the short form at /book (2026-10-25). Old links and the ads' sitelinks still land here.
+  if (calendar && !unavailable) {
+    const q = new URLSearchParams();
+    if (service) q.set("service", service);
+    if (typeof sp.offer === "string") q.set("offer", sp.offer);
+    redirect(`/book${q.size ? `?${q}` : ""}`);
+  }
   return (
     <>
       <PageHero

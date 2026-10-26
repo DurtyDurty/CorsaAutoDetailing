@@ -186,6 +186,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
               <Row label="Referrer" value={lead.source.referrer} />
               <Row label="UTM" value={[lead.source.utmSource, lead.source.utmMedium, lead.source.utmCampaign].filter(Boolean).join(" / ")} />
               <Row label="Keyword (utm_term)" value={lead.source.utmTerm ?? null} />
+              <Row label="Ad (utm_content)" value={lead.source.utmContent ?? null} />
               <Row label="Google Ads click" value={lead.source.gclid || lead.source.gbraid || lead.source.wbraid ? "Yes (click id saved)" : null} />
               <Row label="First visit" value={lead.source.firstSeenAt ? formatEastern(lead.source.firstSeenAt) : null} />
             </dl>
@@ -218,15 +219,24 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
         </div>
 
         <div className="flex flex-col gap-6">
-          <ComposeEmail
-            leadId={lead.id}
-            firstName={lead.firstName}
-            to={lead.email}
-            from={business.contact.email ?? "the business address"}
-            defaultSubject={defaultEmailSubject(lead)}
-            signature={ownerSignature()}
-            initialSendKey={randomUUID()}
-          />
+          {lead.email ? (
+            <ComposeEmail
+              leadId={lead.id}
+              firstName={lead.firstName}
+              to={lead.email}
+              from={business.contact.email ?? "the business address"}
+              defaultSubject={defaultEmailSubject(lead)}
+              signature={ownerSignature()}
+              initialSendKey={randomUUID()}
+            />
+          ) : (
+            <section className="border border-line bg-white rounded-md p-5 text-sm">
+              <h2 className="font-medium">Email</h2>
+              <p className="mt-2 text-ink-muted">
+                {lead.firstName} didn&rsquo;t leave an email. Call or text {lead.phone ? formatPhone(lead.phone) : "them"} instead.
+              </p>
+            </section>
+          )}
           <form action={updateLeadAction} className="border border-line bg-white rounded-md p-5 flex flex-col gap-4">
             <input type="hidden" name="leadId" value={lead.id} />
             <h2 className="font-medium">Follow-up</h2>

@@ -68,7 +68,7 @@ export default function ContactPage() {
               ) : (
                 <>
                   Ready to book? The{" "}
-                  <a href="/request" className="underline underline-offset-4">
+                  <a href="/book" className="underline underline-offset-4">
                     request form
                   </a>{" "}
                   collects the vehicle details we need.

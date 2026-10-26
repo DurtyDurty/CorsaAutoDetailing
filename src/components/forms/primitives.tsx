@@ -7,6 +7,8 @@ import type { FormResult } from "@/app/actions/leads";
 import { track, type AnalyticsEvent } from "@/lib/analytics";
 import { TOUCH_FIELDS } from "@/lib/attribution";
 import { captureTouch } from "@/lib/attribution-client";
+import { reportBookingRequest } from "@/lib/google-ads";
+import { HONEYPOT_LEAD_ID } from "@/lib/leads/shared";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
@@ -67,7 +69,13 @@ const NO_ERRORS: Record<string, string> = Object.freeze({}) as Record<string, st
 
 export function useLeadForm(
   action: (prev: FormResult | null, fd: FormData) => Promise<FormResult>,
-  opts: { formName: string; submittedEvent?: AnalyticsEvent; leadType: string },
+  opts: {
+    formName: string;
+    submittedEvent?: AnalyticsEvent;
+    leadType: string;
+    /** Booking forms: report a "Booking request sent" conversion to Google Ads once the server has saved it. */
+    bookingConversion?: boolean;
+  },
 ) {
   const [state, formAction, pending] = useActionState(action, null);
   const router = useRouter();
@@ -76,11 +84,13 @@ export function useLeadForm(
   useEffect(() => {
     if (state?.status === "ok" && state.redirectTo) {
       track(opts.submittedEvent ?? "lead_form_submitted", { form: opts.formName, lead_type: opts.leadType });
+      // "ok" only comes back after the lead is stored; a honeypot hit looks the same but saved nothing.
+      if (opts.bookingConversion && state.leadId !== HONEYPOT_LEAD_ID) reportBookingRequest(state.leadId);
       // Payment checkout lives on another origin (Stripe): full navigation, not client routing.
       if (/^https?:\/\//.test(state.redirectTo)) window.location.assign(state.redirectTo);
       else router.push(state.redirectTo);
     }
-  }, [state, router, opts.formName, opts.leadType, opts.submittedEvent]);
+  }, [state, router, opts.formName, opts.leadType, opts.submittedEvent, opts.bookingConversion]);
 
   const onStart = () => {
     if (started.current) return;

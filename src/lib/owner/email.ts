@@ -87,14 +87,17 @@ export async function sendOwnerEmail(
 
   const email = getEmailAdapter();
   if (email.kind === "disabled") return { status: "unavailable", reason: "Email isn't configured on the server (Resend)." };
+  // The short booking form makes email optional: those customers are reached by phone or text.
+  const to = lead.email;
+  if (!to) return { status: "failed", reason: "This customer didn't leave an email. Call or text them instead." };
 
   const body = composeOwnerEmail(input.message);
   const logged = input.loggedMessage === undefined ? body : composeOwnerEmail(input.loggedMessage);
-  const base = { leadId, sendKey: input.sendKey, toEmail: lead.email, subject: input.subject, body: logged, providerMessageId: null, error: null };
+  const base = { leadId, sendKey: input.sendKey, toEmail: to, subject: input.subject, body: logged, providerMessageId: null, error: null };
   let providerMessageId: string;
   try {
     const { id } = await email.send({
-      to: lead.email,
+      to,
       subject: input.subject,
       text: body,
       // Replies come back into the app when receiving is set up; otherwise to the contact inbox.

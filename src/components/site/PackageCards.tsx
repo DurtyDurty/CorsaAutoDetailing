@@ -153,7 +153,7 @@ function PackageCard({
 
       <div className={cn("mt-7 flex flex-col", wide && "lg:mt-0 lg:min-w-52")}>
         <Link
-          href={`/request?service=${s.id}`}
+          href={`${isPrelaunch ? "/request" : "/book"}?service=${s.id}`}
           onClick={() => track("book_package_clicked", { service: s.id })}
           className={cn(
             "group inline-flex min-h-14 items-center justify-center gap-2 rounded-sm border px-6 py-3.5 text-base font-semibold transition-colors",

@@ -75,7 +75,8 @@ export interface LeadRecord {
 
   firstName: string;
   lastName: string | null;
-  email: string;
+  /** Null when the customer left it blank (the short booking form makes it optional, 2026-10-25). */
+  email: string | null;
   phone: string | null;
   preferredContact: ContactMethod | null;
 
@@ -324,6 +325,21 @@ export interface AdConversionRecord {
   updatedAt: string;
 }
 
+/**
+ * A website form that failed or was turned away, for the dashboard. Never holds
+ * what the visitor typed: the form, the kind of failure, and field names or error text.
+ */
+export interface SiteErrorRecord {
+  id: string;
+  /** save_failed = the request couldn't be stored; unexpected = a server error; invalid = rejected by validation. */
+  kind: "save_failed" | "unexpected" | "invalid";
+  form: string;
+  detail: string;
+  createdAt: string;
+}
+
+export type NewSiteError = Omit<SiteErrorRecord, "id" | "createdAt">;
+
 /** Thrown by `bookOnlineSlot` when the slot (plus travel buffer) overlaps an active appointment. */
 export class SlotTakenError extends Error {
   constructor() {
@@ -460,6 +476,10 @@ export interface LeadStore {
   listAdConversions(): Promise<AdConversionRecord[]>;
   /** Insert or replace by transactionId. */
   saveAdConversion(row: AdConversionRecord): Promise<void>;
+
+  logSiteError(input: NewSiteError): Promise<void>;
+  /** Newest first. */
+  listSiteErrors(opts: { since: string; limit?: number }): Promise<SiteErrorRecord[]>;
 
   createNotification(leadId: string, kind: NotificationKind): Promise<NotificationRecord>;
   updateNotification(

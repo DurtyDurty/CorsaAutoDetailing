@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { business, isPrelaunch } from "@/config/business";
+import { business, isPrelaunch, phoneLink, reachUsLine } from "@/config/business";
 import { Container } from "@/components/ui/Section";
 import { ButtonLink } from "@/components/ui/Button";
 import { getLeadStore } from "@/lib/leads/store";
 import { billingSuffix, formatUsd } from "@/lib/pricing";
 import { formatEastern } from "@/lib/time";
-import { shortRef } from "@/lib/utils";
+import { formatPhone, shortRef } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Thank you",
@@ -35,7 +35,7 @@ const KINDS = {
     title: "Thanks, interest noted.",
     body: "Maintenance plans aren't available yet and nothing has been charged or enrolled. When pricing and terms are set, we'll share them with you first.",
     next: isPrelaunch ? "Booking opens soon. We'll email you when it does." : "You're welcome to book a one-time service in the meantime.",
-    cta: isPrelaunch ? { label: "Explore services", href: "/services" } : { label: "Request an appointment", href: "/request" },
+    cta: isPrelaunch ? { label: "Explore services", href: "/services" } : { label: "Book a detail", href: "/book" },
   },
   contact: {
     title: "Message received.",
@@ -66,14 +66,7 @@ export default async function ThanksPage({ params, searchParams }: PageProps<"/t
       <Container className="py-20 max-w-2xl">
         <h1 className="font-display text-4xl">We couldn&rsquo;t find that submission.</h1>
         <p className="mt-4 text-ink-muted leading-relaxed">
-          If you just sent a form and landed here, the request may not have saved. Please try again
-          {business.contact.email ? (
-            <>
-              {" "}
-              or email <a href={`mailto:${business.contact.email}`} className="underline underline-offset-4">{business.contact.email}</a>
-            </>
-          ) : null}
-          .
+          If you just sent a form and landed here, the request may not have saved. {reachUsLine()}
         </p>
         <div className="mt-8">
           <ButtonLink href="/">Back to home</ButtonLink>
@@ -88,7 +81,9 @@ export default async function ThanksPage({ params, searchParams }: PageProps<"/t
       <h1 className="font-display text-4xl sm:text-5xl mt-3 text-balance">{requested ? "Request received." : copy.title}</h1>
       <p className="mt-5 text-lg text-ink-muted leading-relaxed">
         {requested
-          ? "We'll review your vehicle and location details and send you a quote with the exact time, or call you to set one. Your appointment is confirmed once you accept the quote."
+          ? lead.email
+            ? "We'll look over your request and send you a quote with the exact time, or call you to set one. Your appointment is confirmed once you accept the quote."
+            : `We'll text or call you${lead.phone ? ` at ${formatPhone(lead.phone)}` : ""} to confirm the exact time and price. Nothing is booked until you agree.`
           : copy.body}
       </p>
 
@@ -119,6 +114,15 @@ export default async function ThanksPage({ params, searchParams }: PageProps<"/t
       )}
 
       {copy.next && <p className="mt-6 text-ink-muted">{copy.next}</p>}
+      {business.contact.phone && (
+        <p className="mt-3 text-ink-muted">
+          Questions before then? Call or text{" "}
+          <a href={phoneLink("tel") ?? undefined} className="font-semibold text-ink underline underline-offset-4">
+            {business.contact.phone}
+          </a>
+          .
+        </p>
+      )}
       <div className="mt-8 flex flex-col sm:flex-row gap-3">
         <ButtonLink href={copy.cta.href}>{copy.cta.label}</ButtonLink>
         <Link href="/contact" className="inline-flex items-center px-2 underline underline-offset-4">

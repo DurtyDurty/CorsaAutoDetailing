@@ -240,6 +240,39 @@ export const calendarRequestSchema = quoteRequestFields
   .superRefine(requirePhone);
 export type CalendarRequestInput = z.infer<typeof calendarRequestSchema>;
 
+const townIds: [string, ...string[]] = ["other", ...business.serviceAreas.communities.map((c) => c.slug)];
+const fullName = line(100).pipe(z.string().min(1, "Enter your name.").regex(NAME, NAME_MESSAGE));
+
+/**
+ * Short booking request (/book and /request, 2026-10-25): only what's needed to
+ * call back and hold a time. Name, phone, vehicle, town, package, a day and part
+ * of the day; email is optional. Condition, address and notes are asked later.
+ * Sending the form is the acknowledgment shown above its button.
+ */
+export const shortRequestSchema = z.object({
+  ...meta,
+  name: fullName,
+  phone: phoneSchema.pipe(z.string({ message: "Enter your phone number." })),
+  email: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => v ?? "")
+    .pipe(z.union([z.literal(""), emailSchema]))
+    .transform((v) => v || null),
+  vehicleYear: quoteRequestFields.shape.vehicleYear,
+  vehicleMake: quoteRequestFields.shape.vehicleMake,
+  vehicleModel: quoteRequestFields.shape.vehicleModel,
+  town: z.enum(townIds, { message: "Choose your town." }),
+  townOther: optionalLine(80),
+  serviceId: z.enum(serviceIds, { message: "Choose a package." }),
+  firstTimeOffer: quoteRequestFields.shape.firstTimeOffer,
+  slotStart: z.string({ message: "Choose a day." }).datetime({ message: "Choose a day." }),
+  dayPart: z.enum(["morning", "afternoon", "either"], { message: "Choose morning, afternoon or either." }),
+  preferredTime: optionalLine(40),
+});
+export type ShortRequestInput = z.infer<typeof shortRequestSchema>;
+
 /** Online booking = the request fields + a chosen slot + agreeing to the deposit policy. */
 export const bookingRequestSchema = quoteRequestFields
   .extend({

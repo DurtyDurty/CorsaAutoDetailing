@@ -10,6 +10,7 @@ import { PackageCards } from "@/components/site/PackageCards";
 import { CareJourney } from "@/components/site/CareJourney";
 import { ProcessSteps } from "@/components/site/ProcessSteps";
 import { Reviews } from "@/components/site/Reviews";
+import { TrustPoints } from "@/components/site/TrustPoints";
 import { Faq } from "@/components/site/Faq";
 import { BusinessJsonLd } from "@/components/site/JsonLd";
 import { LaunchListForm } from "@/components/forms/LaunchListForm";
@@ -56,6 +57,8 @@ export default function HomePage() {
         </div>
 
         <div className="relative px-5 pb-12 pt-4 sm:px-8 sm:pb-14 lg:flex lg:flex-col lg:justify-center lg:py-20 lg:pr-14 lg:pl-[max(2rem,calc((100vw-72rem)/2+2rem))]">
+          {/* First thing under the photos, so a phone shows it without scrolling. */}
+          <TrustPoints className="mb-4 lg:mb-6" />
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-apex">
             {business.brand.tagline.replace(/\.$/, "")}
           </p>
@@ -82,11 +85,8 @@ export default function HomePage() {
           <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-chalk/75">
             {fiveStarGoogle && (
               <li>
-                <a href="#reviews" className="hover:text-chalk">
-                  <span className="text-apex" aria-hidden="true">
-                    ★★★★★{" "}
-                  </span>
-                  5-star reviews on Google
+                <a href="#reviews" className="hover:text-chalk underline underline-offset-4">
+                  Read the reviews
                 </a>
               </li>
             )}
@@ -184,7 +184,7 @@ export default function HomePage() {
               <p className="mt-6 text-lg text-chalk/75 leading-relaxed max-w-lg">
                 {isPrelaunch
                   ? "Leave your name, email and ZIP. We'll let you know when scheduling opens in your area. Nothing else, no spam."
-                  : "Pick a service and an open time on the calendar. We hold it for you and confirm by email."}
+                  : "Pick a package and a day. We hold it for you and confirm by text or email."}
               </p>
             </div>
             <div className="rounded-lg bg-white text-ink p-6 sm:p-8">
@@ -192,12 +192,12 @@ export default function HomePage() {
                 <LaunchListForm />
               ) : (
                 <div className="flex flex-col gap-4">
-                  <ButtonLink href="/request" size="lg" variant="apex">
+                  <ButtonLink href="/book" size="lg" variant="apex">
                     Book a detail
                     <Arrow />
                   </ButtonLink>
                   <p className="text-sm text-ink-muted">
-                    Your time is held while we review your request; you&rsquo;ll get a confirmation email once it&rsquo;s confirmed. Nothing is charged online.
+                    Your time is held while we review your request, and we&rsquo;ll text or email you to confirm. Nothing is charged online.
                   </p>
                 </div>
               )}

@@ -30,9 +30,11 @@ import type {
   TimeOffRecord,
   AdConversionRecord,
   NewQuote,
+  NewSiteError,
   QuotePatch,
   QuoteRecord,
   QuoteStatus,
+  SiteErrorRecord,
 } from "./types";
 import { QuoteConflictError, SlotTakenError } from "./types";
 import { matchesFilter, computeCounts } from "./shared";
@@ -79,6 +81,7 @@ interface DemoData {
   adConversions: AdConversionRecord[];
   quotes: QuoteRecord[];
   invoiceAccessTokens: { appointmentId: string; tokenHash: string }[];
+  siteErrors: SiteErrorRecord[];
 }
 
 // Resolved per call so the working directory can be swapped in tests.
@@ -124,9 +127,10 @@ async function load(): Promise<DemoData> {
       adConversions: parsed.adConversions ?? [],
       quotes: parsed.quotes ?? [],
       invoiceAccessTokens: parsed.invoiceAccessTokens ?? [],
+      siteErrors: parsed.siteErrors ?? [],
     };
   } catch {
-    return { leads: [], appointments: [], notifications: [], timeOff: [], outboundEmails: [], appointmentEvents: [], payments: [], inboundEmails: [], adConversions: [], quotes: [], invoiceAccessTokens: [] };
+    return { leads: [], appointments: [], notifications: [], timeOff: [], outboundEmails: [], appointmentEvents: [], payments: [], inboundEmails: [], adConversions: [], quotes: [], invoiceAccessTokens: [], siteErrors: [] };
   }
 }
 
@@ -478,6 +482,22 @@ export class DemoLeadStore implements LeadStore {
       data.adConversions = [...data.adConversions.filter((c) => c.transactionId !== row.transactionId), row];
       await save(data);
     });
+  }
+
+  logSiteError(input: NewSiteError) {
+    return serialized(async () => {
+      const data = await load();
+      data.siteErrors = [...data.siteErrors, { ...input, id: randomUUID(), createdAt: now() }].slice(-500);
+      await save(data);
+    });
+  }
+
+  async listSiteErrors(opts: { since: string; limit?: number }) {
+    const data = await load();
+    return data.siteErrors
+      .filter((e) => e.createdAt >= opts.since)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, opts.limit ?? 50);
   }
 
   async listTimeOff(opts: { from?: string } = {}) {

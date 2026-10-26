@@ -33,7 +33,7 @@ export function SiteFooter() {
               </li>
             ))}
             <li>
-              <Link href={isPrelaunch ? "/#launch-list" : "/request"} className="text-chalk/85 hover:text-apex">
+              <Link href={isPrelaunch ? "/#launch-list" : "/book"} className="text-chalk/85 hover:text-apex">
                 {isPrelaunch ? "Get launch updates" : "Request an appointment"}
               </Link>
             </li>

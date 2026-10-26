@@ -28,7 +28,8 @@ export function WelcomeOffer() {
     isPrelaunch ||
     pathname.startsWith("/request") ||
     pathname.startsWith("/thanks") ||
-    pathname.startsWith("/booking");
+    // /book and /booking/*: the booking form has its own first-time offer checkbox.
+    pathname.startsWith("/book");
 
   useEffect(() => {
     if (skip) return;
@@ -158,7 +159,7 @@ function OfferBanner({ onClose }: { onClose: () => void }) {
                 Your {offer.percent}% off is on its way to your inbox. Ready now? Book and the offer is already selected.
               </p>
               <Link
-                href="/request?offer=first-time"
+                href="/book?offer=first-time"
                 onClick={onClose}
                 className="group mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-sm border border-apex-deep bg-apex-deep px-6 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-white transition-colors hover:bg-[#a51109] hover:border-[#a51109] sm:w-auto"
               >

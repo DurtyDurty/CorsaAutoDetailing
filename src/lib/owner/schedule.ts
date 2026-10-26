@@ -278,13 +278,13 @@ export async function customerOptions(store: LeadStore, q?: string): Promise<Cus
   const seen = new Set<string>();
   const out: CustomerOption[] = [];
   for (const l of leads) {
-    const key = l.email.toLowerCase();
+    const key = (l.email ?? l.phone ?? l.id).toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
     out.push({
       leadId: l.id,
       name: [l.firstName, l.lastName].filter(Boolean).join(" "),
-      email: l.email,
+      email: l.email ?? "",
       phone: l.phone,
       address: [l.serviceAddress, l.city, l.zip].filter(Boolean).join(", ") || null,
       vehicle: [l.vehicleYear, l.vehicleMake, l.vehicleModel].filter(Boolean).join(" ") || null,

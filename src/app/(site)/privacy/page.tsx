@@ -39,7 +39,7 @@ export default function PrivacyPage() {
             <strong>Launch list:</strong> first name, email, ZIP code, and optionally vehicle type, service interest, phone and contact preference.
           </li>
           <li>
-            <strong>Quote requests:</strong> the above plus vehicle year/make/model, condition notes, city or neighborhood, location type (home or work), preferred time windows or dates, and any notes you add. We do not ask for your street address until we schedule a visit.
+            <strong>Booking requests:</strong> your name and phone number, email if you choose to give it, vehicle year/make/model, your town, the package and the day you prefer. Older versions of the form also asked about the vehicle&rsquo;s condition, location type and notes. We ask for your street address when we confirm the visit.
           </li>
           <li>
             <strong>Vehicle photos</strong> (only if the upload option is shown): stored privately, re-encoded to strip location metadata, and used solely to prepare your quote.
@@ -72,9 +72,21 @@ export default function PrivacyPage() {
         <p>
           {business.analytics.provider === "none"
             ? "This site currently runs no analytics."
-            : "We use privacy-respecting, aggregate analytics that record events such as “form started” or “service viewed.” Analytics never receives your name, email, phone, address, notes or photos."}{" "}
-          We do not install advertising pixels or Google&rsquo;s advertising tag.
+            : "We use privacy-respecting, aggregate analytics that record events such as “form started” or “service viewed.” Analytics never receives your name, email, phone, address, notes or photos."}
         </p>
+        {business.analytics.googleAds.tagId ? (
+          <p>
+            Our public pages load the Google Ads tag. It sets Google cookies in your browser and tells Google Ads when a visit
+            leads to a booking request or a tap on our phone number or text link, so we can see which ads work. It receives a
+            request reference number, never what you type into our forms. You can limit ad personalization at{" "}
+            <a href="https://myadcenter.google.com" target="_blank" rel="noopener noreferrer">
+              myadcenter.google.com
+            </a>
+            .
+          </p>
+        ) : (
+          <p>We do not install advertising pixels or Google&rsquo;s advertising tag.</p>
+        )}
 
         <h2>Retention</h2>
         <p>

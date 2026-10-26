@@ -6,6 +6,9 @@ import type { AppointmentRecord, DashboardCounts, LeadFilter, LeadRecord } from 
  */
 export const OFFER_SIGNUP_NOTE = "Signed up for the first-time customer offer";
 
+/** What a filled-in honeypot gets back: looks like success, nothing was saved. The browser must not count it as a conversion. */
+export const HONEYPOT_LEAD_ID = "00000000-0000-4000-8000-000000000000";
+
 export function isOfferSignup(lead: Pick<LeadRecord, "leadType" | "notes">): boolean {
   return lead.leadType === "launch_list" && Boolean(lead.notes?.startsWith(OFFER_SIGNUP_NOTE));
 }

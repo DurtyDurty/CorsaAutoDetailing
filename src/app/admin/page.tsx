@@ -4,6 +4,7 @@ import { QUOTE_STATUS_LABELS, type AppointmentSummary } from "@shared/api";
 import { formatCents } from "@shared/money";
 import { requireOwner } from "@/lib/auth/owner";
 import { getLeadStore } from "@/lib/leads/store";
+import type { LeadStore, SiteErrorRecord } from "@/lib/leads/types";
 import { todaySummary } from "@/lib/owner/summary";
 import { formatEastern, todayEastern } from "@/lib/time";
 import { formatPhone } from "@/lib/utils";
@@ -36,6 +37,18 @@ function Stat({ label, value, hint }: { label: string; value: string; hint: stri
   );
 }
 
+/** Website form problems from the last 14 days. Empty until migration 0012 (site_errors) is applied. */
+async function recentFormProblems(store: LeadStore): Promise<SiteErrorRecord[]> {
+  return store.listSiteErrors({ since: new Date(Date.now() - 14 * 86_400_000).toISOString(), limit: 200 }).catch(() => []);
+}
+
+/** How often each field was the one a rejected submission got wrong, most first. */
+function fieldCounts(rejected: SiteErrorRecord[]): [string, number][] {
+  const counts = new Map<string, number>();
+  for (const e of rejected) for (const f of e.detail.split(", ").filter(Boolean)) counts.set(f, (counts.get(f) ?? 0) + 1);
+  return [...counts].sort((a, b) => b[1] - a[1]).slice(0, 6);
+}
+
 /** The owner's command center, laid out like the app's Today screen. */
 export default async function TodayPage({ searchParams }: PageProps<"/admin">) {
   await requireOwner();
@@ -47,6 +60,9 @@ export default async function TodayPage({ searchParams }: PageProps<"/admin">) {
   const step = f ? nextStepFor(f.status) : null;
   const waiting = s.newRequests + s.unreadMessages + s.awaitingConfirmation;
   const underway = f && ["en_route", "arrived", "in_progress"].includes(f.status);
+  const formProblems = await recentFormProblems(store);
+  const failures = formProblems.filter((e) => e.kind !== "invalid");
+  const turnedAway = fieldCounts(formProblems.filter((e) => e.kind === "invalid"));
 
   return (
     <div className="flex flex-col gap-6">
@@ -61,6 +77,24 @@ export default async function TodayPage({ searchParams }: PageProps<"/admin">) {
       </div>
 
       <Flash ok={sp.ok} error={sp.error} />
+
+      {failures.length > 0 && (
+        <section aria-labelledby="form-problems" className="border border-error/40 bg-[#fbeeeb] rounded-md p-4 flex flex-col gap-2">
+          <h2 id="form-problems" className="text-xs uppercase tracking-[0.16em] font-semibold text-error">
+            Website form problems, last 14 days ({failures.length})
+          </h2>
+          <p className="text-sm">These visitors were shown your phone number. If one didn&rsquo;t reach you, the request was lost.</p>
+          <ul className="text-sm divide-y divide-error/20">
+            {failures.slice(0, 8).map((e) => (
+              <li key={e.id} className="py-1.5 flex flex-wrap gap-x-3">
+                <span className="font-medium">{formatEastern(e.createdAt, { dateStyle: "medium", timeStyle: "short" })}</span>
+                <span>{e.form}</span>
+                <span className="text-ink-muted">{e.kind === "save_failed" ? "not saved" : "server error"}: {e.detail}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {s.toConfirm.length > 0 && (
         <section aria-labelledby="to-confirm" className="flex flex-col gap-3">
@@ -190,6 +224,13 @@ export default async function TodayPage({ searchParams }: PageProps<"/admin">) {
         <Stat label="This week" value={formatCents(s.week.bookedCents)} hint={`${s.week.jobs} booked`} />
         <Stat label="This month" value={formatCents(s.month.bookedCents)} hint={`${s.month.jobs} booked`} />
       </dl>
+
+      {turnedAway.length > 0 && (
+        <p className="text-sm text-ink-muted">
+          Booking form fields visitors got stuck on (last 14 days):{" "}
+          {turnedAway.map(([field, n]) => `${field} ${n}×`).join(", ")}
+        </p>
+      )}
 
       <section aria-labelledby="schedule" className="flex flex-col gap-3">
         <div className="flex justify-between items-baseline">

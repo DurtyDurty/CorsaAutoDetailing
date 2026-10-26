@@ -18,8 +18,10 @@ const securityHeaders = [
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
       "style-src 'self' 'unsafe-inline'",
-      "script-src 'self' 'unsafe-inline' https://plausible.io",
-      "connect-src 'self' https://plausible.io https://*.supabase.co",
+      // Google Ads tag (gtag.js) and its conversion pings, per Google's CSP guide for the Ads tag.
+      "script-src 'self' 'unsafe-inline' https://plausible.io https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.google.com",
+      "connect-src 'self' https://plausible.io https://*.supabase.co https://www.googletagmanager.com https://www.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://td.doubleclick.net",
+      "frame-src https://www.googletagmanager.com https://bid.g.doubleclick.net https://td.doubleclick.net",
       "upgrade-insecure-requests",
     ].join("; "),
   },

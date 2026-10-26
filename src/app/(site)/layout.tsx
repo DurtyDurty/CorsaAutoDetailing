@@ -1,11 +1,11 @@
-import { primaryCta } from "@/config/business";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { PrelaunchBanner } from "@/components/site/PrelaunchBanner";
-import { StickyCta } from "@/components/site/StickyCta";
+import { MobileActionBar } from "@/components/site/MobileActionBar";
 import { WelcomeOffer } from "@/components/site/WelcomeOffer";
 import { AnalyticsScript } from "@/components/site/AnalyticsScript";
 import { AttributionCapture } from "@/components/site/AttributionCapture";
+import { GoogleAdsTag } from "@/components/site/GoogleAdsTag";
 
 export default function SiteLayout({ children }: LayoutProps<"/">) {
   return (
@@ -22,10 +22,11 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
         {children}
       </main>
       <SiteFooter />
-      <StickyCta {...primaryCta()} />
+      <MobileActionBar />
       <WelcomeOffer />
       <AnalyticsScript />
       <AttributionCapture />
+      <GoogleAdsTag />
     </>
   );
 }

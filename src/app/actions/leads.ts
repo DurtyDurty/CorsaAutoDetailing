@@ -1,7 +1,9 @@
 "use server";
 
 import { headers } from "next/headers";
-import { business, getService, type ServiceId } from "@/config/business";
+import type { z } from "zod";
+import { business, getService, reachUsLine, type ServiceId } from "@/config/business";
+import { reportFormFailure } from "@/lib/site-errors";
 import { isSlotAvailable } from "@/lib/availability";
 import { bookingEnabled, calendarRequestsEnabled, calendarState, releaseToken } from "@/lib/booking";
 import { notifyForLead } from "@/lib/notifications";
@@ -23,9 +25,11 @@ import {
   quoteRequestSchema,
   bookingRequestSchema,
   calendarRequestSchema,
+  shortRequestSchema,
   type BookingRequestInput,
   type CalendarRequestInput,
   type QuoteRequestInput,
+  type ShortRequestInput,
 } from "@/lib/validation";
 
 export type FormResult = IntakeResult & { redirectTo?: string };
@@ -193,11 +197,78 @@ function inPart(slotIso: string, part: string): boolean {
  * request is still saved and the owner is told, but no time is held.
  */
 export async function submitCalendarRequest(_prev: FormResult | null, formData: FormData): Promise<FormResult> {
+  return holdRequest(formData, {
+    form: "calendar_request",
+    schema: calendarRequestSchema,
+    build: (d) => ({ ...buildQuoteLead(d), preferredDate: todayEastern(new Date(d.slotStart)) }),
+  });
+}
+
+/** The short booking form (/book, /request): same held time as the full form, far fewer questions. */
+export async function submitShortRequest(_prev: FormResult | null, formData: FormData): Promise<FormResult> {
+  return holdRequest(formData, { form: "short_request", schema: shortRequestSchema, build: buildShortLead });
+}
+
+function buildShortLead(d: ShortRequestInput): NewLead {
+  const [first, ...rest] = d.name.split(/\s+/);
+  const town = business.serviceAreas.communities.find((c) => c.slug === d.town);
+  const base = baseLead("quote_request", { ...d, firstName: first.slice(0, 50), marketingEmail: false });
+  return {
+    ...base,
+    // Sending the form is the acknowledgment printed above its button.
+    consent: {
+      ...base.consent,
+      priceAcknowledgmentTextVersion: business.consent.priceAcknowledgmentTextVersion,
+      priceAcknowledgedAt: base.consent.serviceAcceptedAt,
+    },
+    lastName: rest.join(" ").slice(0, 50) || null,
+    phone: d.phone,
+    // No email means the owner calls or texts back.
+    preferredContact: d.email ? null : "text",
+    vehicleYear: d.vehicleYear,
+    vehicleMake: d.vehicleMake,
+    vehicleModel: d.vehicleModel,
+    serviceId: d.serviceId,
+    city: town?.name ?? (d.townOther ? `Other: ${d.townOther}` : "Other (not listed)"),
+    // Travel to an unlisted town is confirmed when the owner reviews the request.
+    zipEligibility: town?.coverage ?? "confirm",
+    preferredDate: todayEastern(new Date(d.slotStart)),
+    estimate: computeEstimate({ serviceId: d.serviceId, firstTimeOffer: d.firstTimeOffer }),
+  };
+}
+
+type HoldInput = Pick<CalendarRequestInput, "serviceId" | "slotStart" | "dayPart" | "preferredTime"> &
+  Partial<Pick<CalendarRequestInput, "condition" | "conditionFlags">>;
+
+/** Any error the steps below didn't expect: logged for the owner, and the customer gets the phone number. */
+async function holdRequest<T extends HoldInput>(
+  formData: FormData,
+  opts: { form: string; schema: z.ZodType<T>; build: (d: T) => NewLead },
+): Promise<FormResult> {
+  try {
+    return await holdRequestSteps(formData, opts);
+  } catch (err) {
+    await reportFormFailure(await getLeadStore().catch(() => null), {
+      kind: "unexpected",
+      form: opts.form,
+      detail: err instanceof Error ? err.message : "Unknown error",
+    });
+    return { status: "error", message: `Sorry, something went wrong sending your request. ${reachUsLine()}` };
+  }
+}
+
+async function holdRequestSteps<T extends HoldInput>(
+  formData: FormData,
+  opts: { form: string; schema: z.ZodType<T>; build: (d: T) => NewLead },
+): Promise<FormResult> {
   if (!calendarRequestsEnabled()) {
-    return { status: "unavailable", message: "Online scheduling isn't available right now. Please try again shortly or send us a message." };
+    return { status: "unavailable", message: `Online scheduling isn't available right now. ${reachUsLine()}` };
   }
   const store = await getLeadStore();
-  if (!store) return { status: "unavailable", message: "We can't take requests right now. Please try again shortly." };
+  if (!store) {
+    await reportFormFailure(null, { kind: "save_failed", form: opts.form, detail: "No database configured on the server" });
+    return { status: "unavailable", message: `We can't take requests online right now. ${reachUsLine()}` };
+  }
 
   const requestedService = String(formData.get("serviceId") ?? "");
   const requestedSlot = String(formData.get("slotStart") ?? "");
@@ -219,21 +290,22 @@ export async function submitCalendarRequest(_prev: FormResult | null, formData: 
   if (open.holds.filter((h) => theirs.has(h.leadId)).length >= business.booking.maxOpenRequestsPerCustomer) return TOO_MANY_REQUESTS;
   const canHold = open.holds.length < business.booking.maxOpenRequests;
 
-  let input: CalendarRequestInput | null = null;
+  let input: T | null = null;
   const result = await intake({
     leadType: "quote_request",
-    schema: calendarRequestSchema,
+    form: opts.form,
+    schema: opts.schema,
     formData,
     // Without a held time this is an ordinary request: the usual emails go out now.
     notify: !canHold,
-    build: (d) => {
+    build: (d: T) => {
       input = d;
-      return { ...buildQuoteLead(d), preferredDate: todayEastern(new Date(d.slotStart)) };
+      return opts.build(d);
     },
     afterSave: savePhotos,
   });
   if (result.status !== "ok" || !input || !canHold) return withRedirect(result, "request");
-  const d: CalendarRequestInput = input;
+  const d: T = input;
   const lead = await store.getLead(result.leadId);
   if (!lead) return { status: "error", message: "Something went wrong saving your request. Please try again." };
   // A resubmitted form (same idempotency key) already holds its time.
@@ -286,7 +358,7 @@ export async function submitCalendarRequest(_prev: FormResult | null, formData: 
   return withRedirect(result, "request");
 }
 
-function quotedCents(d: Pick<QuoteRequestInput, "serviceId" | "condition" | "conditionFlags">): number {
+function quotedCents(d: Pick<QuoteRequestInput, "serviceId"> & Partial<Pick<QuoteRequestInput, "condition" | "conditionFlags">>): number {
   const estimate = computeEstimate({ serviceId: d.serviceId, condition: d.condition, conditionFlags: d.conditionFlags });
   return Math.round((estimate?.total ?? 0) * 100);
 }
@@ -403,7 +475,7 @@ export async function submitBooking(_prev: FormResult | null, formData: FormData
     leadId: lead.id,
     description: `Deposit: ${service.name}`,
     amountCents: depositCents,
-    customerEmail: lead.email,
+    customerEmail: lead.email ?? "",
     successUrl: `${origin}/booking/confirmed`,
     cancelUrl: `${origin}/booking/cancelled?appointment=${appt.id}&t=${releaseToken(appt.id, lead)}`,
     expiresAt: new Date(Date.now() + business.booking.checkoutMinutes * 60_000),

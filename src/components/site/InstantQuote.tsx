@@ -52,7 +52,7 @@ export function InstantQuote({ className }: { className?: string }) {
               {sizes && <p className="mt-1 text-sm text-ink-muted">{sizes.map((p) => `${p.size} ${formatUsd(p.price)}`).join(" · ")}</p>}
             </div>
             <Link
-              href={`/request?service=${service.id}`}
+              href={`/book?service=${service.id}`}
               onClick={() => track("book_package_clicked", { service: service.id })}
               className="group inline-flex min-h-14 items-center justify-center gap-2 rounded-sm border border-apex-deep bg-apex-deep px-7 py-3.5 text-[0.95rem] font-semibold uppercase tracking-[0.08em] text-white transition-colors hover:bg-[#a51109] hover:border-[#a51109]"
             >

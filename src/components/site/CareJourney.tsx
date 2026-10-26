@@ -21,7 +21,7 @@ export function CareJourney() {
               For the best results, begin with the Signature Full Detail to bring your vehicle back. Keep those results
               with Monthly Maintenance: a wash inside and out every month, priority booking and 15% off add-ons.
             </p>
-            <ButtonLink href="/request?service=monthly-maintenance" variant="apex" size="lg" className="mt-9">
+            <ButtonLink href="/book?service=monthly-maintenance" variant="apex" size="lg" className="mt-9">
               Start Monthly Maintenance
               <Arrow />
             </ButtonLink>

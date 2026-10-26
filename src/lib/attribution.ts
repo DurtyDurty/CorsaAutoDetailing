@@ -162,6 +162,27 @@ export const TOUCH_FIELDS = [
   "clickSeenAt",
 ] as const satisfies readonly (keyof Touch)[];
 
+/**
+ * Where a lead came from, in a few words for the dashboard list:
+ * "Google Ads", a tagged campaign ("facebook / social"), the referring site, or "Direct".
+ */
+export function sourceLabel(s: {
+  landingPath?: string | null;
+  referrer?: string | null;
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  gclid?: string | null;
+  gbraid?: string | null;
+  wbraid?: string | null;
+}): string {
+  if (isGoogleAds(s)) return "Google Ads";
+  if (s.utmSource) return [s.utmSource, s.utmMedium].filter(Boolean).join(" / ");
+  if (s.landingPath === "owner-app") return "Owner app";
+  if (s.landingPath === "email-reply") return "Email";
+  if (s.referrer) return /(^|\.)google\./.test(s.referrer) ? "Google search" : s.referrer.replace(/^www\./, "");
+  return "Direct";
+}
+
 /** True when the touch came from a Google Ads click (auto-tagged or tagged as paid Google). */
 export function isGoogleAds(s: { gclid?: string | null; gbraid?: string | null; wbraid?: string | null; utmSource?: string | null; utmMedium?: string | null }): boolean {
   if (s.gclid || s.gbraid || s.wbraid) return true;

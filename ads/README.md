@@ -66,7 +66,8 @@ Errors show Google's request ID and error codes. Read calls retry quota and tran
 | Revenue collected | payments ledger | The value on `paid` |
 
 How the website handles attribution and uploads:
-- **Capture.** The site keeps the first touch in first-party browser storage for 90 days and saves it with the lead. That covers the landing page, referrer host, UTMs (including term and content) and the time. The latest Google ad click ID (gclid, gbraid or wbraid) is saved too. Only those parameters are read, so personal data in a URL is ignored. The site loads no Google tag.
+- **Capture.** The site keeps the first touch in first-party browser storage for 90 days and saves it with the lead. That covers the landing page, referrer host, UTMs (including term and content) and the time. The latest Google ad click ID (gclid, gbraid or wbraid) is saved too. Only those parameters are read, so personal data in a URL is ignored.
+- **Website conversions (since 2026-10-25).** The public pages load the Google tag (`NEXT_PUBLIC_GOOGLE_ADS_TAG_ID`). Two Primary actions fire from the browser: "Booking request sent" once the server has saved the request (transaction ID = lead ID), and "Call or text tap" on any `tel:`/`sms:` link. `python setup_web_conversions.py` creates both, sets "Booking confirmed" to Secondary (so one customer isn't counted twice in Conversions) and prints the `send_to` values for `NEXT_PUBLIC_GOOGLE_ADS_LEAD_LABEL` / `NEXT_PUBLIC_GOOGLE_ADS_CALL_LABEL`.
 - **Upload.** The daily Vercel Cron (`/api/cron/ads-conversions`) sends conversions to the Data Manager API (`events:ingest`). It sends only the click ID, time, value and transaction ID: no name, email or phone. Enhanced conversions are not used.
 - **Deduplication.** Transaction IDs are per customer, such as `booking-<lead id>`. A deposit plus the final payment, or a reschedule, is still one acquisition. A changed value is re-sent under the same ID, and Google applies it as an adjustment.
 - **What never counts.** Held requests that are declined or expire never count. Failed payments are never recorded, so they never count.
@@ -75,7 +76,7 @@ How the website handles attribution and uploads:
 
 To turn on uploads, after the campaign exists:
 1. Create the conversion actions in Google Ads: Goals → Conversions → New → Import → **Website (Import from clicks)**.
-   - "Booking confirmed": primary, count **One**.
+   - "Booking confirmed": count **One**. Secondary since the website conversions above became Primary (2026-10-25).
    - "Paying customer": secondary, count One, value from upload.
    - Optionally, "Inquiry": secondary.
 2. Wait 4–6 hours after creating them before uploading.

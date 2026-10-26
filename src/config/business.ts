@@ -104,8 +104,12 @@ export interface ServiceAreaCommunity {
   zips: string[];
 }
 
-function env(name: string): string | null {
-  const v = process.env[name];
+/**
+ * A NEXT_PUBLIC_ value, trimmed; empty counts as unset. Always pass `process.env.NEXT_PUBLIC_X`
+ * written out in full: Next copies only literal references into browser code, so a lookup by
+ * name (process.env[name]) is empty in client components even when the server has the value.
+ */
+function pub(v: string | undefined): string | null {
   return v && v.trim() !== "" ? v.trim() : null;
 }
 
@@ -120,7 +124,7 @@ function reviewUrl(v: string | null): string | null {
 }
 
 /** Public, browser-safe values must come from NEXT_PUBLIC_* variables. */
-const canonicalDomain = env("NEXT_PUBLIC_SITE_URL") ?? "http://localhost:3000";
+const canonicalDomain = pub(process.env.NEXT_PUBLIC_SITE_URL) ?? "http://localhost:3000";
 
 export const business = {
   brand: {
@@ -138,7 +142,7 @@ export const business = {
     },
     canonicalDomain,
     /** Set NEXT_PUBLIC_SITE_ENV=staging to noindex an entire deployment. */
-    siteEnv: (env("NEXT_PUBLIC_SITE_ENV") ?? "production") as "production" | "staging",
+    siteEnv: (pub(process.env.NEXT_PUBLIC_SITE_ENV) ?? "production") as "production" | "staging",
   },
 
   owner: {
@@ -148,19 +152,19 @@ export const business = {
   },
 
   contact: {
-    email: env("NEXT_PUBLIC_CONTACT_EMAIL"),
-    phone: env("NEXT_PUBLIC_CONTACT_PHONE"),
+    email: pub(process.env.NEXT_PUBLIC_CONTACT_EMAIL),
+    phone: pub(process.env.NEXT_PUBLIC_CONTACT_PHONE),
     /** Human-readable hours when you actually reply to messages, e.g. "Mon–Sat, 9am–6pm ET". `null` = don't claim any. */
-    responseHours: env("NEXT_PUBLIC_RESPONSE_HOURS"),
+    responseHours: pub(process.env.NEXT_PUBLIC_RESPONSE_HOURS),
     social: {
-      instagram: env("NEXT_PUBLIC_SOCIAL_INSTAGRAM"),
-      facebook: env("NEXT_PUBLIC_SOCIAL_FACEBOOK"),
+      instagram: pub(process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM),
+      facebook: pub(process.env.NEXT_PUBLIC_SOCIAL_FACEBOOK),
     },
   },
 
   mode: envMode(),
   /** ISO date (YYYY-MM-DD) of a confirmed opening date. Never invent one. */
-  launchDate: env("NEXT_PUBLIC_LAUNCH_DATE"),
+  launchDate: pub(process.env.NEXT_PUBLIC_LAUNCH_DATE),
   timeZone: "America/New_York",
 
   /**
@@ -486,7 +490,7 @@ export const business = {
    * `null` = the work confirmation email leaves the review request out.
    */
   reviews: {
-    googleUrl: reviewUrl(env("NEXT_PUBLIC_GOOGLE_REVIEW_URL")),
+    googleUrl: reviewUrl(pub(process.env.NEXT_PUBLIC_GOOGLE_REVIEW_URL)),
   },
 
   scheduling: {
@@ -564,8 +568,20 @@ export const business = {
   },
 
   analytics: {
-    provider: (env("NEXT_PUBLIC_ANALYTICS_PROVIDER") ?? "none") as "none" | "plausible" | "console",
-    plausibleDomain: env("NEXT_PUBLIC_PLAUSIBLE_DOMAIN"),
+    provider: (pub(process.env.NEXT_PUBLIC_ANALYTICS_PROVIDER) ?? "none") as "none" | "plausible" | "console",
+    plausibleDomain: pub(process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN),
+    /**
+     * Google Ads tag on the public pages (account 595-383-2880). Unset = no tag, so local and
+     * preview builds never count conversions. Labels are the part after the slash in send_to.
+     */
+    googleAds: {
+      /** e.g. AW-18500525177 */
+      tagId: pub(process.env.NEXT_PUBLIC_GOOGLE_ADS_TAG_ID),
+      /** "Booking request sent" (fires after the request is saved). */
+      leadLabel: pub(process.env.NEXT_PUBLIC_GOOGLE_ADS_LEAD_LABEL),
+      /** "Call or text tap" (any tel: or sms: link). */
+      callLabel: pub(process.env.NEXT_PUBLIC_GOOGLE_ADS_CALL_LABEL),
+    },
   },
 
   consent: {
@@ -590,7 +606,28 @@ export const isPrelaunch = business.mode === "PRELAUNCH";
 export function primaryCta(): { label: string; href: string } {
   return isPrelaunch
     ? { label: "Join the launch list", href: "/#launch-list" }
-    : { label: "Book a detail", href: "/request" };
+    : { label: "Book a detail", href: "/book" };
+}
+
+/** End of every "that didn't work" message: how to reach a person instead. */
+export function reachUsLine(): string {
+  const { phone, email } = business.contact;
+  if (phone) return `Please call or text us at ${phone} and we'll book you directly.`;
+  return email ? `Please email us at ${email} and we'll book you directly.` : "Please try again in a few minutes.";
+}
+
+/** Prefilled text for the "Text" buttons (owner's wording, 2026-10-25). */
+export const SMS_PREFILL = "Hi, I'd like a quote for detailing my car.";
+
+/**
+ * tel:/sms: link to the business phone, or null when no phone is configured.
+ * `?&body=` is the form both iOS and Android Messages read.
+ */
+export function phoneLink(kind: "tel" | "sms", body?: string): string | null {
+  const digits = business.contact.phone?.replace(/\D/g, "");
+  if (!digits) return null;
+  const base = `${kind}:+1${digits.slice(-10)}`;
+  return body ? `${base}?&body=${encodeURIComponent(body)}` : base;
 }
 
 export function getService(id: string): ServiceDefinition | undefined {

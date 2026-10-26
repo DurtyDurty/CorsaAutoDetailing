@@ -1,7 +1,9 @@
 import "server-only";
 import { z } from "zod";
-import { business } from "@/config/business";
+import { business, reachUsLine } from "@/config/business";
 import { getLeadStore } from "@/lib/leads/store";
+import { reportFormFailure } from "@/lib/site-errors";
+import { HONEYPOT_LEAD_ID } from "@/lib/leads/shared";
 import { cleanClickId, cleanPath, cleanReferrer, cleanTag, TOUCH_MAX_AGE_DAYS } from "@/lib/attribution";
 import type { LeadRecord, LeadSource, LeadType, NewLead } from "@/lib/leads/types";
 import { notifyForLead } from "@/lib/notifications";
@@ -15,9 +17,7 @@ export type IntakeResult =
   | { status: "unavailable"; message: string }
   | { status: "error"; message: string };
 
-const UNAVAILABLE_MESSAGE =
-  "We can't save requests right now. Please try again shortly" +
-  (business.contact.email ? ` or email ${business.contact.email}.` : ".");
+const UNAVAILABLE_MESSAGE = `Sorry, we couldn't save your request just now. ${reachUsLine()}`;
 
 /** Base record fields shared by every lead type. */
 export function baseLead(
@@ -25,7 +25,7 @@ export function baseLead(
   data: {
     idempotencyKey: string;
     firstName: string;
-    email: string;
+    email: string | null;
     marketingEmail: boolean;
     landingPath: string | null;
     referrer: string | null;
@@ -148,9 +148,15 @@ export async function intake<S extends z.ZodTypeAny>(opts: {
   afterSave?: (lead: LeadRecord, formData: FormData) => Promise<void>;
   /** false = skip the owner/customer emails (online bookings email once the deposit is paid). */
   notify?: boolean;
+  /** Name in the dashboard's form-problem list. Defaults to the lead type. */
+  form?: string;
 }): Promise<IntakeResult> {
+  const form = opts.form ?? opts.leadType;
   const store = await getLeadStore();
-  if (!store) return { status: "unavailable", message: UNAVAILABLE_MESSAGE };
+  if (!store) {
+    await reportFormFailure(null, { kind: "save_failed", form, detail: "No database configured on the server" });
+    return { status: "unavailable", message: UNAVAILABLE_MESSAGE };
+  }
 
   const limit = await limitFormSubmission(opts.leadType);
   if (!limit.ok) {
@@ -167,23 +173,26 @@ export async function intake<S extends z.ZodTypeAny>(opts: {
     const errors = fieldErrors(parsed.error);
     // Honeypot filled → pretend success without saving anything.
     if ("website" in errors) {
-      return { status: "ok", leadId: "00000000-0000-4000-8000-000000000000", created: false };
+      return { status: "ok", leadId: HONEYPOT_LEAD_ID, created: false };
     }
+    // Field names only: shows which questions turn people away, without keeping what they typed.
+    await reportFormFailure(store, { kind: "invalid", form, detail: Object.keys(errors).join(", ") });
     return { status: "invalid", fieldErrors: errors, message: "Please fix the highlighted fields." };
   }
 
   let record: NewLead;
   try {
     record = await opts.build(parsed.data);
-  } catch {
-    return { status: "error", message: "Something went wrong preparing your request. Please try again." };
+  } catch (err) {
+    await reportFormFailure(store, { kind: "unexpected", form, detail: `Preparing the request: ${err instanceof Error ? err.message : "failed"}` });
+    return { status: "error", message: `Something went wrong preparing your request. ${reachUsLine()}` };
   }
 
   let saved: { lead: LeadRecord; created: boolean };
   try {
     saved = await store.createLead(record);
   } catch (err) {
-    console.error("[intake] save failed:", err instanceof Error ? err.message : err);
+    await reportFormFailure(store, { kind: "save_failed", form, detail: err instanceof Error ? err.message : "Save failed" });
     return { status: "unavailable", message: UNAVAILABLE_MESSAGE };
   }
 

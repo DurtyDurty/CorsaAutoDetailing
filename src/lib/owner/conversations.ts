@@ -98,7 +98,7 @@ export async function listConversations(store: LeadStore, q: ListConversationsQu
       return {
         leadId: l.id,
         customerName: name(l),
-        email: l.email,
+        email: l.email ?? "",
         kind: l.leadType as ConversationKind,
         unread: isUnread(l) || replies.some((r) => !r.readAt),
         lastActivityAt: a.at,
@@ -151,7 +151,7 @@ export async function getConversation(store: LeadStore, leadId: string): Promise
       type: "received" as const,
       at: r.receivedAt,
       from: r.fromName ? `${r.fromName} <${r.fromEmail}>` : r.fromEmail,
-      fromOtherAddress: r.fromEmail.toLowerCase() !== lead.email.toLowerCase(),
+      fromOtherAddress: r.fromEmail.toLowerCase() !== (lead.email ?? "").toLowerCase(),
       subject: r.subject,
       body: visibleReply(r.body),
     })),
@@ -162,7 +162,7 @@ export async function getConversation(store: LeadStore, leadId: string): Promise
     leadId: lead.id,
     customerName: name(lead),
     firstName: lead.firstName,
-    email: lead.email,
+    email: lead.email ?? "",
     phone: lead.phone,
     kind: lead.leadType as ConversationKind,
     unread: isUnread(lead) || received.some((r) => !r.readAt),
@@ -172,7 +172,7 @@ export async function getConversation(store: LeadStore, leadId: string): Promise
       : null,
     offer:
       isOfferSignup(lead) && business.firstTimeOffer.enabled
-        ? { percent: business.firstTimeOffer.percent, url: `${business.brand.canonicalDomain}/request?offer=first-time` }
+        ? { percent: business.firstTimeOffer.percent, url: `${business.brand.canonicalDomain}/book?offer=first-time` }
         : null,
     defaultSubject: defaultEmailSubject(lead),
     signature: ownerSignature(),

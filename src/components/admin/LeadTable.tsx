@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { getService, getVehicleCategory } from "@/config/business";
 import { LEAD_STAGE_LABELS, type LeadRecord } from "@/lib/leads/types";
+import { isGoogleAds, sourceLabel } from "@/lib/attribution";
 import { formatEastern } from "@/lib/time";
-import { cn } from "@/lib/utils";
+import { cn, formatPhone } from "@/lib/utils";
 
 const TYPE_LABEL: Record<LeadRecord["leadType"], string> = {
   launch_list: "Launch list",
@@ -42,7 +43,8 @@ export function LeadTable({ leads, showType = true }: { leads: LeadRecord[]; sho
             {showType && <th className="px-4 py-3 font-medium">Type</th>}
             <th className="px-4 py-3 font-medium">Service</th>
             <th className="px-4 py-3 font-medium">Vehicle</th>
-            <th className="px-4 py-3 font-medium">ZIP</th>
+            <th className="px-4 py-3 font-medium">Area</th>
+            <th className="px-4 py-3 font-medium">Source</th>
             <th className="px-4 py-3 font-medium">Stage</th>
           </tr>
         </thead>
@@ -54,7 +56,7 @@ export function LeadTable({ leads, showType = true }: { leads: LeadRecord[]; sho
                 <Link href={`/admin/leads/${l.id}`} className="font-medium underline underline-offset-4">
                   {[l.firstName, l.lastName].filter(Boolean).join(" ")}
                 </Link>
-                <span className="block text-ink-muted text-xs">{l.email}</span>
+                <span className="block text-ink-muted text-xs">{l.email ?? (l.phone ? formatPhone(l.phone) : "")}</span>
               </td>
               {showType && <td className="px-4 py-3 whitespace-nowrap">{TYPE_LABEL[l.leadType]}</td>}
               <td className="px-4 py-3">{l.serviceId ? (getService(l.serviceId)?.name ?? l.serviceId) : l.membershipCadence ? `Plan · ${l.membershipCadence}` : "-"}</td>
@@ -63,10 +65,14 @@ export function LeadTable({ leads, showType = true }: { leads: LeadRecord[]; sho
                   (l.vehicleCategory ? getVehicleCategory(l.vehicleCategory)?.label : "-")}
               </td>
               <td className="px-4 py-3 whitespace-nowrap">
-                {l.zip ?? "-"}
+                {l.zip ?? l.city ?? "-"}
                 {l.zipEligibility && l.zipEligibility !== "core" && (
                   <span className="block text-xs text-ink-muted">{l.zipEligibility}</span>
                 )}
+              </td>
+              <td className="px-4 py-3 whitespace-nowrap">
+                <span className={cn(isGoogleAds(l.source) && "font-medium text-apex-deep")}>{sourceLabel(l.source)}</span>
+                {l.source.utmTerm && <span className="block text-xs text-ink-muted">{l.source.utmTerm}</span>}
               </td>
               <td className="px-4 py-3">
                 <StageBadge stage={l.stage} />

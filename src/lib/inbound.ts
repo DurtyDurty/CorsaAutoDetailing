@@ -151,7 +151,7 @@ async function findOrCreateLead(
     const lead = await store.getLead(tagged);
     if (lead) return lead;
   }
-  const [recent] = await store.listLeads({ search: from.email, includeArchived: true, limit: 20 }).then((ls) => ls.filter((l) => l.email.toLowerCase() === from.email));
+  const [recent] = await store.listLeads({ search: from.email, includeArchived: true, limit: 20 }).then((ls) => ls.filter((l) => l.email?.toLowerCase() === from.email));
   if (recent) return recent;
   // Someone new emailed the reply address: start a conversation for them, up to a daily ceiling.
   const dayAgo = Date.now() - 86_400_000;
@@ -204,10 +204,10 @@ async function notifyOwner(lead: LeadRecord, rec: InboundEmailRecord) {
   if (!to || email.kind === "disabled") return;
   const name = [lead.firstName, lead.lastName].filter(Boolean).join(" ");
   // Filed by the reply address, but sent from somewhere else: say so, since anyone can write to that address.
-  const otherAddress = rec.fromEmail !== lead.email.toLowerCase();
+  const otherAddress = rec.fromEmail !== (lead.email ?? "").toLowerCase();
   const sender = otherAddress ? rec.fromEmail : name;
   const warning = otherAddress
-    ? `Check before acting on this: it was filed under ${name}, but came from ${rec.fromEmail}, not the address on file (${lead.email}).\n\n`
+    ? `Check before acting on this: it was filed under ${name}, but came from ${rec.fromEmail}, not the address on file (${lead.email ?? "none"}).\n\n`
     : "";
   await email
     .send({

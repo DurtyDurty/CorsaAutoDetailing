@@ -13,6 +13,12 @@ const env = {
   DEMO_ADMIN_PASSWORD: "corsa-demo",
   ALLOW_DEMO_STORE: "true",
   FORM_RATE_LIMIT: "200",
+  // The business number, so the Call/Text bar and the "call or text us" lines render.
+  NEXT_PUBLIC_CONTACT_PHONE: "904-649-0739",
+  // A made-up tag: the tests stub Google's script, so nothing reaches Google Ads.
+  NEXT_PUBLIC_GOOGLE_ADS_TAG_ID: "AW-000000000",
+  NEXT_PUBLIC_GOOGLE_ADS_LEAD_LABEL: "e2eLead",
+  NEXT_PUBLIC_GOOGLE_ADS_CALL_LABEL: "e2eCall",
 };
 
 export default defineConfig({

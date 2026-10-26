@@ -51,7 +51,7 @@ function ownerBody(lead: LeadRecord, booking?: AppointmentRecord, requested?: Ap
     `Mode: ${lead.businessMode}`,
     "",
     `Name: ${[lead.firstName, lead.lastName].filter(Boolean).join(" ")}`,
-    `Email: ${lead.email}`,
+    `Email: ${lead.email ?? "none given, call or text them"}`,
     lead.phone ? `Phone: ${lead.phone}` : null,
     lead.preferredContact ? `Preferred contact: ${lead.preferredContact}` : null,
     lead.serviceAddress ? `Service address: ${lead.serviceAddress}` : null,
@@ -164,7 +164,7 @@ function customerBody(lead: LeadRecord, requested?: AppointmentRecord) {
         `Thanks for signing up. Your first detail with ${business.brand.name} is ${offer.percent}% off.`,
         "",
         `Book here and the offer is already selected:`,
-        `${business.brand.canonicalDomain}/request?offer=first-time`,
+        `${business.brand.canonicalDomain}/book?offer=first-time`,
         "",
         offer.terms,
       ]
@@ -197,7 +197,7 @@ async function attempt(store: LeadStore, record: NotificationRecord, lead: LeadR
   if (!to) {
     await store.updateNotification(record.id, {
       status: "skipped",
-      lastError: "OWNER_NOTIFY_EMAIL not configured.",
+      lastError: record.kind === "owner_notify" ? "OWNER_NOTIFY_EMAIL not configured." : "The customer didn't leave an email.",
     });
     return;
   }
@@ -210,7 +210,7 @@ async function attempt(store: LeadStore, record: NotificationRecord, lead: LeadR
     const idempotencyKey = `notification-${record.id}-${record.attempts}`;
     const { id } = await adapter.send(
       record.kind === "owner_notify"
-        ? { to, subject: ownerSubject(lead, booking, requested), text: ownerBody(lead, booking, requested), replyTo: lead.email, idempotencyKey }
+        ? { to, subject: ownerSubject(lead, booking, requested), text: ownerBody(lead, booking, requested), replyTo: lead.email ?? undefined, idempotencyKey }
         : {
             to,
             subject: customerSubject(lead, booking, requested),
@@ -243,6 +243,7 @@ const ACKS_PER_HOUR = 3;
 const ACKS_PER_DAY = 5;
 
 async function ackLimitReached(store: LeadStore, lead: LeadRecord): Promise<boolean> {
+  if (!lead.email) return false;
   const others = (await store.listLeads({ search: lead.email, includeArchived: true, limit: 50 })).filter(
     (l) => l.id !== lead.id && l.email === lead.email,
   );

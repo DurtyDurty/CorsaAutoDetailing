@@ -2,7 +2,7 @@ import { business } from "@/config/business";
 import { cn } from "@/lib/utils";
 
 /** U.S. flag at the official 1.9:1 ratio: 13 stripes, canton over 7 stripes. Stars simplified for small sizes. */
-function Flag({ className }: { className?: string }) {
+export function Flag({ className }: { className?: string }) {
   const stripe = 10 / 13;
   const stars: [number, number][] = [];
   for (let row = 0; row < 5; row++) {

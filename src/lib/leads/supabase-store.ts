@@ -2,6 +2,8 @@ import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type {
   AdConversionRecord,
+  NewSiteError,
+  SiteErrorRecord,
   AppointmentEventRecord,
   AppointmentPatch,
   AppointmentRecord,
@@ -649,6 +651,32 @@ export class SupabaseLeadStore implements LeadStore {
       { onConflict: "transaction_id" },
     );
     if (error) throw new Error(error.message);
+  }
+
+  async logSiteError(input: NewSiteError) {
+    const { error } = await this.client
+      .from("site_errors")
+      .insert({ kind: input.kind, form: input.form.slice(0, 60), detail: input.detail.slice(0, 500) });
+    if (error) throw new Error(error.message);
+  }
+
+  async listSiteErrors(opts: { since: string; limit?: number }) {
+    const { data, error } = await this.client
+      .from("site_errors")
+      .select("*")
+      .gte("created_at", opts.since)
+      .order("created_at", { ascending: false })
+      .limit(opts.limit ?? 50);
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(
+      (r): SiteErrorRecord => ({
+        id: r.id as string,
+        kind: r.kind as SiteErrorRecord["kind"],
+        form: r.form as string,
+        detail: r.detail as string,
+        createdAt: r.created_at as string,
+      }),
+    );
   }
 
   async listTimeOff(opts: { from?: string } = {}) {
