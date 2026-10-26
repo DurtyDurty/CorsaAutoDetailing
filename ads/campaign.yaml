@@ -80,14 +80,14 @@ negative_keywords:
 
 ad_groups:
   - name: Mobile Detailing
-    final_url: /
+    final_url: /book
     keywords:
       - { text: mobile detailing near me, match: PHRASE }
       - { text: mobile car detailing, match: PHRASE }
       - { text: mobile auto detailing, match: PHRASE }
-      - { text: mobile detailing middleburg, match: PHRASE, final_url: /service-areas/middleburg }
-      - { text: mobile detailing green cove springs, match: PHRASE, final_url: /service-areas/green-cove-springs }
-      - { text: mobile detailing fleming island, match: PHRASE, final_url: /service-areas/fleming-island }
+      - { text: mobile detailing middleburg, match: PHRASE }
+      - { text: mobile detailing green cove springs, match: PHRASE }
+      - { text: mobile detailing fleming island, match: PHRASE }
       - { text: mobile auto detailing near me, match: EXACT }
       # 2026-10-05: no impressions in the first 3 days. Most local searches don't say "mobile" or a town name.
       - { text: car detailing near me, match: PHRASE }
@@ -122,13 +122,13 @@ ad_groups:
         - Car detailing near you. Pick a date online and we confirm by email.
 
   - name: Interior & Exterior Detailing
-    final_url: /services
+    final_url: /book
     keywords:
       - { text: interior car detailing, match: PHRASE }
       - { text: interior and exterior detailing, match: PHRASE }
-      - { text: car detailing middleburg, match: PHRASE, final_url: /service-areas/middleburg }
-      - { text: car detailing green cove springs, match: PHRASE, final_url: /service-areas/green-cove-springs }
-      - { text: car detailing fleming island, match: PHRASE, final_url: /service-areas/fleming-island }
+      - { text: car detailing middleburg, match: PHRASE }
+      - { text: car detailing green cove springs, match: PHRASE }
+      - { text: car detailing fleming island, match: PHRASE }
       - { text: car detailing, match: PHRASE }
       - { text: auto detailing, match: PHRASE }
     ad:
@@ -166,12 +166,12 @@ assets:
     - Home or Work Visits
     - Se Habla Español
   sitelinks:
-    - { text: "Book a Detail", url: /request, line1: "Pick a date that works for you", line2: "We confirm your time by email" }
+    - { text: "Book a Detail", url: /book, line1: "Pick a date that works for you", line2: "We confirm your time by email" }
     - { text: "Packages & Prices", url: /services, line1: "Basic, Essential and Signature", line2: "Inside and out in one visit" }
     - { text: "Service Areas", url: /service-areas, line1: "Middleburg and Fleming Island", line2: "Green Cove Springs and nearby" }
     - { text: "Contact Us", url: /contact, line1: "Questions before you book?", line2: "Send us a message" }
     # Added 2026-10-12. Must match business.firstTimeOffer (percent and terms); the link ticks the offer on the booking form.
-    - { text: "10% Off First Detail", url: "/request?offer=first-time", line1: "First-time customers only", line2: "Applied to your final quote" }
+    - { text: "10% Off First Detail", url: "/book?offer=first-time", line1: "First-time customers only", line2: "Applied to your final quote" }
     # Added 2026-10-19 (Google asked for a 6th). Price must match business.ts monthly-maintenance.
     - { text: "Monthly Maintenance", url: /maintenance-plans, line1: "Exterior and interior wash monthly", line2: "Priority booking, $150 a month" }
   # Added only once a business phone number exists (NEXT_PUBLIC_CONTACT_PHONE). null = no call asset.

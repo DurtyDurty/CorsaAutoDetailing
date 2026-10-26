@@ -257,12 +257,13 @@ class BuildTests(unittest.TestCase):
     def test_keywords_and_ads(self):
         kws = self.kind("ad_group_criterion_operation")
         self.assertEqual(len(kws), 17)
+        # Since 2026-10-25 every ad lands on the booking page; town keywords no longer override it.
         town = next(k for k in kws if k.keyword.text == "mobile detailing middleburg")
-        self.assertEqual(list(town.final_urls), ["https://corsaautodetailing.com/service-areas/middleburg"])
+        self.assertEqual(list(town.final_urls), [])
         ads = self.kind("ad_group_ad_operation")
         self.assertEqual(len(ads), 2)
         self.assertEqual(len(ads[0].ad.responsive_search_ad.headlines), 15)
-        self.assertEqual(list(ads[1].ad.final_urls), ["https://corsaautodetailing.com/services"])
+        self.assertEqual([list(a.ad.final_urls) for a in ads], [["https://corsaautodetailing.com/book"]] * 2)
 
     def test_assets(self):
         assets = self.kind("asset_operation")
@@ -272,7 +273,8 @@ class BuildTests(unittest.TestCase):
         self.assertEqual(len(self.cfg.sitelinks), 6)
         # The offer sitelink keeps its query string, so the booking form opens with the offer ticked.
         urls = [a.final_urls[0] for a in assets if a.sitelink_asset.link_text]
-        self.assertIn("https://corsaautodetailing.com/request?offer=first-time", urls)
+        self.assertIn("https://corsaautodetailing.com/book?offer=first-time", urls)
+        self.assertEqual(len(urls), len(set(urls)), "Google disapproves sitelinks that share a landing page")
 
     def test_rerun_with_existing_campaign_uses_its_resource_names(self):
         ex = full_existing(self.cfg)

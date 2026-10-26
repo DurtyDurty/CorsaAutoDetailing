@@ -48,6 +48,7 @@ LANGUAGES = {ENGLISH: "English", SPANISH: "Spanish"}
 KNOWN_PATHS = {
     "/",
     "/services",
+    "/book",
     "/request",
     "/contact",
     "/about",
