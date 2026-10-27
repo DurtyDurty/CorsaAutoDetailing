@@ -77,6 +77,11 @@ negative_keywords:
   - { text: tint, match: BROAD }
   - { text: tinting, match: BROAD }
   - { text: paint correction, match: PHRASE }
+  # 2026-10-27 audit: not offered (RVs) or too far (owner approved).
+  - { text: rv, match: PHRASE }
+  - { text: tallahassee, match: PHRASE }
+  - { text: palm coast, match: PHRASE }
+  - { text: palatka, match: PHRASE }
 
 ad_groups:
   - name: Mobile Detailing
@@ -100,7 +105,8 @@ ad_groups:
       # now carry the search words (were Clay County Mobile Detailing, Mobile Auto Detailing,
       # Premium Mobile Car Care, Detailing at Home or Work).
       headlines:
-        - Mobile Detailing Near You
+        # 2026-10-27: ad relevance still below average on the near-me keywords; three headlines now use the searchers' own words.
+        - Mobile Detailing Near Me
         - We Come to You
         - Detailing From $90
         - Veteran-Owned Detailing
@@ -111,15 +117,15 @@ ad_groups:
         - Green Cove Springs Detailing
         - Full Detail From $150
         - Interior & Exterior Detailing
-        - Mobile Auto Detailing Near You
+        - Auto Detailing Near Me
         - Se Habla Español
         - Mobile Car Detailing
-        - Car Detailing Near You
+        - Car Detailing Near Me
       descriptions:
         - Mobile car detailing at your home or work in Clay County and northern St. Johns County.
         - Basic, Essential and Signature packages, inside and out in one visit. From $90.
         - Veteran-owned mobile auto detailing. We need no water or power hookup from you.
-        - Car detailing near you. Pick a date online and we confirm by email.
+        - Car detailing near me, at your home or work. Pick a day online, we text to confirm.
 
   - name: Interior & Exterior Detailing
     final_url: /book
@@ -155,7 +161,7 @@ ad_groups:
         - Car detailing inside and out, at your home or work. Interior car detailing from $90.
         - Signature adds clay bar, sanitation, interior deep clean and a 1 month protectant wax.
         - Exterior hand wash, sealant application, wheels cleaned, tire shine and windows.
-        - Veteran-owned mobile auto detailing. Pick a date online; we confirm by email.
+        - Veteran-owned mobile auto detailing. Pick a day online; we text or call to confirm.
 
 assets:
   callouts:

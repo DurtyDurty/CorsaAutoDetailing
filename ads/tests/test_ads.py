@@ -211,7 +211,7 @@ class PlanTests(unittest.TestCase):
         self.assertIn("PAUSED", text)
         self.assertIn("10000000 micros", text)
         self.assertIn("Middleburg, Florida, United States [1015119]", text)
-        self.assertRegex(text, r"H1\s+25/30  Mobile Detailing Near You")
+        self.assertRegex(text, r"H1\s+24/30  Mobile Detailing Near Me")
 
 
 class BuildTests(unittest.TestCase):
@@ -252,7 +252,7 @@ class BuildTests(unittest.TestCase):
         sched = [c.ad_schedule for c in crit if c.ad_schedule.start_hour or c.ad_schedule.end_hour]
         self.assertEqual(len(sched), 7)
         self.assertTrue(all(s.start_hour == 8 and s.end_hour == 19 for s in sched))
-        self.assertEqual(sum(1 for c in crit if c.negative), 29)
+        self.assertEqual(sum(1 for c in crit if c.negative), 33)
 
     def test_keywords_and_ads(self):
         kws = self.kind("ad_group_criterion_operation")
