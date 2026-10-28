@@ -103,7 +103,7 @@ class ConfigTests(unittest.TestCase):
     def test_locations_are_the_verified_areas_only(self):
         c = config.load()
         self.assertEqual({l["id"] for l in c.campaign["locations"]}, {1015119, 1015041, 9196545, 9197497, 9011488, 9057255, 1015149})
-        # Clay County became a verified target on 2026-10-28; Jacksonville is still served on request only.
+        # Clay County became a verified target on 2026-10-27; Jacksonville is still served on request only.
         jacksonville = [{"id": 1015067, "name": "Jacksonville, Florida, United States", "type": "City"}]
         self.assertIn("not one of the verified", " ".join(cfg_with(**{"campaign.locations": jacksonville}).errors))
         self.assertIn("PRESENCE", " ".join(cfg_with(**{"campaign.location_matching": "PRESENCE_OR_INTEREST"}).errors))

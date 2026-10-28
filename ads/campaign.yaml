@@ -14,7 +14,7 @@ campaign:
   bidding:
     strategy: MAXIMIZE_CLICKS
     # Optional ceiling per click (USD). null = let Google bid within the budget.
-    # 2026-10-28: owner considered $4.00 and kept $7.00 (top keywords already average about $3.80-$4.50).
+    # 2026-10-27: owner considered $4.00 and kept $7.00 (top keywords already average about $3.80-$4.50).
     max_cpc_usd: 7.00
   networks:
     google_search: true
@@ -34,7 +34,7 @@ campaign:
     # Added 2026-10-19: St. Johns County core areas from the site. 32092 = World Golf Village's ZIP.
     - { id: 9197497, name: "Saint Johns, Florida, United States", type: City }
     - { id: 9011488, name: "32092, Florida, United States", type: Postal Code }
-    # Added 2026-10-28 at the owner's request: all of Clay County, and Orange Park by name (it's inside the county).
+    # Added 2026-10-27 at the owner's request: all of Clay County, and Orange Park by name (it's inside the county).
     - { id: 9057255, name: "Clay County, Florida, United States", type: County }
     - { id: 1015149, name: "Orange Park, Florida, United States", type: City }
   # PRESENCE = people in or regularly in these towns (not people merely searching about them).
@@ -86,7 +86,7 @@ negative_keywords:
   - { text: tallahassee, match: PHRASE }
   - { text: palm coast, match: PHRASE }
   - { text: palatka, match: PHRASE }
-  # 2026-10-28 (owner's list, broad): job seekers, training, bargain hunters, franchise shoppers. careers added as the plural.
+  # 2026-10-27 (owner's list, broad): job seekers, training, bargain hunters, franchise shoppers. careers added as the plural.
   - { text: career, match: BROAD }
   - { text: careers, match: BROAD }
   - { text: school, match: BROAD }
@@ -114,10 +114,10 @@ ad_groups:
       - { text: car detailing near me, match: PHRASE }
       - { text: auto detailing near me, match: PHRASE }
       - { text: detailing near me, match: PHRASE }
-      # 2026-10-28: Google flagged the campaign as missing relevant keywords.
+      # 2026-10-27: Google flagged the campaign as missing relevant keywords.
       - { text: mobile detailing, match: PHRASE }
       - { text: mobile car wash near me, match: PHRASE }
-      # 2026-10-28: two of Google's own suggestions for the 'missing relevant keywords' warning (skipped 'interior cleaning': house cleaning too).
+      # 2026-10-27: two of Google's own suggestions for the 'missing relevant keywords' warning (skipped 'interior cleaning': house cleaning too).
       - { text: car detail service near me, match: PHRASE }
       - { text: auto cleaning near me, match: PHRASE }
     ad:
@@ -155,7 +155,7 @@ ad_groups:
       - { text: interior car detailing, match: PHRASE }
       - { text: interior and exterior detailing, match: PHRASE }
       - { text: car detailing middleburg, match: PHRASE }
-      # 2026-10-28: Google flagged the campaign as missing relevant keywords.
+      # 2026-10-27: Google flagged the campaign as missing relevant keywords.
       - { text: car interior cleaning, match: PHRASE }
       - { text: car detailing orange park, match: PHRASE }
       - { text: auto detailing fleming island, match: PHRASE }
@@ -197,7 +197,7 @@ assets:
     - No Water or Power Needed
     - Home or Work Visits
     - Se Habla Español
-    # 2026-10-28: quotes cost nothing (sent before any work, no obligation).
+    # 2026-10-27: quotes cost nothing (sent before any work, no obligation).
     - We Come to You
     - Free Quotes
   sitelinks:
@@ -209,7 +209,7 @@ assets:
     - { text: "10% Off First Detail", url: "/book?offer=first-time", line1: "First-time customers only", line2: "Applied to your final quote" }
     # Added 2026-10-19 (Google asked for a 6th). Price must match business.ts monthly-maintenance.
     - { text: "Monthly Maintenance", url: /maintenance-plans, line1: "Exterior and interior wash monthly", line2: "Priority booking, $150 a month" }
-    # 2026-10-28: the town pages (Orange Park has none; it's a travel-confirmed area).
+    # 2026-10-27: the town pages (Orange Park has none; it's a travel-confirmed area).
     - { text: "Middleburg Detailing", url: /service-areas/middleburg, line1: "Mobile detailing in Middleburg", line2: "At your home or work" }
     - { text: "Fleming Island Detailing", url: /service-areas/fleming-island, line1: "Mobile detailing on Fleming Island", line2: "At your home or work" }
     - { text: "Green Cove Springs", url: /service-areas/green-cove-springs, line1: "Mobile detailing in Green Cove", line2: "At your home or work" }

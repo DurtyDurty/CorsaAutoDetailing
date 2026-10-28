@@ -38,7 +38,7 @@ VERIFIED_GEO = {
     # Orangedale target, so World Golf Village is its ZIP (business.ts); checked via geo_target_constant.
     9197497: "Saint Johns, Florida, United States",
     9011488: "32092, Florida, United States",
-    # Added 2026-10-28 (owner): all of Clay County, plus Orange Park by name; checked via geo_target_constant.
+    # Added 2026-10-27 (owner): all of Clay County, plus Orange Park by name; checked via geo_target_constant.
     9057255: "Clay County, Florida, United States",
     1015149: "Orange Park, Florida, United States",
 }
