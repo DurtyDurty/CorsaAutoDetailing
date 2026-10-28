@@ -117,6 +117,9 @@ ad_groups:
       # 2026-10-28: Google flagged the campaign as missing relevant keywords.
       - { text: mobile detailing, match: PHRASE }
       - { text: mobile car wash near me, match: PHRASE }
+      # 2026-10-28: two of Google's own suggestions for the 'missing relevant keywords' warning (skipped 'interior cleaning': house cleaning too).
+      - { text: car detail service near me, match: PHRASE }
+      - { text: auto cleaning near me, match: PHRASE }
     ad:
       path1: Mobile
       path2: Detailing

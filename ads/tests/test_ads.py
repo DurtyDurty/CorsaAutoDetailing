@@ -142,7 +142,7 @@ class ConfigTests(unittest.TestCase):
         self.assertIn(("mobile auto detailing near me", "EXACT"), kws)
         self.assertIn(("mobile detailing near me", "PHRASE"), kws)
         self.assertIn(("car detailing near me", "PHRASE"), kws)
-        self.assertEqual(len(kws), 22)
+        self.assertEqual(len(kws), 24)
         self.assertTrue(cfg_with(**{"ad_groups.0.keywords.0.match": "BROAD"}).errors)
         self.assertTrue(cfg_with(**{"ad_groups.0.keywords.0.text": '"mobile detailing"'}).errors)
         dup = cfg_with(**{"ad_groups.1.keywords.0.text": "mobile car detailing", "ad_groups.1.keywords.0.match": "PHRASE"})
@@ -181,7 +181,7 @@ class PlanTests(unittest.TestCase):
         kinds = [s.kind for s in steps]
         self.assertEqual(kinds[:2], ["budget", "campaign"])
         self.assertEqual(kinds.count("location"), 7)
-        self.assertEqual(kinds.count("keyword"), 22)
+        self.assertEqual(kinds.count("keyword"), 24)
         self.assertEqual(kinds.count("call"), 1)
         no_phone = cfg_with(**{"assets.call.phone": None})
         self.assertEqual([s.kind for s in plan.desired(no_phone)].count("call"), 0, "no call asset without a phone number")
@@ -257,7 +257,7 @@ class BuildTests(unittest.TestCase):
 
     def test_keywords_and_ads(self):
         kws = self.kind("ad_group_criterion_operation")
-        self.assertEqual(len(kws), 22)
+        self.assertEqual(len(kws), 24)
         # Since 2026-10-25 every ad lands on the booking page; town keywords no longer override it.
         town = next(k for k in kws if k.keyword.text == "mobile detailing middleburg")
         self.assertEqual(list(town.final_urls), [])
