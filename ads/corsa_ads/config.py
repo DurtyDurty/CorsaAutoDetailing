@@ -38,6 +38,9 @@ VERIFIED_GEO = {
     # Orangedale target, so World Golf Village is its ZIP (business.ts); checked via geo_target_constant.
     9197497: "Saint Johns, Florida, United States",
     9011488: "32092, Florida, United States",
+    # Added 2026-10-28 (owner): all of Clay County, plus Orange Park by name; checked via geo_target_constant.
+    9057255: "Clay County, Florida, United States",
+    1015149: "Orange Park, Florida, United States",
 }
 ENGLISH = 1000
 SPANISH = 1003
@@ -69,7 +72,8 @@ BANNED = [
     (r"limited time|hurry|act now|spots? left|only \d+|last chance|today only|ends soon"
      r"|tiempo limitado|[úu]ltim[oa]s? (cupos|lugares|citas)|solo hoy|no espere|ap[úu]rese", "false urgency or scarcity"),
     (r"\bdeposit|dep[óo]sito", "deposits are off"),
-    (r"\bfree\b|\bgratis\b", "'free' offer that doesn't exist"),
+    # Quotes really are free (sent before any work, no obligation); nothing else is.
+    (r"\bfree\b(?!\s+quotes?\b)|\bgratis\b", "'free' offer that doesn't exist"),
     (r"\bcertified\b|\blicensed\b|\binsured\b|certificad|licenciad|asegurad", "credential not verified in the repo"),
 ]
 

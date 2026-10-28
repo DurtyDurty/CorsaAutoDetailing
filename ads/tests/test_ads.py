@@ -102,9 +102,10 @@ class ConfigTests(unittest.TestCase):
 
     def test_locations_are_the_verified_areas_only(self):
         c = config.load()
-        self.assertEqual({l["id"] for l in c.campaign["locations"]}, {1015119, 1015041, 9196545, 9197497, 9011488})
-        clay_county = [{"id": 9057255, "name": "Clay County, Florida, United States", "type": "County"}]
-        self.assertIn("not one of the verified", " ".join(cfg_with(**{"campaign.locations": clay_county}).errors))
+        self.assertEqual({l["id"] for l in c.campaign["locations"]}, {1015119, 1015041, 9196545, 9197497, 9011488, 9057255, 1015149})
+        # Clay County became a verified target on 2026-10-28; Jacksonville is still served on request only.
+        jacksonville = [{"id": 1015067, "name": "Jacksonville, Florida, United States", "type": "City"}]
+        self.assertIn("not one of the verified", " ".join(cfg_with(**{"campaign.locations": jacksonville}).errors))
         self.assertIn("PRESENCE", " ".join(cfg_with(**{"campaign.location_matching": "PRESENCE_OR_INTEREST"}).errors))
 
     def test_character_limits(self):
@@ -141,7 +142,7 @@ class ConfigTests(unittest.TestCase):
         self.assertIn(("mobile auto detailing near me", "EXACT"), kws)
         self.assertIn(("mobile detailing near me", "PHRASE"), kws)
         self.assertIn(("car detailing near me", "PHRASE"), kws)
-        self.assertEqual(len(kws), 17)
+        self.assertEqual(len(kws), 22)
         self.assertTrue(cfg_with(**{"ad_groups.0.keywords.0.match": "BROAD"}).errors)
         self.assertTrue(cfg_with(**{"ad_groups.0.keywords.0.text": '"mobile detailing"'}).errors)
         dup = cfg_with(**{"ad_groups.1.keywords.0.text": "mobile car detailing", "ad_groups.1.keywords.0.match": "PHRASE"})
@@ -179,8 +180,8 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(steps, plan.desired(c))
         kinds = [s.kind for s in steps]
         self.assertEqual(kinds[:2], ["budget", "campaign"])
-        self.assertEqual(kinds.count("location"), 5)
-        self.assertEqual(kinds.count("keyword"), 17)
+        self.assertEqual(kinds.count("location"), 7)
+        self.assertEqual(kinds.count("keyword"), 22)
         self.assertEqual(kinds.count("call"), 1)
         no_phone = cfg_with(**{"assets.call.phone": None})
         self.assertEqual([s.kind for s in plan.desired(no_phone)].count("call"), 0, "no call asset without a phone number")
@@ -247,16 +248,16 @@ class BuildTests(unittest.TestCase):
     def test_criteria(self):
         crit = self.kind("campaign_criterion_operation")
         geos = sorted(c.location.geo_target_constant for c in crit if c.location.geo_target_constant)
-        self.assertEqual(geos, ["geoTargetConstants/1015041", "geoTargetConstants/1015119", "geoTargetConstants/9011488", "geoTargetConstants/9196545", "geoTargetConstants/9197497"])
+        self.assertEqual(geos, ["geoTargetConstants/1015041", "geoTargetConstants/1015119", "geoTargetConstants/1015149", "geoTargetConstants/9011488", "geoTargetConstants/9057255", "geoTargetConstants/9196545", "geoTargetConstants/9197497"])
         self.assertEqual([c.language.language_constant for c in crit if c.language.language_constant], ["languageConstants/1000"])
         sched = [c.ad_schedule for c in crit if c.ad_schedule.start_hour or c.ad_schedule.end_hour]
         self.assertEqual(len(sched), 7)
         self.assertTrue(all(s.start_hour == 8 and s.end_hour == 19 for s in sched))
-        self.assertEqual(sum(1 for c in crit if c.negative), 33)
+        self.assertEqual(sum(1 for c in crit if c.negative), 43)
 
     def test_keywords_and_ads(self):
         kws = self.kind("ad_group_criterion_operation")
-        self.assertEqual(len(kws), 17)
+        self.assertEqual(len(kws), 22)
         # Since 2026-10-25 every ad lands on the booking page; town keywords no longer override it.
         town = next(k for k in kws if k.keyword.text == "mobile detailing middleburg")
         self.assertEqual(list(town.final_urls), [])
@@ -270,7 +271,7 @@ class BuildTests(unittest.TestCase):
         links = self.kind("campaign_asset_operation")
         self.assertEqual(len(assets), len(links), "every asset is linked to the campaign")
         self.assertEqual(len(assets), len(self.cfg.callouts) + len(self.cfg.sitelinks) + 1, "callouts, sitelinks and the call asset")
-        self.assertEqual(len(self.cfg.sitelinks), 6)
+        self.assertEqual(len(self.cfg.sitelinks), 9)
         # The offer sitelink keeps its query string, so the booking form opens with the offer ticked.
         urls = [a.final_urls[0] for a in assets if a.sitelink_asset.link_text]
         self.assertIn("https://corsaautodetailing.com/book?offer=first-time", urls)
