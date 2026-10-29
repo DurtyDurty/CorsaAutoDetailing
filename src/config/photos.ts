@@ -49,6 +49,9 @@ export const photos = {
   },
 } satisfies Record<string, WorkPhoto>;
 
+/** The before/after section on the home page. Off at the owner's request (2026-10-28); set true to bring it back. */
+export const showGallery = false;
+
 export interface GallerySlot {
   /** Both photos of the same spot. `null` = an empty slot, shown as a placeholder on preview deployments only. */
   before: WorkPhoto | null;

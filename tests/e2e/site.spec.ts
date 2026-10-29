@@ -136,7 +136,13 @@ test.describe("public site", () => {
     await expect(third).toHaveAttribute("aria-current", "true");
   });
 
-  test("the before/after photo flips when tapped", async ({ page }) => {
+  test("the before/after section stays off until it's switched back on", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("#gallery")).toHaveCount(0);
+  });
+
+  // Turn back on with showGallery in src/config/photos.ts.
+  test.skip("the before/after photo flips when tapped", async ({ page }) => {
     await page.goto("/");
     const card = page.locator("#gallery").getByRole("button", { name: /Front seat and console/ });
     await expect(card).toHaveAttribute("aria-pressed", "false");

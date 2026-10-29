@@ -10,7 +10,7 @@ import { ServiceArea } from "./ServiceArea";
 import { ReviewsSection } from "./ReviewsSection";
 import { FaqSection } from "./FaqSection";
 import { BookingSection } from "./BookingSection";
-import { gallery } from "@/config/photos";
+import { gallery, showGallery } from "@/config/photos";
 import { business, shownReviews } from "@/config/business";
 
 /**
@@ -18,20 +18,21 @@ import { business, shownReviews } from "@/config/business";
  * order they appear; a section that's hidden (no gallery photos, fewer than 3 reviews) doesn't take a number.
  */
 export function HomePage({ lang }: { lang: Lang }) {
-  const showGallery = gallery.some((g) => g.before && g.after) || business.brand.siteEnv === "staging" || process.env.NODE_ENV !== "production";
+  const gallerySection = showGallery && (gallery.some((g) => g.before && g.after) || business.brand.siteEnv === "staging" || process.env.NODE_ENV !== "production");
   const showReviews = shownReviews().length > 0;
   let n = 0;
   const next = () => ++n;
   const sections = [
     <WhyCorsa key="why" lang={lang} num={next()} />,
     <Packages key="packages" lang={lang} num={next()} />,
-    ...(showGallery ? [<Gallery key="gallery" lang={lang} num={next()} />] : []),
+    // Right after the prices (owner, 2026-10-28): see the packages, then book.
+    <BookingSection key="book" lang={lang} num={next()} />,
+    ...(gallerySection ? [<Gallery key="gallery" lang={lang} num={next()} />] : []),
     <CorsaClub key="club" lang={lang} num={next()} />,
     <BookingSteps key="steps" lang={lang} num={next()} />,
     <ServiceArea key="area" lang={lang} num={next()} />,
     ...(showReviews ? [<ReviewsSection key="reviews" lang={lang} num={next()} />] : []),
     <FaqSection key="faq" lang={lang} num={next()} />,
-    <BookingSection key="book" lang={lang} num={next()} />,
   ];
   return (
     <div lang={lang}>
