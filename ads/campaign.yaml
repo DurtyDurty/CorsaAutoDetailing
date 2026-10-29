@@ -208,7 +208,8 @@ assets:
     # Added 2026-10-12. Must match business.firstTimeOffer (percent and terms); the link ticks the offer on the booking form.
     - { text: "10% Off First Detail", url: "/book?offer=first-time", line1: "First-time customers only", line2: "Applied to your final quote" }
     # Added 2026-10-19 (Google asked for a 6th). Price must match business.ts monthly-maintenance.
-    - { text: "Monthly Maintenance", url: /maintenance-plans, line1: "Exterior and interior wash monthly", line2: "Priority booking, $150 a month" }
+    # 2026-10-28: Corsa Club replaced Monthly Maintenance; /maintenance-plans redirects to /#corsa-club.
+    - { text: "Corsa Club", url: /maintenance-plans, line1: "Every 2 weeks after a detail", line2: "Upkeep visits at $89 a visit" }
     # 2026-10-27: the town pages (Orange Park has none; it's a travel-confirmed area).
     - { text: "Middleburg Detailing", url: /service-areas/middleburg, line1: "Mobile detailing in Middleburg", line2: "At your home or work" }
     - { text: "Fleming Island Detailing", url: /service-areas/fleming-island, line1: "Mobile detailing on Fleming Island", line2: "At your home or work" }
