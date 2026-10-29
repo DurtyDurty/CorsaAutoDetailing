@@ -51,14 +51,14 @@ export function SiteHeader() {
               className="inline-flex min-h-10 min-w-10 items-center justify-center gap-2 rounded-full bg-apex-deep px-3 text-sm font-semibold text-white hover:bg-[#a51824] sm:px-4"
             >
               <TextIcon />
-              <span className="sr-only min-[400px]:not-sr-only">{d.header.messageUs}</span>
+              <span className="sr-only sm:not-sr-only">{d.header.messageUs}</span>
             </a>
           )}
           {tel && business.contact.phone && (
             <a
               href={tel}
               aria-label={d.header.callAria(formatPhone(business.contact.phone.replace(/\D/g, "").slice(-10)))}
-              className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-full border border-chalk/25 text-chalk hover:border-chalk/60 lg:hidden"
+              className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-full border border-chalk/25 text-chalk hover:border-chalk/60 max-[359px]:hidden lg:hidden"
             >
               <PhoneIcon />
             </a>

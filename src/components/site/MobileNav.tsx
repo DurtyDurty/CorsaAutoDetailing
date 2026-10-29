@@ -38,7 +38,7 @@ export function MobileNav({ links, d }: { links: { href: string; label: string }
       <button
         ref={buttonRef}
         type="button"
-        className="-mr-2 inline-flex min-h-11 min-w-11 items-center justify-center"
+        className="inline-flex min-h-11 min-w-11 items-center justify-center"
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
