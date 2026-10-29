@@ -28,7 +28,7 @@ export function SiteFooter() {
   return (
     <footer lang={d.htmlLang} className="bg-night text-chalk on-dark">
       <div className="stripe-divider" aria-hidden="true" />
-      <Container className="grid gap-10 py-14 md:grid-cols-[1.3fr_1fr_1fr_1fr]">
+      <Container className="grid gap-10 py-14 md:grid-cols-2 lg:grid-cols-[1.2fr_1.25fr_1fr_0.9fr]">
         <div>
           <Wordmark onDark href={localePath(lang, "/")} />
           <p className="mt-4 max-w-sm leading-relaxed text-chalk/75">{d.footer.tagline}</p>
@@ -49,8 +49,10 @@ export function SiteFooter() {
             )}
             {contact.email && (
               <li>
-                <ContactLink method="email" href={`mailto:${contact.email}`} className="break-all hover:text-apex">
-                  {contact.email}
+                <ContactLink method="email" href={`mailto:${contact.email}`} className="hover:text-apex">
+                  {/* Wraps only after the @ in a narrow column, never inside the domain. */}
+                  {contact.email.split("@")[0]}@<wbr />
+                  {contact.email.split("@").slice(1).join("@")}
                 </ContactLink>
               </li>
             )}

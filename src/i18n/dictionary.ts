@@ -87,8 +87,6 @@ const en = {
     seeAll: "See everything included",
     book: "Book this package",
     popular: "Most popular",
-    addOnsTitle: "Add-ons",
-    addOnsNote: "Add any of these to a package. Prices are confirmed when we see the car, and nothing is added without your OK.",
   },
   gallery: {
     title: "Before and after",
@@ -336,8 +334,6 @@ const es: Dict = {
     seeAll: "Ver todo lo que incluye",
     book: "Reservar este paquete",
     popular: "El más pedido",
-    addOnsTitle: "Extras",
-    addOnsNote: "Agrega cualquiera de estos a tu paquete. Confirmamos el precio al ver el carro y no agregamos nada sin tu aprobación.",
   },
   gallery: {
     title: "Antes y después",
