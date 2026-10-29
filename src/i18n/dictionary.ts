@@ -47,7 +47,7 @@ const en = {
   },
   hero: {
     eyebrow: "Mobile detailing · Clay County, FL",
-    title: "Pit-crew detailing, wherever you park.",
+    title: "Detailing, wherever you park.",
     sub: (towns: string) =>
       `Mobile auto detailing for ${towns}. Our trailer carries its own water and power, and every package covers the inside and the outside.`,
     primary: "Get my price",
@@ -294,7 +294,7 @@ const es: Dict = {
   },
   hero: {
     eyebrow: "Detallado móvil · Condado de Clay, FL",
-    title: "Detallado con precisión de pits, donde estaciones.",
+    title: "Detallado, donde estaciones.",
     sub: (towns: string) =>
       `Detallado móvil de autos en ${towns}. Nuestro tráiler lleva su propia agua y electricidad, y cada paquete cubre el interior y el exterior.`,
     primary: "Ver mi precio",
