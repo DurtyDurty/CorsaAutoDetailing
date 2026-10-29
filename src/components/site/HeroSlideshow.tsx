@@ -91,8 +91,10 @@ export function HeroSlideshow({ slides, label }: { slides: HeroSlide[]; label: s
                   src={s.photo.src}
                   alt={s.photo.alt}
                   fill
-                  // The first photo loads up front: it's the first one shown after the logo.
-                  priority={slides.findIndex((x) => x.type === "photo") === i}
+                  // The first photo loads right away (it's next after the logo), but only gets preload priority when it's
+                  // the opening slide: behind the logo it would compete with the text that paints first.
+                  priority={i === 0}
+                  loading={slides.findIndex((x) => x.type === "photo") === i ? "eager" : undefined}
                   sizes="(min-width: 1024px) 50vw, 100vw"
                   className={cn("object-cover", zooming && "hero-kenburns")}
                   // Inline: the keyframe classes in globals.css are unlayered and would beat a utility class.

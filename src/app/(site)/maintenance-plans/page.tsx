@@ -1,6 +1,6 @@
 import { permanentRedirect } from "next/navigation";
 
-/** Monthly Maintenance is now a package (2026-09-30); old links land on its card. */
+/** Old maintenance-plan links (and the ads' sitelink) land on the Corsa Club section (2026-10-28). */
 export default function MaintenancePlansPage() {
-  permanentRedirect("/services#monthly-maintenance");
+  permanentRedirect("/#corsa-club");
 }

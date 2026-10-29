@@ -7,7 +7,7 @@ import { getLeadStore } from "@/lib/leads/store";
 import { LEAD_STAGES, LEAD_STAGE_LABELS } from "@/lib/leads/types";
 import { APPOINTMENT_STATUS_LABELS, isBlocking } from "@shared/appointment-status";
 import { formatEastern, todayEastern } from "@/lib/time";
-import { formatUsd } from "@/lib/pricing";
+import { conditionFlagLabel, formatUsd } from "@/lib/pricing";
 import { formatPhone, shortRef } from "@/lib/utils";
 import { StageBadge } from "@/components/admin/LeadTable";
 import { Button } from "@/components/ui/Button";
@@ -120,7 +120,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
             </section>
           )}
 
-          {(lead.serviceId || lead.vehicleCategory || lead.condition) && (
+          {(lead.serviceId || lead.vehicleCategory || lead.condition || lead.conditionFlags.length > 0 || lead.vehicleMake) && (
             <section className="border border-line bg-white rounded-md p-5">
               <h2 className="font-medium">Vehicle & service</h2>
               <dl className="mt-3">
@@ -129,7 +129,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
                 <Row label="Vehicle" value={[lead.vehicleYear, lead.vehicleMake, lead.vehicleModel].filter(Boolean).join(" ")} />
                 <Row label="Condition" value={lead.condition} />
                 <Row label="Customer checked" value={lead.estimate?.needs} />
-                <Row label="Flags" value={lead.conditionFlags} />
+                <Row label="Noted" value={lead.conditionFlags.map(conditionFlagLabel)} />
                 <Row label="Concerns" value={lead.concerns} />
                 <Row
                   label="Estimate"
@@ -139,6 +139,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
                       : null
                   }
                 />
+                <Row label="Military / veteran / first responder" value={lead.estimate?.military ? `Yes: ${business.militaryDiscount.percent}% off claimed` : null} />
                 <Row label="Offer claimed" value={lead.estimate?.offer} />
                 <Row label="Review notes" value={lead.estimate?.reviewNotes} />
               </dl>

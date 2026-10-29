@@ -14,7 +14,7 @@ import { intake, baseLead, type IntakeResult } from "@/lib/leads/intake";
 import { OFFER_SIGNUP_NOTE } from "@/lib/leads/shared";
 import { getLeadStore } from "@/lib/leads/store";
 import { photosEnabled, storeLeadPhotos } from "@/lib/photos";
-import { computeEstimate } from "@/lib/pricing";
+import { computeEstimate, firstTimeOfferNote, militaryNote } from "@/lib/pricing";
 import { normalizeEmail, normalizePhone } from "@/lib/utils";
 import { lookupZip } from "@/lib/zip";
 import {
@@ -25,11 +25,11 @@ import {
   quoteRequestSchema,
   bookingRequestSchema,
   calendarRequestSchema,
-  shortRequestSchema,
+  bookingWizardSchema,
   type BookingRequestInput,
   type CalendarRequestInput,
   type QuoteRequestInput,
-  type ShortRequestInput,
+  type BookingWizardInput,
 } from "@/lib/validation";
 
 export type FormResult = IntakeResult & { redirectTo?: string };
@@ -204,15 +204,34 @@ export async function submitCalendarRequest(_prev: FormResult | null, formData: 
   });
 }
 
-/** The short booking form (/book, /request): same held time as the full form, far fewer questions. */
-export async function submitShortRequest(_prev: FormResult | null, formData: FormData): Promise<FormResult> {
-  return holdRequest(formData, { form: "short_request", schema: shortRequestSchema, build: buildShortLead });
+/**
+ * The booking form (/, /book, /es and /es/book): the same held time as the full form, three short steps.
+ * Spanish submissions confirm on /es/thanks.
+ */
+export async function submitBookingRequest(_prev: FormResult | null, formData: FormData): Promise<FormResult> {
+  const result = await holdRequest(formData, { form: "booking_form", schema: bookingWizardSchema, build: buildWizardLead });
+  if (formData.get("lang") === "es" && result.redirectTo?.startsWith("/thanks/")) return { ...result, redirectTo: `/es${result.redirectTo}` };
+  return result;
 }
 
-function buildShortLead(d: ShortRequestInput): NewLead {
+function buildWizardLead(d: BookingWizardInput): NewLead {
   const [first, ...rest] = d.name.split(/\s+/);
   const town = business.serviceAreas.communities.find((c) => c.slug === d.town);
   const base = baseLead("quote_request", { ...d, firstName: first.slice(0, 50), marketingEmail: false });
+  const help = d.serviceId === "help";
+  const estimate = help
+    ? null
+    : computeEstimate({ serviceId: d.serviceId, conditionFlags: d.conditionFlags, firstTimeOffer: d.firstTimeOffer, military: d.military });
+  // "Help me choose" has no estimate to carry the claimed discounts, so they go in the notes.
+  const notes = help
+    ? [
+        "Asked for help choosing a package.",
+        d.firstTimeOffer && business.firstTimeOffer.enabled ? firstTimeOfferNote(null) : null,
+        d.military && business.militaryDiscount.enabled ? militaryNote(null) : null,
+      ]
+        .filter(Boolean)
+        .join(" ")
+    : null;
   return {
     ...base,
     // Sending the form is the acknowledgment printed above its button.
@@ -228,15 +247,17 @@ function buildShortLead(d: ShortRequestInput): NewLead {
     vehicleYear: d.vehicleYear,
     vehicleMake: d.vehicleMake,
     vehicleModel: d.vehicleModel,
-    serviceId: d.serviceId,
-    city: town?.name ?? (d.townOther ? `Other: ${d.townOther}` : "Other (not listed)"),
-    // Travel to an unlisted town is confirmed when the owner reviews the request.
-    zipEligibility: town?.coverage ?? "confirm",
+    serviceId: help ? null : d.serviceId,
+    conditionFlags: d.conditionFlags,
+    zip: d.zip,
+    city: town?.name ?? "Other (not listed)",
+    // A listed town's coverage, or the ZIP's; travel to anything else is confirmed when the owner reviews it.
+    zipEligibility: town?.coverage ?? (d.zip ? lookupZip(d.zip).eligibility : "confirm"),
     preferredDate: todayEastern(new Date(d.slotStart)),
-    estimate: computeEstimate({ serviceId: d.serviceId, firstTimeOffer: d.firstTimeOffer }),
+    notes,
+    estimate,
   };
 }
-
 type HoldInput = Pick<CalendarRequestInput, "serviceId" | "slotStart" | "dayPart" | "preferredTime"> &
   Partial<Pick<CalendarRequestInput, "condition" | "conditionFlags">>;
 
@@ -274,9 +295,9 @@ async function holdRequestSteps<T extends HoldInput>(
   const requestedSlot = String(formData.get("slotStart") ?? "");
   const requestedPart = formData.get("dayPart");
   if (requestedSlot && typeof requestedPart === "string" && requestedPart && !inPart(requestedSlot, requestedPart)) return SLOT_TAKEN;
-  if (getService(requestedService) && requestedSlot) {
+  if ((getService(requestedService) || requestedService === "help") && requestedSlot) {
     await store.releaseExpiredHolds();
-    const free = isSlotAvailable({ serviceId: requestedService as ServiceId, ...(await calendarState(store)), startIso: requestedSlot });
+    const free = isSlotAvailable({ serviceId: holdServiceFor(requestedService), ...(await calendarState(store)), startIso: requestedSlot });
     if (!free) return SLOT_TAKEN;
   }
 
@@ -313,9 +334,10 @@ async function holdRequestSteps<T extends HoldInput>(
     return withRedirect(result, "request");
   }
 
-  const serviceId = d.serviceId as ServiceId;
+  // "Help me choose" holds the longest package's time; the job gets its package when the owner quotes it.
+  const serviceId = getService(d.serviceId) ? (d.serviceId as ServiceId) : null;
   const startsAt = new Date(d.slotStart);
-  const minutes = business.booking.durationMinutes[serviceId] ?? business.scheduling.defaultDurationMinutes;
+  const minutes = business.booking.durationMinutes[holdServiceFor(d.serviceId)] ?? business.scheduling.defaultDurationMinutes;
   const holdUntil = Math.min(Date.now() + business.booking.requestHoldHours * 3600_000, startsAt.getTime());
   let appt;
   try {
@@ -356,6 +378,11 @@ async function holdRequestSteps<T extends HoldInput>(
   });
   await notifyForLead(store, lead);
   return withRedirect(result, "request");
+}
+
+/** The package whose length a requested time is checked and held for ("help" = the longest one). */
+function holdServiceFor(id: string): ServiceId {
+  return (getService(id) ? id : business.booking.helpHoldService) as ServiceId;
 }
 
 function quotedCents(d: Pick<QuoteRequestInput, "serviceId"> & Partial<Pick<QuoteRequestInput, "condition" | "conditionFlags">>): number {

@@ -11,10 +11,11 @@ import { reportContactTap } from "@/lib/google-ads";
  * which live outside the site layout). Loads only when
  * NEXT_PUBLIC_GOOGLE_ADS_TAG_ID is set.
  *
- * - Page views: gtag's config sends the first; later client-side navigations
- *   send their own, since the page never reloads.
- * - Call/text taps: one listener catches every tel: and sms: link on the page,
- *   wherever it is (header, footer, sticky bar, contact page).
+ * - The tiny `gtag()` queue is set up right away, so a conversion or a tap in the first seconds is never lost;
+ *   Google's own script (gtag.js) loads once the page has finished loading, so it doesn't slow the first paint
+ *   on phones, and then works through the queue.
+ * - Page views: gtag's config sends the first; later client-side navigations send their own.
+ * - Call/text taps: one listener catches every tel: and sms: link on the page.
  */
 export function GoogleAdsTag() {
   const tagId = business.analytics.googleAds.tagId;
@@ -46,10 +47,10 @@ export function GoogleAdsTag() {
   if (!tagId) return null;
   return (
     <>
-      <Script src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(tagId)}`} strategy="afterInteractive" />
       <Script id="google-ads-tag" strategy="afterInteractive">
         {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;gtag('js',new Date());gtag('config',${JSON.stringify(tagId)});`}
       </Script>
+      <Script src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(tagId)}`} strategy="lazyOnload" />
     </>
   );
 }

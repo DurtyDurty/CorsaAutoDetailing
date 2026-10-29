@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fieldErrors, formDataToObject, shortRequestSchema } from "@/lib/validation";
+import { bookingWizardSchema, fieldErrors, formDataToObject } from "@/lib/validation";
 import { sourceLabel } from "@/lib/attribution";
 
 const KEY = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
@@ -23,9 +23,9 @@ const valid = {
   dayPart: "morning",
 };
 
-const parse = (entries: Record<string, string>) => shortRequestSchema.safeParse(formDataToObject(fd(entries)));
+const parse = (entries: Record<string, string>, f = fd(entries)) => bookingWizardSchema.safeParse(formDataToObject(f));
 
-describe("shortRequestSchema", () => {
+describe("bookingWizardSchema", () => {
   it("accepts the essentials with no email", () => {
     const r = parse(valid);
     expect(r.success).toBe(true);
@@ -61,9 +61,25 @@ describe("shortRequestSchema", () => {
     }
   });
 
-  it("only accepts towns we list, or 'other'", () => {
-    expect(parse({ ...valid, town: "other", townOther: "Keystone Heights" }).success).toBe(true);
+  it("only accepts towns we list, or 'other' with a ZIP", () => {
+    expect(parse({ ...valid, town: "other", zip: "32656" }).success).toBe(true);
+    const noZip = parse({ ...valid, town: "other" });
+    expect(noZip.success).toBe(false);
+    if (!noZip.success) expect(fieldErrors(noZip.error).zip).toBe("Enter a 5-digit ZIP code.");
     expect(parse({ ...valid, town: "atlantis" }).success).toBe(false);
+  });
+
+  it("takes Help me choose, condition flags, the discounts and the page language", () => {
+    const f = fd({ ...valid, serviceId: "help", military: "on", firstTimeOffer: "on", lang: "es" });
+    f.append("conditionFlags", "pet_hair");
+    f.append("conditionFlags", "bugs_tar");
+    const r = parse({}, f);
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data).toMatchObject({ serviceId: "help", military: true, firstTimeOffer: true, lang: "es", conditionFlags: ["pet_hair", "bugs_tar"] });
+    }
+    expect(parse({ ...valid, conditionFlags: "made_up" }).success).toBe(false);
+    expect(parse(valid).success && parse(valid).data).toMatchObject({ military: false, lang: "en", conditionFlags: [] });
   });
 
   it("refuses names that could carry a link", () => {
@@ -80,6 +96,7 @@ describe("phoneLink", () => {
     vi.stubEnv("NEXT_PUBLIC_CONTACT_PHONE", "904-649-0739");
     const { phoneLink, SMS_PREFILL } = await import("@/config/business");
     expect(phoneLink("tel")).toBe("tel:+19046490739");
+    expect(SMS_PREFILL).toBe("Hi Corsa, I'd like a quote for my car");
     expect(phoneLink("sms", SMS_PREFILL)).toBe(`sms:+19046490739?&body=${encodeURIComponent(SMS_PREFILL)}`);
   });
 

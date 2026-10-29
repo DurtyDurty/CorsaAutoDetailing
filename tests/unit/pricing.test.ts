@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { business, getService } from "@/config/business";
-import { computeEstimate, formatServicePrice, groupStartingPrice, recommendService, sizePrices } from "@/lib/pricing";
+import { BOOKING_CONDITION_FLAGS, computeEstimate, conditionFlagLabel, formatServicePrice, groupStartingPrice, recommendService, sizePrices } from "@/lib/pricing";
 
 describe("computeEstimate", () => {
   it("returns each package's one starting price", () => {
@@ -8,7 +8,8 @@ describe("computeEstimate", () => {
       "basic-full": 90,
       "signature-full": 150,
       "platinum-full": 200,
-      "monthly-maintenance": 150,
+      // Corsa Club, per visit (replaced Monthly Maintenance, 2026-10-28).
+      "monthly-maintenance": 89,
     };
     expect(business.services.map((s) => s.id)).toEqual(Object.keys(expected));
     for (const service of business.services) {
@@ -83,6 +84,23 @@ describe("computeEstimate", () => {
     expect(computeEstimate({ serviceId: "basic-full" })).not.toHaveProperty("needs");
   });
 
+  it("flags the military discount, alone or with the first-time offer, without changing the estimate", () => {
+    const m = computeEstimate({ serviceId: "signature-full", military: true });
+    expect(m?.military).toBe(true);
+    expect(m?.offer).toBe("Military, veteran or first responder: 10% off (about $15 off the $150 starting price)");
+    expect(m?.total).toBe(150);
+    const both = computeEstimate({ serviceId: "signature-full", military: true, firstTimeOffer: true });
+    expect(both?.offer).toBe(
+      "First-time customer: 10% off (about $15 off the $150 starting price); Military, veteran or first responder: 10% off (about $15 off the $150 starting price) (only one discount applies)",
+    );
+    expect(computeEstimate({ serviceId: "signature-full" })).not.toHaveProperty("military");
+  });
+
+  it("labels the booking form's condition flags and keeps the old ones readable", () => {
+    expect(BOOKING_CONDITION_FLAGS.map(conditionFlagLabel)).toEqual(["Pets or pet hair", "Smoke or odor", "Stains", "Sand or mud", "Bugs, tar or sap"]);
+    expect(conditionFlagLabel("mud")).toBe("Heavy mud");
+  });
+
   it("flags the first-time offer for the owner without changing the estimate", () => {
     const e = computeEstimate({ serviceId: "platinum-full", firstTimeOffer: true });
     expect(e?.offer).toBe("First-time customer: 10% off (about $20 off the $200 starting price)");
@@ -96,8 +114,12 @@ describe("computeEstimate", () => {
     expect(computeEstimate({ serviceId: "essential" })).toBeNull();
   });
 
-  it("marks monthly packages and formats their price per month", () => {
-    expect(computeEstimate({ serviceId: "monthly-maintenance" })?.billing).toBe("monthly");
+  it("prices Corsa Club per visit, every two weeks after a first detail, and still formats monthly prices", () => {
+    const club = getService("monthly-maintenance")!;
+    expect(club.name).toBe("Corsa Club");
+    expect(club.plan).toEqual({ everyDays: 14, afterFirstDetail: true });
+    expect(computeEstimate({ serviceId: "monthly-maintenance" })?.billing).toBe("visit");
+    expect(formatServicePrice(club)).toBe("$89");
     expect(computeEstimate({ serviceId: "platinum-full" })?.billing).toBe("visit");
     expect(formatServicePrice({ price: 150, billing: "monthly" })).toBe("$150/mo");
     expect(formatServicePrice({ price: 799, billing: "visit" })).toBe("$799");
@@ -107,6 +129,6 @@ describe("computeEstimate", () => {
     const e = computeEstimate({ serviceId: "signature-full" });
     expect(e?.pricingVersion).toBe(business.pricingVersion);
     expect(e?.taxNotice).toBe(business.taxNotice);
-    expect(groupStartingPrice("popular")).toBe(90); // monthly price excluded
+    expect(groupStartingPrice("popular")).toBe(90); // Corsa Club ($89 a visit) is a plan, not a package price
   });
 });

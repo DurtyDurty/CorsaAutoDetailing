@@ -8,8 +8,10 @@ const display = Barlow_Condensed({
   subsets: ["latin"],
   variable: "--font-brand",
   display: "swap",
-  weight: ["600", "700", "800"],
-  style: ["normal", "italic"],
+  // 700 (headings) and 800 (race numbers). Upright only: the italic race numbers are slanted by the browser,
+  // which looks the same on this face and saves two font downloads on every phone visit (2026-10-28).
+  weight: ["700", "800"],
+  style: ["normal"],
 });
 
 const noindex = business.brand.siteEnv === "staging";

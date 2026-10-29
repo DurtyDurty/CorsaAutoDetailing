@@ -30,7 +30,7 @@ export default function AboutPage() {
         <div className="mt-10 grid md:grid-cols-3 gap-8">
           {[
             {
-              t: "Straight answers",
+              t: "Clear answers",
               b: "Starting prices are labeled as starting prices. A request isn't an appointment until we confirm it. If we can't reach your area yet, we'll say so.",
             },
             {

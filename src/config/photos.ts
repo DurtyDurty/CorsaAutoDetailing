@@ -49,12 +49,29 @@ export const photos = {
   },
 } satisfies Record<string, WorkPhoto>;
 
+export interface GallerySlot {
+  /** Both photos of the same spot. `null` = an empty slot, shown as a placeholder on preview deployments only. */
+  before: WorkPhoto | null;
+  after: WorkPhoto | null;
+  caption: { en: string; es: string };
+}
+
 /**
- * Before/after shots for the "Real results" section (/book and the home page). Our own work only.
- * To add one: put the image in public/media/work (resized, location data stripped, plates blurred)
- * and add an entry here with a caption. Order = display order. Empty = the section shows reviews only.
+ * Before/after gallery on the home page (tap a photo to flip it). Our own work only.
+ * To fill a slot: put both images in public/media/work (resized, location data stripped, plates blurred),
+ * then set `before` and `after` like the first entry. Order = display order. Slots still `null` are
+ * hidden on the live site and shown as numbered placeholders on Vercel previews.
  */
-export const beforeAfter: { photo: WorkPhoto; caption: string }[] = [
-  { photo: photos.interiorBeforeAfter, caption: "Front seat and console, before and after" },
-  // { photo: { src: "/media/work/your-photo.jpg", alt: "Describe what the photo shows", width: 1080, height: 1350 }, caption: "Short caption" },
+export const gallery: GallerySlot[] = [
+  {
+    // Cropped from interior-before-after.jpg on 2026-10-28.
+    before: { src: "/media/work/interior-before.jpg", alt: "Front seat and console before the detail: stained, dusty and dull", width: 513, height: 1118, focus: "50% 55%" },
+    after: { src: "/media/work/interior-after.jpg", alt: "The same seat and console after the detail: clean fabric and a wiped-down console", width: 513, height: 1118, focus: "50% 55%" },
+    caption: { en: "Front seat and console", es: "Asiento delantero y consola" },
+  },
+  { before: null, after: null, caption: { en: "Exterior paint", es: "Pintura exterior" } },
+  { before: null, after: null, caption: { en: "Wheels and tires", es: "Rines y llantas" } },
+  { before: null, after: null, caption: { en: "Carpets and floor mats", es: "Alfombras y tapetes" } },
+  { before: null, after: null, caption: { en: "Pet hair removal", es: "Pelo de mascota" } },
+  { before: null, after: null, caption: { en: "Dashboard and console", es: "Tablero y consola" } },
 ];

@@ -61,6 +61,10 @@ export interface ServiceDefinition {
   /** USD added for each vehicle size up from a sedan (see `business.vehicleSizes`). Unset = one price for every size. */
   sizeStep?: number;
   billing: "visit" | "monthly";
+  /** A recurring plan rather than a one-time package (Corsa Club): how often, and whether a full detail comes first. */
+  plan?: { everyDays: number; afterFirstDetail: boolean };
+  /** Spanish copy for the /es pages. Package names stay as they are: they're the names on quotes and invoices. */
+  es: { tagline: string | null; includesHeading?: string; includes: string[]; summary?: string[] };
 }
 
 /** One line of the "Not sure which package?" checklist. */
@@ -98,8 +102,10 @@ export interface ServiceAreaCommunity {
   blurb: string;
   /** Opening paragraph for the community's own SEO page. Facts only; verify local details (OWNER_DECISIONS.md). */
   intro: string;
-  /** Publish /service-areas/<slug>. */
+  /** Publish /service-areas/<slug> (and /es/service-areas/<slug>). */
   page: boolean;
+  /** Spanish copy for /es. */
+  es: { blurb: string; intro: string };
   /** ZIP codes the owner has associated with this community. Verify before launch. */
   zips: string[];
 }
@@ -171,7 +177,7 @@ export const business = {
    * Bump whenever a price or service scope changes. Stored with each lead's
    * estimate so old inquiries can be understood later.
    */
-  pricingVersion: "2026-10-v14",
+  pricingVersion: "2026-10-v15",
   /** Shown next to all prices while in PRELAUNCH mode. */
   priceLabel: {
     PRELAUNCH: "Planned starting prices",
@@ -226,13 +232,15 @@ export const business = {
       price: 90,
       sizeStep: 15,
       billing: "visit",
+      es: { tagline: null, includes: ["Lavado exterior básico", "Limpieza interior básica"] },
     },
     {
       id: "signature-full",
       name: "Essential Full Detail",
       group: "popular",
       tagline: "Inside & Out Refresh",
-      badge: null,
+      // Owner's pick for the badge (2026-10-28); it was on Signature before.
+      badge: "Most popular",
       // Each package builds on the one before it (owner decision 2026-10-11).
       includesEverythingIn: "basic-full",
       // Reworded 2026-10-07 to read as a full detail, not a wash: same work as before plus floor mats,
@@ -258,37 +266,64 @@ export const business = {
       price: 150,
       sizeStep: 20,
       billing: "visit",
+      es: {
+        tagline: "Renovado por dentro y por fuera",
+        includes: [
+          "Lavado y secado a mano",
+          "Sellador de pintura para brillo y protección",
+          "Rines y llantas a fondo",
+          "Abrillantador de llantas",
+          "Aspirado completo de asientos y alfombras",
+          "Tapetes limpios",
+          "Tablero, consola y paneles de puertas limpios",
+          "Protector UV en tablero y plásticos",
+          "Marcos de puertas limpios",
+          "Vidrios limpios por dentro y por fuera",
+        ],
+        summary: [
+          "Lavado a mano con sellador",
+          "Rines, llantas y abrillantador",
+          "Aspirado y limpieza interior completa",
+          "Vidrios por dentro y por fuera",
+        ],
+      },
     },
     {
       id: "platinum-full",
       name: "Signature Full Detail",
       group: "popular",
       tagline: "Bring It Back",
-      badge: "Most popular",
+      badge: null,
       includesEverythingIn: "signature-full",
       // Clay bar and the 4-week wax lead: they are what sets this package apart (owner, 2026-10-11).
       includes: ["Clay bar treatment", "4-week paint sealant wax", "Full interior deep clean", "Sanitation"],
       price: 200,
       sizeStep: 25,
       billing: "visit",
+      es: {
+        tagline: "Como recién salido",
+        includes: ["Tratamiento con clay bar", "Cera selladora de 4 semanas", "Limpieza profunda del interior", "Sanitización"],
+      },
     },
     {
+      // Corsa Club replaced Monthly Maintenance on 2026-10-28 (owner). The id stays: old leads, the owner
+      // app and the /maintenance-plans ad sitelink use it.
       id: "monthly-maintenance",
-      name: "Monthly Maintenance",
+      name: "Corsa Club",
       group: "popular",
-      tagline: "Keep It Fresh",
+      tagline: "A visit every 2 weeks",
       badge: null,
       includesEverythingIn: null,
-      includesHeading: "Preferred client",
-      includes: [
-        "1 exterior wash with sealant per month",
-        "1 interior wash per month",
-        "Priority booking",
-        "15% off add-on services",
-        "Exclusive client perks",
-      ],
-      price: 150,
-      billing: "monthly",
+      includesHeading: "Every visit",
+      includes: ["Hand wash", "Wheels and door jambs", "Interior vacuum", "Interior wipe-down", "Glass inside and out"],
+      price: 89,
+      billing: "visit",
+      plan: { everyDays: 14, afterFirstDetail: true },
+      es: {
+        tagline: "Una visita cada 2 semanas",
+        includesHeading: "En cada visita",
+        includes: ["Lavado a mano", "Rines y marcos de puertas", "Aspirado interior", "Limpieza del interior", "Vidrios por dentro y por fuera"],
+      },
     },
   ] satisfies ServiceDefinition[],
   /**
@@ -303,7 +338,7 @@ export const business = {
     { id: "rough-paint", label: "Paint feels rough or gritty to the touch", service: "platinum-full" },
     { id: "lasting-wax", label: "Wax protection that lasts about 4 weeks", service: "platinum-full" },
     { id: "deep-interior", label: "Interior needs a deep clean and sanitizing", service: "platinum-full" },
-    { id: "monthly", label: "I want it kept clean every month", service: "monthly-maintenance" },
+    { id: "monthly", label: "I want it kept clean every couple of weeks", service: "monthly-maintenance" },
   ] satisfies PackageNeed[],
 
   /**
@@ -320,6 +355,28 @@ export const business = {
     emailNote: "We'll email your offer, plus occasional updates and offers. Unsubscribe any time.",
     terms: "First-time customers only. The discount is applied to your final quote and can't be combined with other offers.",
     checkboxLabel: "I'm a first-time customer: take 10% off my first detail",
+    es: {
+      headline: "10% de descuento en tu primer detallado",
+      body: "¿Primera vez con Corsa? Déjanos tu correo y te enviamos tu 10% de descuento. Vamos a tu casa o trabajo.",
+      emailNote: "Te enviamos tu descuento y, de vez en cuando, novedades y ofertas. Puedes darte de baja cuando quieras.",
+      terms: "Solo para clientes nuevos. El descuento se aplica a tu cotización final y no se combina con otras ofertas.",
+      checkboxLabel: "Es mi primera vez: quiero 10% de descuento en mi primer detallado",
+    },
+  },
+
+  /**
+   * Military, veteran and first-responder discount (owner, 2026-10-28). A checkbox on the booking form; like the
+   * first-time offer it never changes the online estimate: the owner takes it off in the quote.
+   */
+  militaryDiscount: {
+    enabled: true,
+    percent: 10,
+    checkboxLabel: "I'm active military, a veteran or a first responder (10% off)",
+    note: "Applied to your final quote.",
+    es: {
+      checkboxLabel: "Soy militar activo, veterano o personal de primera respuesta (10% de descuento)",
+      note: "Se aplica a tu cotización final.",
+    },
   },
 
   /** Owner-approved fixed-price add-ons that the online estimate may add. None approved yet. */
@@ -359,6 +416,10 @@ export const business = {
         intro:
           "Middleburg is home base for Corsa Auto Detailing. We bring interior and exterior car detailing to driveways and garages across western Clay County, so your car gets a careful hand wash and real protection without you driving anywhere.",
         page: true,
+        es: {
+          blurb: "Nuestra base. Entradas de casa, garajes y calles tranquilas son ideales.",
+          intro: "Middleburg es la base de Corsa Auto Detailing. Llevamos el detallado interior y exterior a casas y garajes de todo el oeste del condado de Clay, para que tu carro reciba un lavado a mano cuidadoso y protección de verdad sin que tengas que manejar a ningún lado.",
+        },
         zips: ["32068"],
       },
       {
@@ -370,6 +431,10 @@ export const business = {
         intro:
           "Fleming Island sits on the St. Johns River along US-17, between Orange Park and Green Cove Springs. We detail cars at homes and workplaces across the island, including the Eagle Harbor and Pace Island neighborhoods.",
         page: true,
+        es: {
+          blurb: "Cobertura principal, incluidas las zonas de Eagle Harbor y Pace Island. Algunas asociaciones de vecinos limitan el lavado en la entrada, así que revisa las reglas de la tuya.",
+          intro: "Fleming Island está junto al río St. Johns, sobre la US-17, entre Orange Park y Green Cove Springs. Detallamos carros en casas y lugares de trabajo de toda la isla, incluidos los vecindarios de Eagle Harbor y Pace Island.",
+        },
         zips: ["32003"],
       },
       {
@@ -381,6 +446,10 @@ export const business = {
         intro:
           "Green Cove Springs is the Clay County seat, on the west bank of the St. Johns River. We cover the city and the nearby Lake Asbury area with mobile detailing at your home or workplace.",
         page: true,
+        es: {
+          blurb: "Cobertura principal para la ciudad y la zona cercana de Lake Asbury.",
+          intro: "Green Cove Springs es la sede del condado de Clay, en la orilla oeste del río St. Johns. Cubrimos la ciudad y la zona cercana de Lake Asbury con detallado móvil en tu casa o trabajo.",
+        },
         zips: ["32043"],
       },
       {
@@ -392,6 +461,10 @@ export const business = {
         intro:
           "St. Johns, in northern St. Johns County, is just across the St. Johns River from Clay County. We bring full interior and exterior detailing to homes and workplaces throughout the area.",
         page: true,
+        es: {
+          blurb: "El norte del condado de St. Johns, al otro lado del río desde el condado de Clay.",
+          intro: "St. Johns, en el norte del condado de St. Johns, queda justo al otro lado del río St. Johns desde el condado de Clay. Llevamos el detallado completo, por dentro y por fuera, a casas y lugares de trabajo de toda la zona.",
+        },
         zips: ["32259"],
       },
       {
@@ -403,6 +476,10 @@ export const business = {
         intro:
           "Orangedale sits on the St. Johns County side of the Shands Bridge, a short drive from Green Cove Springs. We detail cars at homes and workplaces around Orangedale and along the river.",
         page: true,
+        es: {
+          blurb: "Del lado del condado de St. Johns del puente Shands, a pocos minutos de Green Cove Springs.",
+          intro: "Orangedale queda del lado del condado de St. Johns del puente Shands, a pocos minutos de Green Cove Springs. Detallamos carros en casas y lugares de trabajo de Orangedale y a lo largo del río.",
+        },
         // ZIP not set: confirm which ZIP(s) you'll serve here (OWNER_DECISIONS.md).
         zips: [],
       },
@@ -415,6 +492,10 @@ export const business = {
         intro:
           "World Golf Village, off I-95 in St. Johns County, is part of our St. Johns County coverage. We come to your home or workplace for interior and exterior detailing.",
         page: true,
+        es: {
+          blurb: "Junto a la I-95, en el condado de St. Johns.",
+          intro: "World Golf Village, junto a la I-95 en el condado de St. Johns, es parte de nuestra cobertura en ese condado. Vamos a tu casa o trabajo para detallar tu carro por dentro y por fuera.",
+        },
         zips: ["32092"],
       },
       {
@@ -425,6 +506,10 @@ export const business = {
         blurb: "Selected locations. Travel eligibility is confirmed when we review your request.",
         intro: "",
         page: false,
+        es: {
+          blurb: "Algunas zonas. Confirmamos si podemos llegar cuando revisamos tu solicitud.",
+          intro: "",
+        },
         zips: ["32065", "32073"],
       },
       {
@@ -434,8 +519,12 @@ export const business = {
         coverage: "confirm",
         blurb: "Jacksonville mobile detailing at your home or workplace. Travel is confirmed for your exact location when we review your request.",
         intro:
-          "Jacksonville mobile detailing at your home or workplace. Jacksonville covers a lot of ground, so we confirm travel for your exact address when we review your request, and we'll tell you plainly if we can't reach you yet.",
+          "Jacksonville mobile detailing at your home or workplace. Jacksonville covers a lot of ground, so we confirm travel for your exact address when we review your request, and we'll tell you clearly if we can't reach you yet.",
         page: true,
+        es: {
+          blurb: "Detallado móvil en Jacksonville, en tu casa o trabajo. Confirmamos el traslado a tu dirección exacta cuando revisamos tu solicitud.",
+          intro: "Detallado móvil en Jacksonville, en tu casa o trabajo. Jacksonville es grande, así que confirmamos el traslado a tu dirección exacta cuando revisamos tu solicitud, y te avisamos con claridad si todavía no llegamos a tu zona.",
+        },
         // Duval County / City of Jacksonville ZIPs. Verify before launch (OWNER_DECISIONS.md).
         zips: [
           "32099", "32202", "32204", "32205", "32206", "32207", "32208", "32209", "32210", "32211", "32212",
@@ -465,8 +554,10 @@ export const business = {
   },
 
   /**
-   * Real customer reviews only, word for word, with the name shown where they were posted.
-   * Empty = the home page reviews section is hidden. Added 2026-10-13 from the Google Business Profile.
+   * Real customer reviews only, word for word, with the name shown where they were posted, and the date
+   * Google shows (YYYY-MM-DD) when you add one. The reviews section and its rating markup stay hidden until
+   * there are `reviews.minToShow` of them (owner, 2026-10-28). Never add a review that wasn't posted.
+   * Added 2026-10-13 from the Google Business Profile.
    */
   testimonials: [
     {
@@ -483,7 +574,7 @@ export const business = {
       rating: 5,
       source: "Google",
     },
-  ] as { quote: string; name: string; location?: string; rating: number; source: string }[],
+  ] as { quote: string; name: string; location?: string; rating: number; source: string; date?: string }[],
   promotions: [] as { title: string; detail: string }[],
   /**
    * Google review link from the Business Profile ("Ask for reviews", e.g. https://g.page/r/.../review).
@@ -491,6 +582,8 @@ export const business = {
    */
   reviews: {
     googleUrl: reviewUrl(pub(process.env.NEXT_PUBLIC_GOOGLE_REVIEW_URL)),
+    /** Fewer real reviews than this: no reviews section, no rating claims, no AggregateRating markup. */
+    minToShow: 3,
   },
 
   scheduling: {
@@ -529,6 +622,8 @@ export const business = {
       "monthly-maintenance": 180,
       "platinum-full": 300, // Signature Full Detail
     } as Partial<Record<ServiceId, number>>,
+    /** "Help me choose" requests hold this package's length (the longest), so whatever the owner quotes fits. */
+    helpHoldService: "platinum-full" as ServiceId,
     slotIntervalMinutes: 30,
     /**
      * Customers pick Morning or Afternoon, then a preferred arrival time inside it
@@ -596,6 +691,12 @@ export const business = {
     priceAcknowledgmentText:
       "I understand that the displayed price is an estimate and that final pricing will be confirmed after Corsa Auto Detailing inspects my vehicle.",
     smsMarketingEnabled: false,
+    /** The same two acknowledgments as shown on the Spanish booking form (same text versions). */
+    es: {
+      serviceText: "Entiendo que Corsa Auto Detailing usará los datos que comparto para revisar y responder a esta solicitud.",
+      priceAcknowledgmentText:
+        "Entiendo que el precio mostrado es un estimado y que el precio final se confirmará después de que Corsa Auto Detailing revise mi vehículo.",
+    },
   },
 } as const;
 
@@ -616,8 +717,14 @@ export function reachUsLine(): string {
   return email ? `Please email us at ${email} and we'll book you directly.` : "Please try again in a few minutes.";
 }
 
-/** Prefilled text for the "Text" buttons (owner's wording, 2026-10-25). */
-export const SMS_PREFILL = "Hi, I'd like a quote for detailing my car.";
+/** Prefilled text for every "Message us" / "Text" button (owner's wording, 2026-10-28). */
+export const SMS_PREFILL = "Hi Corsa, I'd like a quote for my car";
+export const SMS_PREFILL_ES = "Hola Corsa, quiero una cotización para mi carro";
+
+/** Real reviews, once there are enough to show (see business.reviews.minToShow). */
+export function shownReviews() {
+  return business.testimonials.length >= business.reviews.minToShow ? business.testimonials : [];
+}
 
 /**
  * tel:/sms: link to the business phone, or null when no phone is configured.

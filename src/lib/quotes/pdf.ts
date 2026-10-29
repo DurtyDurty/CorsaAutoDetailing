@@ -21,7 +21,8 @@ export interface QuoteDocument {
   issuedAt: string;
   expiresAt: string;
   customer: { name: string; email: string; phone: string | null; address: string | null };
-  appointment: { startsAt: string; endsAt: string; serviceName: string; vehicle: string | null };
+  /** `noted` and `discount` come from the booking form (requestNotes in lib/pricing). */
+  appointment: { startsAt: string; endsAt: string; serviceName: string; vehicle: string | null; noted?: string | null; discount?: string | null };
   lines: QuoteLine[];
   subtotalCents: number;
   discountCents: number;
@@ -177,7 +178,7 @@ async function render(q: Doc): Promise<Uint8Array> {
   const left = [
     { s: q.customer.name, bold: true },
     ...(q.customer.address ? wrap(regular, 10, safeText(regular, q.customer.address), colW).map((s) => ({ s, bold: false })) : []),
-    { s: q.customer.email, bold: false },
+    ...(q.customer.email ? [{ s: q.customer.email, bold: false }] : []),
     ...(q.customer.phone ? [{ s: formatPhone(q.customer.phone), bold: false }] : []),
   ];
   for (const l of left) {
@@ -192,6 +193,9 @@ async function render(q: Doc): Promise<Uint8Array> {
       bold: false,
     },
     ...(q.appointment.vehicle ? [{ s: q.appointment.vehicle, bold: false }] : []),
+    ...[q.appointment.noted, q.appointment.discount]
+      .filter((s): s is string => Boolean(s))
+      .flatMap((s) => wrap(regular, 10, safeText(regular, s), colW).map((line) => ({ s: line, bold: false }))),
   ];
   for (const l of right) {
     text(l.s, rightX, ry, { size: l.bold ? 12 : 10, font: l.bold ? bold : regular, color: l.bold ? C.ink : C.muted });

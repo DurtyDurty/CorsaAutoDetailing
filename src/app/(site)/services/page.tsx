@@ -3,11 +3,11 @@ import { business } from "@/config/business";
 import { photos } from "@/config/photos";
 import { Section, SectionHeading } from "@/components/ui/Section";
 import { PageHero } from "@/components/site/PageHero";
-import { PackageCards } from "@/components/site/PackageCards";
+import { PackageGrid } from "@/components/site/PackageGrid";
 import { InstantQuote } from "@/components/site/InstantQuote";
 import { AdditionalServices } from "@/components/site/AdditionalServices";
 import { PricingDisclosures } from "@/components/site/Disclosures";
-import { CareJourney } from "@/components/site/CareJourney";
+import { CorsaClub } from "@/components/home/CorsaClub";
 import { BusinessJsonLd } from "@/components/site/JsonLd";
 import { Faq } from "@/components/site/Faq";
 import { SERVICES_FAQ } from "@/content/faq";
@@ -17,7 +17,7 @@ import { groupStartingPrice } from "@/lib/pricing";
 export const metadata: Metadata = {
   title: "Detailing packages & pricing",
   description:
-    `Interior and exterior detailing packages from $${groupStartingPrice("popular")}, priced by vehicle size, plus monthly maintenance. Mobile car detailing at your home or work in Clay County, St. Johns and Jacksonville.`,
+    `Interior and exterior detailing packages from $${groupStartingPrice("popular")}, priced by vehicle size, plus the Corsa Club maintenance plan. Mobile car detailing at your home or work in Clay County, St. Johns and Jacksonville.`,
   alternates: { canonical: "/services" },
 };
 
@@ -41,9 +41,11 @@ export default function ServicesPage() {
         <InstantQuote className="mt-10 max-w-3xl" />
       </Section>
 
-      <Section tone="chalk">
-        <PackageCards headingLevel="h2" />
-        <PricingDisclosures className="mt-12" />
+      <Section tone="night" id="packages">
+        <PackageGrid lang="en" headingLevel="h2" />
+      </Section>
+      <Section tone="chalk" className="!py-10">
+        <PricingDisclosures />
       </Section>
 
       <Section tone="white">
@@ -67,7 +69,7 @@ export default function ServicesPage() {
         </div>
       </Section>
 
-      <CareJourney />
+      <CorsaClub lang="en" />
 
       <Section tone="chalk">
         <SectionHeading title="Service questions" />

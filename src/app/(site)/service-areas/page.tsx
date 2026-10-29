@@ -70,7 +70,7 @@ export default function ServiceAreasPage() {
               ))}
             </ul>
             <p className="mt-6 text-sm text-ink-muted">
-              Other parts of Clay County, St. Johns County and Jacksonville may be reachable depending on the day&rsquo;s route. We confirm travel for every Jacksonville address when we review the request, and we&rsquo;ll tell you plainly if we can&rsquo;t get to you yet. There are no travel surcharges. If a location doesn&rsquo;t work, we simply say so.
+              Other parts of Clay County, St. Johns County and Jacksonville may be reachable depending on the day&rsquo;s route. We confirm travel for every Jacksonville address when we review the request, and we&rsquo;ll tell you clearly if we can&rsquo;t get to you yet. There are no travel surcharges. If a location doesn&rsquo;t work, we simply say so.
             </p>
           </div>
         </div>

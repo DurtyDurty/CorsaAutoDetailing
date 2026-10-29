@@ -11,10 +11,13 @@ export function Wordmark({
   onDark = false,
   className,
   asLink = true,
+  href = "/",
 }: {
   onDark?: boolean;
   className?: string;
   asLink?: boolean;
+  /** Home in the page's language ("/" or "/es"). */
+  href?: string;
 }) {
   const logo = onDark ? business.brand.logos.horizontalLight : business.brand.logos.horizontalDark;
   const inner = logo ? (
@@ -46,7 +49,7 @@ export function Wordmark({
   );
   if (!asLink) return <div className={className}>{inner}</div>;
   return (
-    <Link href="/" className={cn("inline-flex items-center", className)} aria-label={`${business.brand.name} home`}>
+    <Link href={href} className={cn("inline-flex items-center", className)} aria-label={`${business.brand.name} home`}>
       {inner}
     </Link>
   );

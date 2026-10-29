@@ -7,6 +7,7 @@ import type { LeadStore } from "@/lib/leads/types";
 import { renderInvoicePdf, type InvoiceDocument } from "@/lib/quotes/pdf";
 import { ZELLE } from "@/lib/quotes/zelle";
 import { formatEastern } from "@/lib/time";
+import { requestNotes } from "@/lib/pricing";
 import { getAppointmentDetail } from "./appointments";
 
 const INVOICE_TOKEN = /^[A-Za-z0-9_-]{43}$/;
@@ -72,6 +73,7 @@ export function invoiceDocument(a: AppointmentDetail, issuedAt = new Date().toIS
       endsAt: a.endsAt,
       serviceName,
       vehicle: [a.vehicle.year, a.vehicle.make, a.vehicle.model].filter(Boolean).join(" ") || null,
+      ...requestNotes(a.customerNotes.conditionFlags, a.customerNotes.offer),
     },
     lines:
       bookedCents === null

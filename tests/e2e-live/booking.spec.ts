@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import releaseLeftoverHolds from "./global-setup";
 
 const unique = () => `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 /** Names on the public forms are letters only, so the unique part of a test name is too. */
@@ -39,16 +40,6 @@ async function pickFirstSlot(page: Page) {
   return iso!;
 }
 
-/** Calendar requests: picks a part of the first open day (no times are shown); returns the placeholder start it holds. */
-async function pickDayPart(page: Page, part: "Morning" | "Afternoon" | "Either" = "Morning", form = page.getByRole("form", { name: "Service request" })) {
-  const group = form.getByRole("radiogroup", { name: "What part of the day?" });
-  await expect(group).toBeVisible();
-  const choice = group.getByRole("radio", { name: part }).or(group.getByRole("radio").first()).first();
-  await choice.locator("xpath=..").click();
-  await expect(choice).toBeChecked();
-  return (await form.locator('input[name="slotStart"]').getAttribute("value"))!;
-}
-
 async function fillContactAndAgree(page: Page, name: string) {
   const form = page.getByRole("form", { name: "Service request" });
   await form.getByRole("button", { name: "Continue" }).click();
@@ -64,26 +55,60 @@ async function fillContactAndAgree(page: Page, name: string) {
 
 // The build has a made-up Google Ads tag (playwright.live.config.ts). Google's script is replaced
 // with nothing, so no test talks to Google; the page's own gtag() still records each call in dataLayer.
+// Each request can hold a time, and the site allows only a few unconfirmed holds at once; this suite makes
+// more than that across both projects, so every test starts with none (the demo store is a shared local file).
 test.beforeEach(async ({ context }) => {
+  await releaseLeftoverHolds();
   await context.route("https://www.googletagmanager.com/**", (r) => r.fulfill({ status: 200, contentType: "text/javascript", body: "" }));
 });
 
-/** The short booking form at /book (deposits off). Leaves the submit to the caller. */
-async function fillShortForm(page: Page, opts: { service: string; packageName: string; name: string; email?: string; part?: "Morning" | "Afternoon" | "Either" }) {
-  await page.goto(`/book?service=${opts.service}`);
-  const form = page.getByRole("form", { name: "Booking request" });
-  await expect(form.getByRole("radio", { name: new RegExp(opts.packageName) })).toBeChecked();
-  await form.getByLabel("Name", { exact: true }).fill(opts.name);
-  await form.getByLabel("Phone", { exact: true }).fill(phone());
-  await form.getByLabel(/^Year\b/).fill("2019");
-  await form.getByLabel(/^Make\b/).fill("Lexus");
-  await form.getByLabel(/^Model\b/).fill("IS F");
-  await form.getByLabel("Town", { exact: true }).selectOption("middleburg");
-  if (opts.email) await form.getByLabel(/^Email/).fill(opts.email);
-  const slot = await pickDayPart(page, opts.part ?? "Morning", form);
+/**
+ * The 3-step booking form at /book (deposits off): package, then the car and you, then a day.
+ * Leaves the submit to the caller. `lang: "es"` uses /es/book and the Spanish labels.
+ */
+async function fillWizard(
+  page: Page,
+  opts: {
+    service: string;
+    packageName: string;
+    name: string;
+    email?: string;
+    part?: "Morning" | "Afternoon" | "Either";
+    flags?: string[];
+    military?: boolean;
+    firstTime?: boolean;
+    lang?: "en" | "es";
+  },
+) {
+  const es = opts.lang === "es";
+  await page.goto(`${es ? "/es" : ""}/book?service=${opts.service}`);
+  const form = page.getByRole("form", { name: es ? "Solicitud de cita" : "Booking request" });
+  const next = es ? "Continuar" : "Continue";
+  if (opts.service !== "help") await expect(form.getByRole("radio", { name: new RegExp(opts.packageName) })).toBeChecked();
+  else await form.getByText(es ? "Ayúdame a elegir" : "Help me choose").click();
+  for (const f of opts.flags ?? []) await form.getByRole("checkbox", { name: f }).check();
+  await form.getByRole("button", { name: next }).click();
+  await form.getByLabel(es ? /^Año/ : /^Year\b/).fill("2019");
+  await form.getByLabel(es ? /^Marca/ : /^Make\b/).fill("Lexus");
+  await form.getByLabel(es ? /^Modelo/ : /^Model\b/).fill("IS F");
+  await form.getByLabel(es ? "Pueblo o ciudad" : "Town", { exact: true }).selectOption("middleburg");
+  await form.getByLabel(es ? "Nombre" : "Name", { exact: true }).fill(opts.name);
+  await form.getByLabel(es ? "Teléfono" : "Phone", { exact: true }).fill(phone());
+  if (opts.email) await form.getByLabel(es ? /^Correo/ : /^Email/).fill(opts.email);
+  if (opts.military) await form.getByRole("checkbox", { name: es ? /Soy militar activo/ : /active military/ }).check();
+  if (opts.firstTime) await form.getByRole("checkbox", { name: es ? /primera vez/ : /first-time customer/ }).check();
+  await form.getByRole("button", { name: next }).click();
+  const group = form.getByRole("radiogroup", { name: es ? "¿En qué parte del día?" : "What part of the day?" });
+  await expect(group).toBeVisible();
+  const label = { Morning: es ? "Mañana" : "Morning", Afternoon: es ? "Tarde" : "Afternoon", Either: es ? "Cualquiera" : "Either" }[opts.part ?? "Morning"];
+  const choice = group.getByRole("radio", { name: label }).or(group.getByRole("radio").first()).first();
+  await choice.locator("xpath=..").click();
+  await expect(choice).toBeChecked();
+  const slot = (await form.locator('input[name="slotStart"]').getAttribute("value"))!;
+  // The day strip scrolls inside the form; it must never widen the page on a phone.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
   return { form, slot };
 }
-
 async function openSlots(page: Page, service: string): Promise<string[]> {
   const res = await page.request.get(`/api/availability?service=${service}`);
   expect(res.status()).toBe(200);
@@ -92,17 +117,17 @@ async function openSlots(page: Page, service: string): Promise<string[]> {
 }
 
 test.describe("after launch without deposits (LIVE mode, current production setup)", () => {
-  test("Book now opens /book with the package chosen, prices above the form", async ({ page, isMobile }) => {
+  test("Book this package opens /book with the package chosen and every price in step 1", async ({ page }) => {
     await page.goto("/services");
-    await page.locator("article", { has: page.getByRole("heading", { name: "Signature Full Detail" }) }).getByRole("link", { name: "Book now" }).click();
+    await page.locator("li#platinum-full").getByRole("link", { name: /Book this package/ }).click();
     await expect(page).toHaveURL(/\/book\?service=platinum-full$/);
     const form = page.getByRole("form", { name: "Booking request" });
     await expect(form.getByRole("radio", { name: /Signature Full Detail/ })).toBeChecked();
-    for (const price of ["$90+", "$150+", "$200+"]) await expect(form).toContainText(price);
+    for (const price of ["$90+", "$150+", "$200+", "$89"]) await expect(form).toContainText(price);
+    await expect(form.getByRole("radio", { name: /Help me choose/ })).toHaveCount(1);
     await expect(page.getByText("Veteran-owned").first()).toBeVisible();
     await expect(page.getByText("Se habla español").first()).toBeVisible();
     await expect(page.getByText(/Preparing to launch/)).toHaveCount(0);
-    if (!isMobile) await expect(page.getByRole("banner").getByRole("link", { name: "Book a detail" })).toBeVisible();
   });
 
   test("old /request links forward to /book, keeping the package and the offer", async ({ page }) => {
@@ -110,18 +135,31 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     await expect(page).toHaveURL(/\/book\?service=basic-full&offer=first-time$/);
     const form = page.getByRole("form", { name: "Booking request" });
     await expect(form.getByRole("radio", { name: /Basic Package/ })).toBeChecked();
-    await expect(form.getByRole("checkbox", { name: /first-time customer/ })).toBeChecked();
+    await expect(form.locator('input[name="firstTimeOffer"]')).toBeChecked();
+  });
+
+  test("the header has Message us (prefilled SMS, both languages) and tap-to-call on phones", async ({ page, isMobile }) => {
+    await page.goto("/");
+    const header = page.getByRole("banner");
+    await expect(header.getByRole("link", { name: "Message us" })).toHaveAttribute("href", /^sms:\+1\d{10}\?&body=Hi%20Corsa%2C%20I'd%20like%20a%20quote%20for%20my%20car$/);
+    await expect(header.getByRole("link", { name: /Call Corsa at/ })).toHaveCount(isMobile ? 1 : 0);
+    await page.goto("/es");
+    await expect(page.getByRole("banner").getByRole("link", { name: "Escríbenos" })).toHaveAttribute("href", /body=Hola%20Corsa%2C%20quiero%20una%20cotizaci/);
   });
 
   test("phones get Call, Text and Book at the bottom; Text opens a prefilled message", async ({ page, isMobile }) => {
     test.skip(!isMobile, "mobile only");
-    await page.goto("/");
+    await page.goto("/about");
     const bar = page.getByRole("navigation", { name: "Call, text or book" });
     await expect(bar).toBeVisible();
     await expect(bar.getByRole("link", { name: "Call" })).toHaveAttribute("href", /^tel:\+1\d{10}$/);
-    await expect(bar.getByRole("link", { name: "Text" })).toHaveAttribute("href", /^sms:\+1\d{10}\?&body=Hi%2C%20I'd%20like%20a%20quote/);
+    await expect(bar.getByRole("link", { name: "Text" })).toHaveAttribute("href", /^sms:\+1\d{10}\?&body=Hi%20Corsa%2C%20I'd%20like%20a%20quote%20for%20my%20car$/);
     await bar.getByRole("link", { name: "Book" }).click();
     await expect(page).toHaveURL(/\/book$/);
+    // On a page with the form, Book jumps to it.
+    await page.goto("/");
+    await page.getByRole("navigation", { name: "Call, text or book" }).getByRole("link", { name: "Book" }).click();
+    await expect(page).toHaveURL(/\/#booking-form$/);
   });
 
   test("the first-time offer pops up once per visit and carries into the booking form", async ({ page }) => {
@@ -131,19 +169,11 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
     await expect(offer).toBeVisible();
     await expect(offer.getByRole("img", { name: "Corsa Auto Detailing" })).toBeVisible();
-    // OFFER_SHOTS: frames of the looping banner animations ("OFF" launch, logo wash).
-    for (let i = 0; process.env.OFFER_SHOTS && i < 12; i++) {
-      await page.screenshot({ path: `${process.env.OFFER_SHOTS}/offer-${test.info().project.name}-${i}.png` });
-      await page.waitForTimeout(450);
-    }
-    if (process.env.OFFER_SHOTS) await page.screenshot({ path: `${process.env.OFFER_SHOTS}/offer-${test.info().project.name}.png` });
-    // Leaving an email saves the signup and sends the offer; then they can book with it selected.
     const email = `${unique()}@example.com`;
     await offer.getByLabel("First name").fill("Casey");
     await offer.getByLabel("Email").fill(email);
     await offer.getByRole("button", { name: "Send my 10% off" }).click();
     await expect(page.getByRole("dialog", { name: "You're in." })).toBeVisible();
-    if (process.env.OFFER_SHOTS) await page.screenshot({ path: `${process.env.OFFER_SHOTS}/offer-joined-${test.info().project.name}.png` });
     const { readFile } = await import("node:fs/promises");
     const outbox = JSON.parse(await readFile(".data/demo-outbox.json", "utf8")) as { to: string; subject: string; text: string }[];
     const sent = outbox.find((m) => m.to === email);
@@ -152,16 +182,22 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     await page.getByRole("dialog").getByRole("link", { name: "Book with 10% off" }).click();
     await expect(page).toHaveURL(/\/book\?offer=first-time$/);
     await expect(offer).toHaveCount(0);
-    const form = page.getByRole("form", { name: "Booking request" });
-    await expect(form.getByRole("checkbox", { name: /first-time customer/ })).toBeChecked();
+    await expect(page.getByRole("form", { name: "Booking request" }).locator('input[name="firstTimeOffer"]')).toBeChecked();
     // Same visit, another page: it does not come back.
     await page.goto("/about");
     await page.waitForTimeout(2500);
     await expect(offer).toHaveCount(0);
   });
 
-  test("the short form without an email: the day is held, the customer is told we'll text or call", async ({ page }) => {
-    const { form, slot } = await fillShortForm(page, { service: "monthly-maintenance", packageName: "Monthly Maintenance", name: `Riley ${word()}` });
+  test("without an email: flags and the military box are saved, the day is held, the customer is told we'll text or call", async ({ page }) => {
+    const name = `Riley ${word()}`;
+    const { form, slot } = await fillWizard(page, {
+      service: "monthly-maintenance",
+      packageName: "Corsa Club",
+      name,
+      flags: ["Pets or pet hair", "Bugs, tar or sap"],
+      military: true,
+    });
     await expect(form.getByRole("group", { name: "Days" })).toBeVisible();
     await expect(form.getByText(/^\d{1,2}:\d{2}/)).toHaveCount(0);
     await form.getByLabel(/Preferred time/).fill("around 9:30");
@@ -172,17 +208,38 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     await expect(page.getByText(/We'll text or call you at \(904\) 555-/)).toBeVisible();
     // Morning unless an earlier run already holds it; then the first open part of the day.
     await expect(page.getByText(/^(Morning|Afternoon|Morning or afternoon), around 9:30$/)).toBeVisible();
-    await expect(page.getByText("Monthly Maintenance")).toBeVisible();
-    // The held time is gone from the calendar.
+    await expect(page.locator("main").getByText("Corsa Club")).toBeVisible();
     expect(await openSlots(page, "monthly-maintenance")).not.toContain(slot);
+
+    // The owner sees the flags and the discount claim.
+    await page.goto("/admin/login");
+    await page.getByLabel("Password").fill("corsa-demo");
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(page).toHaveURL(/\/admin$/);
+    await page.goto(`/admin/leads?q=${encodeURIComponent(name)}`);
+    await page.getByRole("link", { name }).first().click();
+    await expect(page.getByText("Pets or pet hair, Bugs, tar or sap", { exact: true })).toBeVisible();
+    await expect(page.getByText(/Military, veteran or first responder: 10% off/).first()).toBeVisible();
   });
 
-  test("a bad email is pointed out and nothing typed is lost", async ({ page }) => {
+  test("in Spanish: Help me choose, then the Spanish confirmation", async ({ page }) => {
+    const { form } = await fillWizard(page, { service: "help", packageName: "Ayúdame a elegir", name: `Lucía ${word()}`, lang: "es" });
+    await form.getByRole("button", { name: "Enviar mi solicitud" }).click();
+    await expect(page).toHaveURL(/\/es\/thanks\/request\?ref=/);
+    await expect(page.getByRole("heading", { name: "Recibimos tu solicitud." })).toBeVisible();
+    await expect(page.getByText(/Te escribimos o te llamamos al \(904\) 555-/)).toBeVisible();
+  });
+
+  test("a mistake on step 2 keeps the customer on step 2 with everything typed", async ({ page }) => {
+    await page.goto("/book?service=basic-full");
+    const form = page.getByRole("form", { name: "Booking request" });
+    await form.getByRole("button", { name: "Continue" }).click();
     const name = `Morgan ${word()}`;
-    const { form } = await fillShortForm(page, { service: "basic-full", packageName: "Basic Package", name, email: "morgan@" });
-    // The browser's own email check stops it first; the server check is covered by unit tests.
-    await form.getByRole("button", { name: "Send my request" }).click();
-    await expect(page).toHaveURL(/\/book\?/);
+    await form.getByLabel("Name", { exact: true }).fill(name);
+    await form.getByLabel(/^Email/).fill("morgan@");
+    // The browser's own checks stop it; the server check is covered by unit tests.
+    await form.getByRole("button", { name: "Continue" }).click();
+    await expect(form.getByRole("radiogroup", { name: "What part of the day?" })).toBeHidden();
     await expect(form.getByLabel("Name", { exact: true })).toHaveValue(name);
   });
 });
@@ -201,7 +258,7 @@ test.describe("Google Ads conversions (LIVE mode, stubbed tag)", () => {
   });
 
   test("a booking request counts once it's saved, not before", async ({ page }) => {
-    const { form } = await fillShortForm(page, { service: "basic-full", packageName: "Basic Package", name: `Ads ${word()}`, part: "Afternoon" });
+    const { form } = await fillWizard(page, { service: "basic-full", packageName: "Basic Package", name: `Ads ${word()}`, part: "Afternoon" });
     expect(await conversions(page, "AW-000000000/e2eLead")).toHaveLength(0);
     await form.getByRole("button", { name: "Send my request" }).click();
     await expect(page).toHaveURL(/\/thanks\/request\?ref=([0-9a-f-]{36})/);
@@ -215,7 +272,7 @@ test.describe("Google Ads conversions (LIVE mode, stubbed tag)", () => {
     await page.goto("/contact");
     // Keep the browser from trying to dial; the site's own listener still sees the tap.
     await page.evaluate(() => window.addEventListener("click", (e) => (e.target as Element).closest?.('a[href^="tel:"],a[href^="sms:"]') && e.preventDefault(), true));
-    await page.locator('a[href^="tel:"]').first().click();
+    await page.locator('main a[href^="tel:"]').first().click();
     await expect.poll(async () => (await conversions(page, "AW-000000000/e2eCall")).length).toBe(1);
   });
 });
@@ -225,8 +282,7 @@ test.describe("quotes: request, quote, accept (LIVE mode)", () => {
     // A customer requests a time on the website, with an email so the quote can be emailed.
     const name = `Quote ${word()}`;
     const email = `${unique()}@example.com`;
-    const { form } = await fillShortForm(page, { service: "monthly-maintenance", packageName: "Monthly Maintenance", name, email });
-    await form.getByRole("checkbox", { name: /first-time customer/ }).check();
+    const { form } = await fillWizard(page, { service: "signature-full", packageName: "Essential Full Detail", name, email, firstTime: true });
     await form.getByRole("button", { name: "Send my request" }).click();
     await expect(page).toHaveURL(/\/thanks\/request\?ref=/);
 

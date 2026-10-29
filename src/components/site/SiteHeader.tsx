@@ -1,42 +1,77 @@
-import { primaryCta } from "@/config/business";
-import { ButtonLink } from "@/components/ui/Button";
+"use client";
+
+import Link from "next/link";
+import { business, phoneLink, SMS_PREFILL, SMS_PREFILL_ES } from "@/config/business";
+import { localePath } from "@/i18n/dictionary";
+import { otherLanguageHref } from "@/i18n/routes";
+import { useLang } from "@/i18n/use-lang";
+import { formatPhone } from "@/lib/utils";
 import { Wordmark } from "./Wordmark";
 import { MobileNav } from "./MobileNav";
-import { NAV_LINKS } from "./nav";
-import { VeteranBadge } from "./VeteranBadge";
+import { navLinks } from "./nav";
+import { PhoneIcon, TextIcon } from "./icons";
 
 /**
- * Logo · nav links · CTA · veteran badge (far right).
- * Slightly wider than page content so the full row fits; below 1280px the links move into the Menu.
+ * Logo · page links (wide screens) · EN/ES · Message us (SMS, prefilled) · tap-to-call (phones) · menu.
+ * Taps on the SMS and call links count as Google Ads "Call or text tap" conversions (GoogleAdsTag).
  */
 export function SiteHeader() {
-  const cta = primaryCta();
+  const { lang, d, pathname } = useLang();
+  const tel = phoneLink("tel");
+  const sms = phoneLink("sms", lang === "es" ? SMS_PREFILL_ES : SMS_PREFILL);
+  const links = navLinks(lang);
+  const other = lang === "es" ? "en" : "es";
+
   return (
-    <header className="sticky top-0 z-40 bg-asphalt/95 backdrop-blur text-chalk on-dark">
-      <div className="relative mx-auto flex w-full max-w-[88rem] items-center justify-between gap-3 sm:gap-6 px-5 sm:px-8 h-16 sm:h-[4.5rem]">
-        <Wordmark onDark className="shrink-0" />
-        <nav aria-label="Primary" className="hidden xl:flex items-center gap-6">
-          {NAV_LINKS.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              className="relative whitespace-nowrap py-2 text-[0.95rem] font-medium text-chalk/80 hover:text-chalk after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-left after:scale-x-0 after:bg-apex after:transition-transform hover:after:scale-x-100"
-            >
+    <header lang={d.htmlLang} className="sticky top-0 z-40 border-b border-white/5 bg-night/90 text-chalk backdrop-blur on-dark">
+      <div className="relative mx-auto flex h-16 w-full max-w-[88rem] items-center justify-between gap-2 px-4 sm:h-[4.5rem] sm:gap-4 sm:px-8">
+        <Wordmark onDark href={localePath(lang, "/")} className="shrink-0" />
+        <nav aria-label={d.nav.primary} className="hidden items-center gap-7 xl:flex">
+          {links.map((l) => (
+            <Link key={l.href} href={l.href} className="whitespace-nowrap py-2 text-[0.95rem] font-medium text-chalk/80 hover:text-chalk">
               {l.label}
-            </a>
+            </Link>
           ))}
         </nav>
-        <div className="flex shrink-0 items-center gap-2 min-[360px]:gap-3 xl:gap-4">
-          <div className="hidden lg:block">
-            <ButtonLink href={cta.href} size="sm" variant="apex">
-              {cta.label}
-            </ButtonLink>
-          </div>
-          <VeteranBadge stacked />
-          <MobileNav cta={cta} />
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+          <Link
+            href={otherLanguageHref(pathname, other)}
+            hrefLang={other}
+            lang={other}
+            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-full border border-chalk/25 px-2.5 text-xs font-bold uppercase tracking-[0.1em] text-chalk hover:border-chalk/60"
+          >
+            <span className="sm:hidden">{other.toUpperCase()}</span>
+            <span className="hidden sm:inline">{d.header.switchTo}</span>
+            {/* Spoken after the visible label, so the accessible name still starts with what sighted users see. */}
+            <span className="sr-only">: {d.header.switchToAria}</span>
+          </Link>
+          {sms && (
+            <a
+              href={sms}
+              className="inline-flex min-h-10 min-w-10 items-center justify-center gap-2 rounded-full bg-apex-deep px-3 text-sm font-semibold text-white hover:bg-[#a51824] sm:px-4"
+            >
+              <TextIcon />
+              <span className="sr-only min-[400px]:not-sr-only">{d.header.messageUs}</span>
+            </a>
+          )}
+          {tel && business.contact.phone && (
+            <a
+              href={tel}
+              aria-label={d.header.callAria(formatPhone(business.contact.phone.replace(/\D/g, "").slice(-10)))}
+              className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-full border border-chalk/25 text-chalk hover:border-chalk/60 lg:hidden"
+            >
+              <PhoneIcon />
+            </a>
+          )}
+          {tel && business.contact.phone && (
+            <a href={tel} className="hidden whitespace-nowrap text-sm font-semibold text-chalk/85 hover:text-chalk lg:inline">
+              {business.contact.phone}
+            </a>
+          )}
+          <MobileNav links={links} d={d} />
         </div>
       </div>
-      <div className="kerb h-0.5 opacity-70" aria-hidden="true" />
+      <div className="stripe-divider opacity-80" aria-hidden="true" />
     </header>
   );
 }

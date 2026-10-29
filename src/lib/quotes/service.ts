@@ -7,6 +7,7 @@ import { ApiError } from "@/lib/api/http";
 import { getEmailAdapter } from "@/lib/email";
 import { QuoteConflictError, SlotTakenError, type AppointmentRecord, type LeadRecord, type LeadStore, type QuoteRecord } from "@/lib/leads/types";
 import { easternToUtc, formatEastern, todayEastern } from "@/lib/time";
+import { requestNotes } from "@/lib/pricing";
 import { appointmentConfirmationEmail, sendOwnerEmail } from "@/lib/owner/email";
 import { renderQuotePdf, type QuoteDocument } from "./pdf";
 
@@ -127,6 +128,7 @@ export function quoteDocument(q: QuoteRecord, a: AppointmentRecord, lead: LeadRe
       endsAt: a.endsAt,
       serviceName: serviceName(a, lead),
       vehicle: lead ? [lead.vehicleYear, lead.vehicleMake, lead.vehicleModel].filter(Boolean).join(" ") || null : null,
+      ...requestNotes(lead?.conditionFlags ?? [], lead?.estimate?.offer),
     },
     lines: q.lines,
     subtotalCents: q.subtotalCents,

@@ -20,7 +20,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       // Google Ads tag (gtag.js) and its conversion pings, per Google's CSP guide for the Ads tag.
       "script-src 'self' 'unsafe-inline' https://plausible.io https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.google.com",
-      "connect-src 'self' https://plausible.io https://*.supabase.co https://www.googletagmanager.com https://www.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://td.doubleclick.net",
+      "connect-src 'self' https://plausible.io https://*.supabase.co https://www.googletagmanager.com https://www.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://td.doubleclick.net https://ad.doubleclick.net",
       "frame-src https://www.googletagmanager.com https://bid.g.doubleclick.net https://td.doubleclick.net",
       "upgrade-insecure-requests",
     ].join("; "),
@@ -34,8 +34,9 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: { formats: ["image/avif", "image/webp"] },
   experimental: {
-    // Photo uploads (up to 5 × 10MB) need a large limit; without them the forms are a few KB of text.
-    serverActions: { bodySizeLimit: process.env.SUPABASE_STORAGE_BUCKET ? "55mb" : "1mb" },
+    // Photo uploads: the booking form shrinks photos in the browser to fit Vercel's 4.5MB request cap.
+    // Without uploads the forms are a few KB of text.
+    serverActions: { bodySizeLimit: process.env.SUPABASE_STORAGE_BUCKET ? "5mb" : "1mb" },
   },
   async headers() {
     return [

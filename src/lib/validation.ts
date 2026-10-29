@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { business } from "@/config/business";
-import { CONDITION_FLAGS } from "@/lib/pricing";
+import { BOOKING_CONDITION_FLAGS, CONDITION_FLAGS } from "@/lib/pricing";
 import { earliestPreferenceDate, isIsoDate, isPastEasternDate } from "@/lib/time";
 import { cleanLine, cleanText, normalizeEmail, normalizePhone } from "@/lib/utils";
 
@@ -244,34 +244,50 @@ const townIds: [string, ...string[]] = ["other", ...business.serviceAreas.commun
 const fullName = line(100).pipe(z.string().min(1, "Enter your name.").regex(NAME, NAME_MESSAGE));
 
 /**
- * Short booking request (/book and /request, 2026-10-25): only what's needed to
- * call back and hold a time. Name, phone, vehicle, town, package, a day and part
- * of the day; email is optional. Condition, address and notes are asked later.
- * Sending the form is the acknowledgment shown above its button.
+ * The booking form (/, /book and /es, 2026-10-28 redesign), three steps:
+ * 1. a package, Corsa Club, or "help" (we recommend one), plus optional condition flags;
+ * 2. vehicle, town (or a ZIP when it isn't listed), name, phone, optional email, discounts, optional photos;
+ * 3. a day and part of the day (the owner sets the exact time with the quote).
+ * Sending it is the acknowledgment printed above its button. `lang` only picks the confirmation page.
  */
-export const shortRequestSchema = z.object({
-  ...meta,
-  name: fullName,
-  phone: phoneSchema.pipe(z.string({ message: "Enter your phone number." })),
-  email: z
-    .string()
-    .trim()
-    .optional()
-    .transform((v) => v ?? "")
-    .pipe(z.union([z.literal(""), emailSchema]))
-    .transform((v) => v || null),
-  vehicleYear: quoteRequestFields.shape.vehicleYear,
-  vehicleMake: quoteRequestFields.shape.vehicleMake,
-  vehicleModel: quoteRequestFields.shape.vehicleModel,
-  town: z.enum(townIds, { message: "Choose your town." }),
-  townOther: optionalLine(80),
-  serviceId: z.enum(serviceIds, { message: "Choose a package." }),
-  firstTimeOffer: quoteRequestFields.shape.firstTimeOffer,
-  slotStart: z.string({ message: "Choose a day." }).datetime({ message: "Choose a day." }),
-  dayPart: z.enum(["morning", "afternoon", "either"], { message: "Choose morning, afternoon or either." }),
-  preferredTime: optionalLine(40),
-});
-export type ShortRequestInput = z.infer<typeof shortRequestSchema>;
+export const bookingWizardSchema = z
+  .object({
+    ...meta,
+    serviceId: z.enum([...serviceIds, "help"], { message: "Choose a package, Corsa Club or Help me choose." }),
+    conditionFlags: arrayField(z.enum(BOOKING_CONDITION_FLAGS)).default([]),
+    name: fullName,
+    phone: phoneSchema.pipe(z.string({ message: "Enter your phone number." })),
+    email: z
+      .string()
+      .trim()
+      .optional()
+      .transform((v) => v ?? "")
+      .pipe(z.union([z.literal(""), emailSchema]))
+      .transform((v) => v || null),
+    vehicleYear: quoteRequestFields.shape.vehicleYear,
+    vehicleMake: quoteRequestFields.shape.vehicleMake,
+    vehicleModel: quoteRequestFields.shape.vehicleModel,
+    town: z.enum(townIds, { message: "Choose your town." }),
+    zip: z
+      .string()
+      .trim()
+      .optional()
+      .transform((v) => v || null)
+      .pipe(z.string().regex(/^\d{5}$/, "Enter a 5-digit ZIP code.").nullable()),
+    firstTimeOffer: quoteRequestFields.shape.firstTimeOffer,
+    military: z
+      .string()
+      .optional()
+      .transform((v) => v === "on"),
+    slotStart: z.string({ message: "Choose a day." }).datetime({ message: "Choose a day." }),
+    dayPart: z.enum(["morning", "afternoon", "either"], { message: "Choose morning, afternoon or either." }),
+    preferredTime: optionalLine(40),
+    lang: z.enum(["en", "es"]).optional().transform((v) => v ?? "en"),
+  })
+  .superRefine((d, ctx) => {
+    if (d.town === "other" && !d.zip) ctx.addIssue({ code: "custom", path: ["zip"], message: "Enter a 5-digit ZIP code." });
+  });
+export type BookingWizardInput = z.infer<typeof bookingWizardSchema>;
 
 /** Online booking = the request fields + a chosen slot + agreeing to the deposit policy. */
 export const bookingRequestSchema = quoteRequestFields

@@ -9,6 +9,8 @@ import { track } from "@/lib/analytics";
 import { Arrow } from "@/components/ui/Button";
 import { Field, FormMessage, FormMeta, SubmitButton, TextInput, useLeadForm } from "@/components/forms/primitives";
 import { Wordmark } from "./Wordmark";
+import { localePath, stripLang } from "@/i18n/dictionary";
+import { useLang } from "@/i18n/use-lang";
 
 /** Shown this visit already (session), or signed up before (kept). */
 const SEEN_KEY = "corsa-offer-seen";
@@ -21,7 +23,7 @@ const JOINED_KEY = "corsa-offer-joined";
  * against the site in Google search. Not shown where the visitor is already booking, or before launch.
  */
 export function WelcomeOffer() {
-  const pathname = usePathname();
+  const pathname = stripLang(usePathname() ?? "/");
   const [open, setOpen] = useState(false);
   const skip =
     !business.firstTimeOffer.enabled ||
@@ -75,7 +77,10 @@ export function WelcomeOffer() {
 }
 
 function OfferBanner({ onClose }: { onClose: () => void }) {
-  const offer = business.firstTimeOffer;
+  const { lang, d } = useLang();
+  const base = business.firstTimeOffer;
+  const offer = lang === "es" ? { ...base, ...base.es } : base;
+  const o = d.offer;
   const logo = business.brand.logos.horizontalLight;
   const { state, onSubmit, pending, errors, message } = useLeadForm(submitOfferSignup, {
     formName: "first_time_offer",
@@ -97,7 +102,7 @@ function OfferBanner({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none sm:items-center sm:p-6">
       <button
         type="button"
-        aria-label="Close offer"
+        aria-label={o.close}
         tabIndex={-1}
         onClick={onClose}
         className="absolute inset-0 hidden bg-asphalt/70 pointer-events-auto sm:block"
@@ -105,6 +110,7 @@ function OfferBanner({ onClose }: { onClose: () => void }) {
       <div
         role="dialog"
         aria-labelledby="welcome-offer-title"
+        lang={d.htmlLang}
         className="relative grid max-h-full w-full overflow-y-auto pointer-events-auto bg-white shadow-[0_-16px_48px_-16px_rgba(12,13,16,0.55)] sm:max-w-3xl sm:grid-cols-[5fr_6fr] sm:shadow-[0_32px_80px_-24px_rgba(12,13,16,0.7)]"
       >
         {/* Brand panel: logo and the number. */}
@@ -142,54 +148,56 @@ function OfferBanner({ onClose }: { onClose: () => void }) {
                 <span className="offer-off-word">Off</span>
               </span>
             </p>
-            <p className="hidden font-mono text-[0.7rem] uppercase tracking-[0.18em] text-chalk/65 sm:block">Your first detail</p>
+            <p className="hidden font-mono text-[0.7rem] uppercase tracking-[0.18em] text-chalk/65 sm:block">{o.firstDetail}</p>
           </div>
           <div className="kerb relative h-[4px] shrink-0" aria-hidden="true" />
         </div>
 
         {/* Offer and signup. */}
         <div className="px-6 pt-4 sm:p-8" style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}>
-          <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-apex-deep font-semibold">First-time customers</p>
+          <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-apex-deep font-semibold">{lang === "es" ? "Clientes nuevos" : "First-time customers"}</p>
           <h2 id="welcome-offer-title" className="mt-2 pr-8 font-display text-3xl leading-[0.95] sm:pr-0 sm:text-4xl">
-            {joined ? "You're in." : offer.headline}
+            {joined ? o.joinedTitle : offer.headline}
           </h2>
           {joined ? (
             <>
               <p className="mt-3 leading-relaxed">
-                Your {offer.percent}% off is on its way to your inbox. Ready now? Book and the offer is already selected.
+                {lang === "es"
+                  ? `Tu ${offer.percent}% de descuento va en camino a tu correo. ¿Listo? Agenda y el descuento ya queda marcado.`
+                  : `Your ${offer.percent}% off is on its way to your inbox. Ready now? Book and the offer is already selected.`}
               </p>
               <Link
-                href="/book?offer=first-time"
+                href={`${localePath(lang, "/book")}?offer=first-time`}
                 onClick={onClose}
                 className="group mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-sm border border-apex-deep bg-apex-deep px-6 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-white transition-colors hover:bg-[#a51109] hover:border-[#a51109] sm:w-auto"
               >
-                Book with {offer.percent}% off
+                {o.bookWith(offer.percent)}
                 <Arrow />
               </Link>
             </>
           ) : (
-            <form onSubmit={onSubmit} className="mt-3 flex flex-col gap-3" aria-label="First-time offer signup">
+            <form onSubmit={onSubmit} className="mt-3 flex flex-col gap-3" aria-label={lang === "es" ? "Registro para el descuento" : "First-time offer signup"}>
               <p className="hidden leading-relaxed sm:block">{offer.body}</p>
               <FormMeta />
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-1">
-                <Field name="firstName" label="First name" error={errors.firstName}>
+                <Field name="firstName" label={o.firstName} error={errors.firstName}>
                   {(p) => <TextInput name="firstName" autoComplete="given-name" required {...p} />}
                 </Field>
-                <Field name="email" label="Email" error={errors.email}>
+                <Field name="email" label={o.email} error={errors.email}>
                   {(p) => <TextInput name="email" type="email" autoComplete="email" required {...p} />}
                 </Field>
               </div>
               <FormMessage message={message} />
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-                <SubmitButton pending={pending} className="w-full sm:w-auto">
-                  Send my {offer.percent}% off
+                <SubmitButton pending={pending} busyLabel={d.form.sending} className="w-full sm:w-auto">
+                  {o.send(offer.percent)}
                 </SubmitButton>
                 <button
                   type="button"
                   onClick={onClose}
                   className="hidden min-h-11 px-2 text-sm font-semibold uppercase tracking-[0.08em] text-ink-muted hover:text-ink sm:block"
                 >
-                  No thanks
+                  {o.noThanks}
                 </button>
               </div>
               <p className="text-xs leading-relaxed text-ink-muted">
@@ -201,7 +209,7 @@ function OfferBanner({ onClose }: { onClose: () => void }) {
 
         <button
           type="button"
-          aria-label="Close"
+          aria-label={d.nav.close}
           onClick={onClose}
           className="absolute right-1 top-1.5 flex h-11 w-11 items-center justify-center text-2xl leading-none text-chalk/80 hover:text-chalk sm:text-ink-muted sm:hover:text-ink"
         >

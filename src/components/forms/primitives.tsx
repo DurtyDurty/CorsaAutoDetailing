@@ -313,12 +313,23 @@ export function FormMessage({ message, tone = "error" }: { message: string | nul
   );
 }
 
-export function SubmitButton({ children, pending, className }: { children: ReactNode; pending?: boolean; className?: string }) {
+export function SubmitButton({
+  children,
+  pending,
+  className,
+  busyLabel = "Sending…",
+}: {
+  children: ReactNode;
+  pending?: boolean;
+  className?: string;
+  /** What the button says while the form is sending (the Spanish forms pass their own). */
+  busyLabel?: string;
+}) {
   const status = useFormStatus();
   const busy = pending || status.pending;
   return (
     <Button type="submit" size="lg" disabled={busy} aria-busy={busy} className={className}>
-      {busy ? "Sending…" : children}
+      {busy ? busyLabel : children}
     </Button>
   );
 }

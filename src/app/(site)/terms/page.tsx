@@ -90,7 +90,7 @@ export default function TermsPage() {
 
         <h2>Maintenance plans</h2>
         <p>
-          Monthly Maintenance is arranged with you directly: we agree on your visits and how you&rsquo;ll pay. This website doesn&rsquo;t bill you automatically.
+          Corsa Club is arranged with you directly after your first full detail: we agree on your visits, every two weeks, and you pay per visit. This website doesn&rsquo;t bill you automatically.
         </p>
 
         <h2>Contact</h2>

@@ -3,10 +3,10 @@
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV_LINKS } from "./nav";
-import { ButtonLink } from "@/components/ui/Button";
+import type { Dict } from "@/i18n/dictionary";
 
-export function MobileNav({ cta }: { cta: { label: string; href: string } }) {
+/** The page links in a drop-down panel below the header, on screens without the full nav. */
+export function MobileNav({ links, d }: { links: { href: string; label: string }[]; d: Dict }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -30,11 +30,7 @@ export function MobileNav({ cta }: { cta: { label: string; href: string } }) {
       }
     };
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+    return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
   return (
@@ -42,39 +38,32 @@ export function MobileNav({ cta }: { cta: { label: string; href: string } }) {
       <button
         ref={buttonRef}
         type="button"
-        className="inline-flex items-center gap-2 min-h-11 min-w-11 justify-center px-2.5 -mr-2.5 sm:px-3 sm:-mr-3 text-sm font-medium"
+        className="-mr-2 inline-flex min-h-11 min-w-11 items-center justify-center"
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
       >
-        {/* Icon-only on phones to leave room for the veteran badge; screen readers still hear the label. */}
-        <span className="sr-only sm:not-sr-only">{open ? "Close" : "Menu"}</span>
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+        <span className="sr-only">{open ? d.nav.close : d.nav.menu}</span>
+        <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
           {open ? <path d="M4 4l12 12M16 4L4 16" /> : <path d="M3 5h14M3 10h14M3 15h14" />}
         </svg>
       </button>
-      <div
-        id={panelId}
-        hidden={!open}
-        className="absolute inset-x-0 top-full bg-asphalt border-b border-line-dark shadow-[0_24px_48px_-20px_rgba(0,0,0,0.6)]"
-      >
-        <nav aria-label="Primary mobile" className="px-5 py-4 flex flex-col">
-          {NAV_LINKS.map((l, i) => (
+      <div id={panelId} hidden={!open} className="absolute inset-x-0 top-full border-b border-line-dark bg-night shadow-[0_24px_48px_-20px_rgba(0,0,0,0.7)]">
+        <nav aria-label={d.nav.primaryMobile} className="flex flex-col px-5 py-3">
+          {links.map((l, i) => (
             <Link
               key={l.href}
               href={l.href}
               ref={i === 0 ? firstLinkRef : undefined}
-              className="flex items-baseline gap-4 py-3.5 border-b border-line-dark last:border-0 font-display text-3xl hover:text-apex"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-4 border-b border-line-dark py-3.5 font-display text-3xl last:border-0 hover:text-apex"
             >
-              <span className="font-mono text-xs font-normal text-apex" aria-hidden="true">
-                0{i + 1}
+              <span className="race-num !h-7 !min-w-10 !text-sm" aria-hidden="true">
+                {String(i + 1).padStart(2, "0")}
               </span>
               {l.label}
             </Link>
           ))}
-          <ButtonLink href={cta.href} variant="apex" className="mt-4 w-full">
-            {cta.label}
-          </ButtonLink>
         </nav>
       </div>
     </div>
