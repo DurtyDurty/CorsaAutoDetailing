@@ -87,8 +87,8 @@ const en = {
     seeAll: "See everything included",
     book: "Book this package",
     popular: "Most popular",
-    addOnsTitle: "Optional add-ons",
-    addOnsNote: "Add either one to any package. We price it when we see the car, and only do it with your OK.",
+    addOnsTitle: "Add-ons",
+    addOnsNote: "Add any of these to a package. Prices are confirmed when we see the car, and nothing is added without your OK.",
   },
   gallery: {
     title: "Before and after",
@@ -144,11 +144,15 @@ const en = {
     stepLabels: ["Package", "Your car and you", "Day and time"],
     stepOf: (n: number, total: number) => `Step ${n} of ${total}`,
     packageLegend: "What does your car need?",
-    help: { title: "Help me choose", body: "Not sure? We'll recommend a package after we see the car." },
+    help: {
+      title: "Help me choose",
+      // Owner, 2026-10-28: photos by text are fine for this.
+      body: (phone: string | null) =>
+        phone ? `Not sure? Text a few photos of the car to ${phone} and we'll recommend a package.` : "Not sure? We'll recommend a package after we see the car.",
+    },
     clubNote: "Starts after your first full detail.",
-    addOnsLegend: "Add-ons",
     addOnPriced: "Priced when we see the car",
-    flagsLegend: "Anything we should know?",
+    flagsLegend: "Add-ons and anything we should know",
     optional: "optional",
     flags: {
       pet_hair: "Pets or pet hair",
@@ -332,8 +336,8 @@ const es: Dict = {
     seeAll: "Ver todo lo que incluye",
     book: "Reservar este paquete",
     popular: "El más pedido",
-    addOnsTitle: "Extras opcionales",
-    addOnsNote: "Agrega cualquiera a tu paquete. Le damos precio al ver el carro y solo lo hacemos con tu aprobación.",
+    addOnsTitle: "Extras",
+    addOnsNote: "Agrega cualquiera de estos a tu paquete. Confirmamos el precio al ver el carro y no agregamos nada sin tu aprobación.",
   },
   gallery: {
     title: "Antes y después",
@@ -389,11 +393,16 @@ const es: Dict = {
     stepLabels: ["Paquete", "Tu carro y tú", "Día y hora"],
     stepOf: (n: number, total: number) => `Paso ${n} de ${total}`,
     packageLegend: "¿Qué necesita tu carro?",
-    help: { title: "Ayúdame a elegir", body: "¿No estás seguro? Te recomendamos un paquete después de ver el carro." },
+    help: {
+      title: "Ayúdame a elegir",
+      body: (phone: string | null) =>
+        phone
+          ? `¿No estás seguro? Mándanos unas fotos del carro por mensaje al ${phone} y te recomendamos un paquete.`
+          : "¿No estás seguro? Te recomendamos un paquete después de ver el carro.",
+    },
     clubNote: "Empieza después de tu primer detallado completo.",
-    addOnsLegend: "Extras",
     addOnPriced: "Precio al ver el carro",
-    flagsLegend: "¿Algo que debamos saber?",
+    flagsLegend: "Extras y algo que debamos saber",
     optional: "opcional",
     flags: {
       pet_hair: "Mascotas o pelo de mascota",

@@ -5,7 +5,7 @@ import { submitBookingRequest } from "@/app/actions/leads";
 import { business, getService } from "@/config/business";
 import { dict, type Lang } from "@/i18n/dictionary";
 import { BOOKING_CONDITION_FLAGS, formatUsd, optionalAddOns } from "@/lib/pricing";
-import { cn } from "@/lib/utils";
+import { cn, formatPhone } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { DayPartPicker } from "./DayPartPicker";
 import { Field, FormMessage, FormMeta, Select, SubmitButton, TextInput, useLeadForm } from "./primitives";
@@ -209,30 +209,14 @@ export function BookingWizard({
           <legend className="mb-1.5 text-sm font-medium">{f.packageLegend}</legend>
           {packages.map((s) => option(s.id, s.name, `${formatUsd(s.price)}+`, null, s.badge ? t.packages.popular : null))}
           {club && option(club.id, club.name, `${formatUsd(club.price)}`, `${t.packages.perVisit}. ${f.clubNote}`)}
-          {option("help", f.help.title, null, f.help.body)}
+          {option("help", f.help.title, null, f.help.body(phone ? formatPhone(phone.replace(/\D/g, "").slice(-10)) : null))}
           {fieldError("serviceId") && (
             <p id="svc-err" className="text-sm text-error" role="alert">
               {fieldError("serviceId")}
             </p>
           )}
         </fieldset>
-        {addOns.length > 0 && (
-          <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1.5 text-sm font-medium">
-              {f.addOnsLegend} <span className="font-normal text-ink-muted">({f.optional})</span>
-            </legend>
-            {addOns.map((a) => (
-              <label key={a.id} className="choice">
-                <input type="checkbox" name="addOns" value={a.id} className="checkbox" />
-                <span className="min-w-0">
-                  <span className="block font-medium leading-snug">{lang === "es" ? a.es.name : a.name}</span>
-                  {a.description && <span className="mt-0.5 block text-sm text-ink-muted">{lang === "es" ? (a.es.description ?? a.description) : a.description}</span>}
-                  <span className="mt-0.5 block text-xs font-semibold uppercase tracking-[0.08em] text-apex-deep">{f.addOnPriced}</span>
-                </span>
-              </label>
-            ))}
-          </fieldset>
-        )}
+        {/* One list (owner, 2026-10-28): what the car has, then the add-ons. Two field names, one group. */}
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1.5 text-sm font-medium">
             {f.flagsLegend} <span className="font-normal text-ink-muted">({f.optional})</span>
@@ -242,6 +226,15 @@ export function BookingWizard({
               <label key={flag} className="choice py-3">
                 <input type="checkbox" name="conditionFlags" value={flag} className="checkbox" />
                 <span className="font-medium leading-snug">{f.flags[flag]}</span>
+              </label>
+            ))}
+            {addOns.map((a) => (
+              <label key={a.id} className="choice py-3">
+                <input type="checkbox" name="addOns" value={a.id} className="checkbox" />
+                <span className="min-w-0">
+                  <span className="block font-medium leading-snug">{lang === "es" ? a.es.name : a.name}</span>
+                  <span className="mt-0.5 block text-xs font-semibold uppercase tracking-[0.08em] text-apex-deep">{f.addOnPriced}</span>
+                </span>
               </label>
             ))}
           </div>

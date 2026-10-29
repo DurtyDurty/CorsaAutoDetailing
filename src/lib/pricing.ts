@@ -72,7 +72,8 @@ export function optionalAddOns(ids?: readonly string[]) {
 }
 
 /** "Anything we should know?" on the booking form (2026-10-28), in this order. */
-export const BOOKING_CONDITION_FLAGS = ["pet_hair", "odor", "stains", "sand", "bugs_tar"] as const;
+// "Smoke or odor" came off the form on 2026-10-28 (owner); its label above stays for older requests.
+export const BOOKING_CONDITION_FLAGS = ["pet_hair", "stains", "sand", "bugs_tar"] as const;
 
 export function conditionFlagLabel(flag: string): string {
   return CONDITION_FLAG_LABELS[flag] ?? flag;

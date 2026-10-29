@@ -127,6 +127,9 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     await expect(form.getByRole("radio", { name: /Signature Full Detail/ })).toBeChecked();
     for (const price of ["$90+", "$150+", "$200+", "$89"]) await expect(form).toContainText(price);
     await expect(form.getByRole("radio", { name: /Help me choose/ })).toHaveCount(1);
+    // Add-ons sit in the same list as the condition boxes; smoke or odor is gone.
+    for (const box of ["Pets or pet hair", "Paint enhancement", "Headlight restoration"]) await expect(form.getByRole("checkbox", { name: new RegExp(box) })).toHaveCount(1);
+    await expect(form.getByRole("checkbox", { name: /Smoke or odor/ })).toHaveCount(0);
     await expect(page.getByText("Veteran-owned").first()).toBeVisible();
     await expect(page.getByText("Se habla español").first()).toBeVisible();
     await expect(page.getByText(/Preparing to launch/)).toHaveCount(0);

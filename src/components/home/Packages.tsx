@@ -1,11 +1,13 @@
 import { dict, type Lang } from "@/i18n/dictionary";
-import { addOnPrice, optionalAddOns } from "@/lib/pricing";
+import { business } from "@/config/business";
+import { addOnPrice } from "@/lib/pricing";
 import { Section, SectionHeading } from "@/components/ui/Section";
 import { PackageGrid } from "@/components/site/PackageGrid";
 
 export function Packages({ lang, num }: { lang: Lang; num: number }) {
   const d = dict(lang).packages;
-  const addOns = optionalAddOns();
+  // Every add-on together (owner, 2026-10-28): the range-priced ones and the ones priced at inspection.
+  const addOns = business.additionalServices;
   return (
     <Section tone="night" id="packages" labelledBy="packages-title">
       <SectionHeading id="packages-title" num={num} title={d.title} lede={d.lede} onDark />

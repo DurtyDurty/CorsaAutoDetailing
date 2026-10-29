@@ -110,7 +110,9 @@ describe("computeEstimate", () => {
   });
 
   it("labels the booking form's condition flags and keeps the old ones readable", () => {
-    expect(BOOKING_CONDITION_FLAGS.map(conditionFlagLabel)).toEqual(["Pets or pet hair", "Smoke or odor", "Stains", "Sand or mud", "Bugs, tar or sap"]);
+    expect(BOOKING_CONDITION_FLAGS.map(conditionFlagLabel)).toEqual(["Pets or pet hair", "Stains", "Sand or mud", "Bugs, tar or sap"]);
+    // Off the form since 2026-10-28, still readable on older requests.
+    expect(conditionFlagLabel("odor")).toBe("Smoke or odor");
     expect(conditionFlagLabel("mud")).toBe("Heavy mud");
   });
 
