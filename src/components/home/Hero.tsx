@@ -1,19 +1,15 @@
 import { isPrelaunch, phoneLink, primaryCta } from "@/config/business";
-import { photos } from "@/config/photos";
 import { dict, type Lang } from "@/i18n/dictionary";
 import { HeroSlideshow, type HeroSlide } from "@/components/site/HeroSlideshow";
 import { TrustPoints } from "@/components/site/TrustPoints";
 import { BOOKING_FORM_ID } from "@/components/site/MobileActionBar";
 import { PhoneIcon } from "@/components/site/icons";
 
-/** Hero slideshow order: the animated logo opens (owner's choice), then the strongest photo. */
-const slides: HeroSlide[] = [
-  { type: "logo" },
-  { type: "photo", photo: photos.stingerRear },
-  { type: "photo", photo: photos.stingerFront },
-  { type: "photo", photo: photos.onSiteSetup },
-  { type: "photo", photo: photos.stingerDriveway },
-];
+/**
+ * Hero slideshow: just the animated logo for now. The owner took the job photos off (2026-10-29) until he has
+ * better ones; add them back after the logo as { type: "photo", photo: photos.x }.
+ */
+const slides: HeroSlide[] = [{ type: "logo" }];
 
 /** The Clay County towns the hero names (owner, 2026-10-28). */
 const HERO_TOWNS = ["Green Cove Springs", "Fleming Island", "Middleburg", "Orange Park"];

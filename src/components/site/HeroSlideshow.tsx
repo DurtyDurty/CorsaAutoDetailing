@@ -46,6 +46,7 @@ export function HeroSlideshow({ slides, label }: { slides: HeroSlide[]; label: s
     };
   }, []);
 
+  const carousel = slides.length > 1;
   const autoplay = !reduced;
   const running = autoplay && !userPaused && !hovered && inView && tabVisible;
 
@@ -60,9 +61,9 @@ export function HeroSlideshow({ slides, label }: { slides: HeroSlide[]; label: s
   return (
     <div
       ref={root}
-      role="region"
-      aria-roledescription="carousel"
-      aria-label={label}
+      role={carousel ? "region" : undefined}
+      aria-roledescription={carousel ? "carousel" : undefined}
+      aria-label={carousel ? label : undefined}
       className="absolute inset-0 overflow-hidden bg-asphalt"
       // Mouse only: on touch screens a tap would "hover" and never leave, freezing the slideshow.
       onPointerEnter={(e) => e.pointerType === "mouse" && setHovered(true)}
@@ -76,9 +77,9 @@ export function HeroSlideshow({ slides, label }: { slides: HeroSlide[]; label: s
           return (
             <div
               key={s.type === "photo" ? s.photo.src : "logo"}
-              role="group"
-              aria-roledescription="slide"
-              aria-label={`${i + 1} of ${slides.length}`}
+              role={carousel ? "group" : undefined}
+              aria-roledescription={carousel ? "slide" : undefined}
+              aria-label={carousel ? `${i + 1} of ${slides.length}` : undefined}
               aria-hidden={!isActive}
               className={cn(
                 "absolute inset-0 transition-opacity duration-1000 ease-out",
@@ -112,65 +113,70 @@ export function HeroSlideshow({ slides, label }: { slides: HeroSlide[]; label: s
         })}
       </div>
 
-      {/* Bottom shade so the controls read on bright photos. */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-24 bg-gradient-to-t from-asphalt/70 to-asphalt/0" aria-hidden="true" />
+      {/* A single slide (the logo on its own) plays once and needs no controls. */}
+      {carousel && (
+        <>
+          {/* Bottom shade so the controls read on bright photos. */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-24 bg-gradient-to-t from-asphalt/70 to-asphalt/0" aria-hidden="true" />
 
-      <div className="absolute inset-x-0 bottom-0 z-30 flex items-center gap-3 px-5 pb-4 sm:px-8 lg:pb-6">
-        <div className="flex flex-1 gap-1.5" role="group" aria-label="Choose a slide">
-          {slides.map((s, i) => {
-            const done = i < active;
-            const current = i === active;
-            return (
+          <div className="absolute inset-x-0 bottom-0 z-30 flex items-center gap-3 px-5 pb-4 sm:px-8 lg:pb-6">
+            <div className="flex flex-1 gap-1.5" role="group" aria-label="Choose a slide">
+              {slides.map((s, i) => {
+                const done = i < active;
+                const current = i === active;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => show(i)}
+                    aria-label={`Show slide ${i + 1}${s.type === "photo" ? `: ${s.photo.alt}` : ": Corsa logo animation"}`}
+                    aria-current={current ? "true" : undefined}
+                    className="group relative h-6 flex-1"
+                  >
+                    <span className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 overflow-hidden rounded-full bg-chalk/30 group-hover:bg-chalk/50">
+                      <span
+                        key={current ? `run-${active}-${logoLap}` : "idle"}
+                        className={cn(
+                          "absolute inset-0 origin-left rounded-full bg-chalk",
+                          current && autoplay && "hero-progress",
+                          done || (current && !autoplay) ? "scale-x-100" : current ? "" : "scale-x-0",
+                        )}
+                        style={
+                          current && autoplay
+                            ? {
+                                animationDuration: `${s.type === "logo" ? LOGO_MS : PHOTO_MS}ms`,
+                                animationPlayState: running ? "running" : "paused",
+                              }
+                            : undefined
+                        }
+                        onAnimationEnd={() => current && autoplay && show(active + 1)}
+                      />
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {autoplay && (
               <button
-                key={i}
                 type="button"
-                onClick={() => show(i)}
-                aria-label={`Show slide ${i + 1}${s.type === "photo" ? `: ${s.photo.alt}` : ": Corsa logo animation"}`}
-                aria-current={current ? "true" : undefined}
-                className="group relative h-6 flex-1"
+                onClick={() => setUserPaused((p) => !p)}
+                aria-label={userPaused ? "Play slideshow" : "Pause slideshow"}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-asphalt/60 text-chalk backdrop-blur hover:bg-asphalt/80"
               >
-                <span className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 overflow-hidden rounded-full bg-chalk/30 group-hover:bg-chalk/50">
-                  <span
-                    key={current ? `run-${active}-${logoLap}` : "idle"}
-                    className={cn(
-                      "absolute inset-0 origin-left rounded-full bg-chalk",
-                      current && autoplay && "hero-progress",
-                      done || (current && !autoplay) ? "scale-x-100" : current ? "" : "scale-x-0",
-                    )}
-                    style={
-                      current && autoplay
-                        ? {
-                            animationDuration: `${s.type === "logo" ? LOGO_MS : PHOTO_MS}ms`,
-                            animationPlayState: running ? "running" : "paused",
-                          }
-                        : undefined
-                    }
-                    onAnimationEnd={() => current && autoplay && show(active + 1)}
-                  />
-                </span>
+                {userPaused ? (
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                    <path d="M3 1.5v11l9.5-5.5z" />
+                  </svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                    <path d="M3 1.5h3v11H3zM8 1.5h3v11H8z" />
+                  </svg>
+                )}
               </button>
-            );
-          })}
-        </div>
-        {autoplay && (
-          <button
-            type="button"
-            onClick={() => setUserPaused((p) => !p)}
-            aria-label={userPaused ? "Play slideshow" : "Pause slideshow"}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-asphalt/60 text-chalk backdrop-blur hover:bg-asphalt/80"
-          >
-            {userPaused ? (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
-                <path d="M3 1.5v11l9.5-5.5z" />
-              </svg>
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
-                <path d="M3 1.5h3v11H3zM8 1.5h3v11H8z" />
-              </svg>
             )}
-          </button>
-        )}
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -126,15 +126,10 @@ test.describe("public site", () => {
     expect(jsonLd).not.toMatch(/"(price|minPrice|priceRange|aggregateRating)"/);
     expect(jsonLd).toContain('"FAQPage"');
     expect(jsonLd).toContain('"AutoWash"');
-    // Hero slideshow: 4 photos plus the animated logo, a pause button, and bars that jump to a slide.
-    const slideshow = main.getByRole("region", { name: "Photos of our work" });
-    await expect(slideshow.locator('[aria-roledescription="slide"]')).toHaveCount(5);
-    await expect(slideshow.locator('img[alt="Corsa Auto Detailing logo"]')).toHaveCount(1);
-    await slideshow.getByRole("button", { name: "Pause slideshow" }).click();
-    await expect(slideshow.getByRole("button", { name: "Play slideshow" })).toBeVisible();
-    const third = slideshow.getByRole("button", { name: /^Show slide 3:/ });
-    await third.click();
-    await expect(third).toHaveAttribute("aria-current", "true");
+    // Hero: only the animated logo until the owner has new job photos (2026-10-29), so no slideshow controls.
+    await expect(main.locator('img[alt="Corsa Auto Detailing logo"]')).toHaveCount(1);
+    await expect(main.getByRole("region", { name: "Photos of our work" })).toHaveCount(0);
+    await expect(main.getByRole("button", { name: /slideshow|^Show slide/ })).toHaveCount(0);
   });
 
   test("the before/after section stays off until it's switched back on", async ({ page }) => {
