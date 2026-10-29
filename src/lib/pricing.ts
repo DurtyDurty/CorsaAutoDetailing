@@ -48,6 +48,11 @@ export interface EstimateInput {
   firstTimeOffer?: boolean;
   /** Military, veteran or first responder. Recorded only; the owner applies it in the quote. */
   military?: boolean;
+  /**
+   * Optional add-ons the customer asked for (`business.additionalServices` with `optional`). Saved as $0 lines:
+   * the quote shows them as "Priced on site" until the owner prices them, so they never change the total.
+   */
+  optionalAddOnIds?: string[];
 }
 
 // Ids are stored on leads: keep old ones (mud, other) so earlier requests still read correctly.
@@ -60,6 +65,11 @@ const CONDITION_FLAG_LABELS: Record<string, string> = {
   mud: "Heavy mud",
   other: "Other concern",
 };
+
+/** The booking form's optional add-ons, in config order; unknown ids are dropped. */
+export function optionalAddOns(ids?: readonly string[]) {
+  return business.additionalServices.filter((a) => a.optional && (ids === undefined || ids.includes(a.id)));
+}
 
 /** "Anything we should know?" on the booking form (2026-10-28), in this order. */
 export const BOOKING_CONDITION_FLAGS = ["pet_hair", "odor", "stains", "sand", "bugs_tar"] as const;
@@ -85,6 +95,7 @@ export function computeEstimate(input: EstimateInput): EstimateSnapshot | null {
     .map((id) => business.addOns.find((a) => a.id === id))
     .filter((a): a is NonNullable<typeof a> => Boolean(a))
     .map((a) => ({ label: a.name, amount: a.price }));
+  for (const a of optionalAddOns(input.optionalAddOnIds ?? [])) addOns.push({ label: a.name, amount: a.priceMin ?? 0 });
 
   const reviewNotes: string[] = [];
   if (input.condition === "deeper") {
@@ -169,6 +180,12 @@ export function formatUsd(amount: number): string {
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(amount);
+}
+
+/** An add-on's price for display: "$35-$75", "$50", or "Priced at inspection" when it has none. */
+export function addOnPrice(a: { priceMin: number | null; priceMax: number | null }, lang: "en" | "es" = "en"): string {
+  if (a.priceMin === null) return lang === "es" ? "Precio al revisar" : "Priced at inspection";
+  return formatUsdRange(a.priceMin, a.priceMax ?? a.priceMin);
 }
 
 /** "$35-$75", or "$50" when the range is a single price. */

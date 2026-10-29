@@ -75,6 +75,7 @@ async function fillWizard(
     email?: string;
     part?: "Morning" | "Afternoon" | "Either";
     flags?: string[];
+    addOns?: string[];
     military?: boolean;
     firstTime?: boolean;
     lang?: "en" | "es";
@@ -86,6 +87,7 @@ async function fillWizard(
   const next = es ? "Continuar" : "Continue";
   if (opts.service !== "help") await expect(form.getByRole("radio", { name: new RegExp(opts.packageName) })).toBeChecked();
   else await form.getByText(es ? "Ayúdame a elegir" : "Help me choose").click();
+  for (const a of opts.addOns ?? []) await form.getByRole("checkbox", { name: new RegExp(a) }).check();
   for (const f of opts.flags ?? []) await form.getByRole("checkbox", { name: f }).check();
   await form.getByRole("button", { name: next }).click();
   await form.getByLabel(es ? /^Año/ : /^Year\b/).fill("2019");
@@ -196,6 +198,7 @@ test.describe("after launch without deposits (LIVE mode, current production setu
       packageName: "Corsa Club",
       name,
       flags: ["Pets or pet hair", "Bugs, tar or sap"],
+      addOns: ["Headlight restoration"],
       military: true,
     });
     await expect(form.getByRole("group", { name: "Days" })).toBeVisible();
@@ -220,6 +223,7 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     await page.getByRole("link", { name }).first().click();
     await expect(page.getByText("Pets or pet hair, Bugs, tar or sap", { exact: true })).toBeVisible();
     await expect(page.getByText(/Military, veteran or first responder: 10% off/).first()).toBeVisible();
+    await expect(page.getByText("Headlight restoration (price at inspection)")).toBeVisible();
   });
 
   test("in Spanish: Help me choose, then the Spanish confirmation", async ({ page }) => {
@@ -353,25 +357,32 @@ test.describe("owner dashboard laid out like the app (LIVE mode)", () => {
     await expect(page).toHaveURL(/\/admin$/);
     await expect(page.getByRole("link", { name: "Today", exact: true }).first()).toBeVisible();
 
-    await page.getByRole("link", { name: "+ New appointment" }).click();
-    await expect(page).toHaveURL(/\/admin\/book/);
-    await page.getByRole("radio", { name: "New customer" }).click();
+    await expect(page.getByRole("link", { name: "+ New appointment" })).toHaveAttribute("href", "/admin/book");
     const name = `Dash ${word()}`;
-    await page.getByLabel("First name").fill(name);
-    await page.getByLabel(/^Email/).fill(`${unique()}@example.com`);
-    await page.getByLabel("Service address").fill("45 Oak Ln");
-    await page.getByLabel("ZIP").fill("32068");
-    await page.getByLabel("Service", { exact: true }).selectOption("platinum-full");
-    await expect(page.getByLabel("Price ($)")).toHaveValue("200");
-    // A free day: each project and run picks its own week and weekday so they never collide
-    // (a 5-hour job has to start by noon to finish inside working hours, so two don't fit in one day).
+    // A free day: each project and run picks its own week and weekday (a 5-hour job has to start by noon to
+    // finish inside working hours, so two don't fit in one day). The local test store keeps jobs from earlier
+    // runs, so if that day is already taken, try the next week.
     const d = new Date(Date.now() + (8 + 7 * Math.floor(Math.random() * 20)) * 86400_000);
     while (d.getUTCDay() !== (testInfo.project.name.includes("mobile") ? 2 : 3)) d.setUTCDate(d.getUTCDate() + 1);
-    await page.getByLabel("Date").fill(d.toISOString().slice(0, 10));
-    await page.getByLabel("Time (Eastern)").fill("09:30");
-    // The form starts on "A quote to accept"; this walk-through books outright.
-    await page.getByRole("radio", { name: "Booked now" }).click();
-    await page.getByRole("button", { name: "Book appointment" }).click();
+    for (let attempt = 0; ; attempt++) {
+      await page.goto("/admin/book");
+      await page.getByRole("radio", { name: "New customer" }).click();
+      await page.getByLabel("First name").fill(name);
+      await page.getByLabel(/^Email/).fill(`${unique()}@example.com`);
+      await page.getByLabel("Service address").fill("45 Oak Ln");
+      await page.getByLabel("ZIP").fill("32068");
+      await page.getByLabel("Service", { exact: true }).selectOption("platinum-full");
+      await expect(page.getByLabel("Price ($)")).toHaveValue("200");
+      await page.getByLabel("Date").fill(d.toISOString().slice(0, 10));
+      await page.getByLabel("Time (Eastern)").fill("09:30");
+      // The form starts on "A quote to accept"; this walk-through books outright.
+      await page.getByRole("radio", { name: "Booked now" }).click();
+      await page.getByRole("button", { name: "Book appointment" }).click();
+      const taken = page.getByText(/overlaps another job/);
+      await expect(taken.or(page.getByRole("heading", { name, exact: true }))).toBeVisible();
+      if (!(await taken.isVisible()) || attempt >= 5) break;
+      d.setUTCDate(d.getUTCDate() + 7);
+    }
 
     await expect(page).toHaveURL(/\/admin\/jobs\/[0-9a-f-]{36}\?ok=/);
     await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();

@@ -1,7 +1,7 @@
 import { business } from "@/config/business";
-import { formatUsdRange } from "@/lib/pricing";
+import { addOnPrice } from "@/lib/pricing";
 
-/** Add-on services priced as ranges. Confirmed at inspection and only done with the customer's approval. */
+/** Add-on services, priced as ranges or at inspection. Confirmed at inspection and only done with the customer's approval. */
 export function AdditionalServices() {
   return (
     <div>
@@ -15,7 +15,7 @@ export function AdditionalServices() {
               <span aria-hidden="true" className="h-2 w-2 -skew-x-[20deg] bg-apex-deep transition-transform group-hover:scale-125" />
               <span className="font-medium">{a.name}</span>
             </span>
-            <span className="shrink-0 font-display text-2xl">{formatUsdRange(a.priceMin, a.priceMax)}</span>
+            <span className={a.priceMin === null ? "shrink-0 text-sm font-semibold text-ink-muted" : "shrink-0 font-display text-2xl"}>{addOnPrice(a)}</span>
           </li>
         ))}
       </ul>

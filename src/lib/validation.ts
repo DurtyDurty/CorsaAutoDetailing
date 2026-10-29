@@ -241,6 +241,7 @@ export const calendarRequestSchema = quoteRequestFields
 export type CalendarRequestInput = z.infer<typeof calendarRequestSchema>;
 
 const townIds: [string, ...string[]] = ["other", ...business.serviceAreas.communities.map((c) => c.slug)];
+const optionalAddOnIds = business.additionalServices.filter((a) => a.optional).map((a) => a.id) as [string, ...string[]];
 const fullName = line(100).pipe(z.string().min(1, "Enter your name.").regex(NAME, NAME_MESSAGE));
 
 /**
@@ -255,6 +256,7 @@ export const bookingWizardSchema = z
     ...meta,
     serviceId: z.enum([...serviceIds, "help"], { message: "Choose a package, Corsa Club or Help me choose." }),
     conditionFlags: arrayField(z.enum(BOOKING_CONDITION_FLAGS)).default([]),
+    addOns: arrayField(z.enum(optionalAddOnIds)).default([]),
     name: fullName,
     phone: phoneSchema.pipe(z.string({ message: "Enter your phone number." })),
     email: z

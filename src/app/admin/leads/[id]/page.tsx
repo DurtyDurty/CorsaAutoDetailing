@@ -139,6 +139,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
                       : null
                   }
                 />
+                <Row label="Add-ons requested" value={(lead.estimate?.addOns ?? []).map((a) => (a.amount === 0 ? `${a.label} (price at inspection)` : a.label))} />
                 <Row label="Military / veteran / first responder" value={lead.estimate?.military ? `Yes: ${business.militaryDiscount.percent}% off claimed` : null} />
                 <Row label="Offer claimed" value={lead.estimate?.offer} />
                 <Row label="Review notes" value={lead.estimate?.reviewNotes} />

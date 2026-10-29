@@ -14,7 +14,7 @@ import { intake, baseLead, type IntakeResult } from "@/lib/leads/intake";
 import { OFFER_SIGNUP_NOTE } from "@/lib/leads/shared";
 import { getLeadStore } from "@/lib/leads/store";
 import { photosEnabled, storeLeadPhotos } from "@/lib/photos";
-import { computeEstimate, firstTimeOfferNote, militaryNote } from "@/lib/pricing";
+import { computeEstimate, firstTimeOfferNote, militaryNote, optionalAddOns } from "@/lib/pricing";
 import { normalizeEmail, normalizePhone } from "@/lib/utils";
 import { lookupZip } from "@/lib/zip";
 import {
@@ -221,11 +221,12 @@ function buildWizardLead(d: BookingWizardInput): NewLead {
   const help = d.serviceId === "help";
   const estimate = help
     ? null
-    : computeEstimate({ serviceId: d.serviceId, conditionFlags: d.conditionFlags, firstTimeOffer: d.firstTimeOffer, military: d.military });
+    : computeEstimate({ serviceId: d.serviceId, conditionFlags: d.conditionFlags, firstTimeOffer: d.firstTimeOffer, military: d.military, optionalAddOnIds: d.addOns });
   // "Help me choose" has no estimate to carry the claimed discounts, so they go in the notes.
   const notes = help
     ? [
         "Asked for help choosing a package.",
+        d.addOns.length > 0 ? `Add-ons requested: ${optionalAddOns(d.addOns).map((a) => a.name).join(", ")}.` : null,
         d.firstTimeOffer && business.firstTimeOffer.enabled ? firstTimeOfferNote(null) : null,
         d.military && business.militaryDiscount.enabled ? militaryNote(null) : null,
       ]

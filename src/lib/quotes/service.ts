@@ -93,7 +93,8 @@ export function quoteDraft(a: AppointmentRecord, lead: LeadRecord | null): Quote
   return {
     lines,
     discountCents: a.discountCents,
-    extras: business.additionalServices.map((s) => ({ label: s.name, minCents: s.priceMin * 100, maxCents: s.priceMax * 100 })),
+    // An add-on priced at inspection starts at $0, which the quote shows as "Priced on site" until the owner prices it.
+    extras: business.additionalServices.map((s) => ({ label: s.name, minCents: (s.priceMin ?? 0) * 100, maxCents: (s.priceMax ?? s.priceMin ?? 0) * 100 })),
     defaultExpiresInDays: 3,
     latestExpiry: a.startsAt,
     requested: a.source === "online" ? a.notes : null,

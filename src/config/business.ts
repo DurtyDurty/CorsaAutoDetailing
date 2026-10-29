@@ -80,9 +80,15 @@ export interface PackageNeed {
 export interface AdditionalService {
   id: string;
   name: string;
-  priceMin: number;
+  /** `null` = priced at inspection, no number shown. */
+  priceMin: number | null;
   /** Same as priceMin for a flat price. */
-  priceMax: number;
+  priceMax: number | null;
+  /** Customers can ask for it on the booking form ("Optional add-ons"). */
+  optional?: boolean;
+  /** One line on what's done. Only work that's actually done. */
+  description?: string;
+  es: { name: string; description?: string };
 }
 
 export interface FixedAddOn {
@@ -384,9 +390,34 @@ export const business = {
 
   /** Priced as ranges; shown on the site and confirmed at inspection. Not added to online estimates. */
   additionalServices: [
-    { id: "pet-hair", name: "Excessive pet-hair removal", priceMin: 35, priceMax: 75 },
-    { id: "sand-mud", name: "Heavy sand or mud removal", priceMin: 30, priceMax: 75 },
-    { id: "extraction", name: "Full carpet and seat extraction", priceMin: 50, priceMax: 100 },
+    { id: "pet-hair", name: "Excessive pet-hair removal", priceMin: 35, priceMax: 75, es: { name: "Eliminación de exceso de pelo de mascota" } },
+    { id: "sand-mud", name: "Heavy sand or mud removal", priceMin: 30, priceMax: 75, es: { name: "Remoción de arena o lodo pesado" } },
+    { id: "extraction", name: "Full carpet and seat extraction", priceMin: 50, priceMax: 100, es: { name: "Extracción completa de alfombras y asientos" } },
+    // Added back 2026-10-28 (owner) as optional add-ons, priced at inspection.
+    {
+      id: "paint-enhancement",
+      name: "Paint enhancement",
+      priceMin: null,
+      priceMax: null,
+      optional: true,
+      description: "A one-step machine polish that brings back gloss and softens light swirl marks, finished with sealant.",
+      es: {
+        name: "Realce de pintura",
+        description: "Pulido a máquina de un paso que devuelve el brillo y suaviza las marcas leves de remolinos, con sellador al final.",
+      },
+    },
+    {
+      id: "headlight-restoration",
+      name: "Headlight restoration",
+      priceMin: null,
+      priceMax: null,
+      optional: true,
+      description: "Yellowed, cloudy headlights sanded, polished and sealed with a UV-protective coat.",
+      es: {
+        name: "Restauración de faros",
+        description: "Faros amarillentos u opacos lijados, pulidos y sellados con una capa protectora UV.",
+      },
+    },
 
   ] satisfies AdditionalService[],
 

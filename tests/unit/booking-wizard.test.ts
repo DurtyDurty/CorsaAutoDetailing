@@ -79,6 +79,10 @@ describe("bookingWizardSchema", () => {
       expect(r.data).toMatchObject({ serviceId: "help", military: true, firstTimeOffer: true, lang: "es", conditionFlags: ["pet_hair", "bugs_tar"] });
     }
     expect(parse({ ...valid, conditionFlags: "made_up" }).success).toBe(false);
+    const withAddOn = parse({ ...valid, addOns: "paint-enhancement" });
+    expect(withAddOn.success && withAddOn.data.addOns).toEqual(["paint-enhancement"]);
+    // Only the optional ones can be asked for on the form.
+    expect(parse({ ...valid, addOns: "pet-hair" }).success).toBe(false);
     expect(parse(valid).success && parse(valid).data).toMatchObject({ military: false, lang: "en", conditionFlags: [] });
   });
 

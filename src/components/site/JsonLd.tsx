@@ -41,8 +41,9 @@ export function BusinessJsonLd({ withOffers = true, lang = "en" }: { withOffers?
   const addOnOffers = business.additionalServices.map((a) => ({
     "@type": "Offer",
     priceCurrency: "USD",
-    priceSpecification: { "@type": "PriceSpecification", minPrice: a.priceMin, maxPrice: a.priceMax, priceCurrency: "USD" },
-    itemOffered: { "@type": "Service", name: a.name, provider: { "@id": id } },
+    // Add-ons priced at inspection publish no price at all.
+    ...(a.priceMin !== null && { priceSpecification: { "@type": "PriceSpecification", minPrice: a.priceMin, maxPrice: a.priceMax, priceCurrency: "USD" } }),
+    itemOffered: { "@type": "Service", name: lang === "es" ? a.es.name : a.name, ...(a.description && { description: lang === "es" ? (a.es.description ?? a.description) : a.description }), provider: { "@id": id } },
   }));
 
   const { start, end } = business.scheduling.workHours;

@@ -87,6 +87,8 @@ const en = {
     seeAll: "See everything included",
     book: "Book this package",
     popular: "Most popular",
+    addOnsTitle: "Optional add-ons",
+    addOnsNote: "Add either one to any package. We price it when we see the car, and only do it with your OK.",
   },
   gallery: {
     title: "Before and after",
@@ -144,6 +146,8 @@ const en = {
     packageLegend: "What does your car need?",
     help: { title: "Help me choose", body: "Not sure? We'll recommend a package after we see the car." },
     clubNote: "Starts after your first full detail.",
+    addOnsLegend: "Add-ons",
+    addOnPriced: "Priced when we see the car",
     flagsLegend: "Anything we should know?",
     optional: "optional",
     flags: {
@@ -328,6 +332,8 @@ const es: Dict = {
     seeAll: "Ver todo lo que incluye",
     book: "Reservar este paquete",
     popular: "El más pedido",
+    addOnsTitle: "Extras opcionales",
+    addOnsNote: "Agrega cualquiera a tu paquete. Le damos precio al ver el carro y solo lo hacemos con tu aprobación.",
   },
   gallery: {
     title: "Antes y después",
@@ -385,6 +391,8 @@ const es: Dict = {
     packageLegend: "¿Qué necesita tu carro?",
     help: { title: "Ayúdame a elegir", body: "¿No estás seguro? Te recomendamos un paquete después de ver el carro." },
     clubNote: "Empieza después de tu primer detallado completo.",
+    addOnsLegend: "Extras",
+    addOnPriced: "Precio al ver el carro",
     flagsLegend: "¿Algo que debamos saber?",
     optional: "opcional",
     flags: {

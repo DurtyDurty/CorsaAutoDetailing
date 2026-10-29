@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { business, getService } from "@/config/business";
-import { BOOKING_CONDITION_FLAGS, computeEstimate, conditionFlagLabel, formatServicePrice, groupStartingPrice, recommendService, sizePrices } from "@/lib/pricing";
+import { addOnPrice, BOOKING_CONDITION_FLAGS, computeEstimate, conditionFlagLabel, formatServicePrice, groupStartingPrice, optionalAddOns, recommendService, sizePrices } from "@/lib/pricing";
+
+const getAddOn = (id: string) => business.additionalServices.find((a) => a.id === id)!;
 
 describe("computeEstimate", () => {
   it("returns each package's one starting price", () => {
@@ -94,6 +96,17 @@ describe("computeEstimate", () => {
       "First-time customer: 10% off (about $15 off the $150 starting price); Military, veteran or first responder: 10% off (about $15 off the $150 starting price) (only one discount applies)",
     );
     expect(computeEstimate({ serviceId: "signature-full" })).not.toHaveProperty("military");
+  });
+
+  it("records optional add-ons as $0 lines priced at inspection, never changing the total", () => {
+    expect(optionalAddOns().map((a) => a.id)).toEqual(["paint-enhancement", "headlight-restoration"]);
+    const e = computeEstimate({ serviceId: "signature-full", optionalAddOnIds: ["headlight-restoration", "pet-hair", "bogus"] });
+    expect(e?.addOns).toEqual([{ label: "Headlight restoration", amount: 0 }]);
+    expect(e?.total).toBe(150);
+    expect(computeEstimate({ serviceId: "signature-full" })?.addOns).toEqual([]);
+    expect(addOnPrice(getAddOn("paint-enhancement"))).toBe("Priced at inspection");
+    expect(addOnPrice(getAddOn("paint-enhancement"), "es")).toBe("Precio al revisar");
+    expect(addOnPrice(getAddOn("pet-hair"))).toBe("$35-$75");
   });
 
   it("labels the booking form's condition flags and keeps the old ones readable", () => {

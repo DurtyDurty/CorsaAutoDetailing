@@ -83,7 +83,7 @@ export function QuoteLines({ initial, extras, initialDiscountCents }: { initial:
               onClick={() => setLines((ls) => [...ls, line(x.label, x.minCents)])}
               className="rounded-sm border border-line px-3 py-1.5 text-sm text-ink-muted hover:border-asphalt hover:text-ink"
             >
-              + {x.label} ({x.minCents === x.maxCents ? formatCents(x.minCents) : `${formatCents(x.minCents)}–${formatCents(x.maxCents)}`})
+              + {x.label} ({x.maxCents === 0 ? "priced on site" : x.minCents === x.maxCents ? formatCents(x.minCents) : `${formatCents(x.minCents)}–${formatCents(x.maxCents)}`})
             </button>
           ))}
         </div>

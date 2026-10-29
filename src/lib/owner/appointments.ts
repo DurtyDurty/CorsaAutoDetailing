@@ -142,7 +142,8 @@ export async function getAppointmentDetail(store: LeadStore, id: string): Promis
       spaceNotes: lead?.notes ?? null,
       conditionFlags: lead?.conditionFlags ?? [],
       condition: lead?.condition ?? null,
-      needs: lead?.estimate?.needs ?? [],
+      // Add-ons the customer asked for ride along here, so the app shows them without an update.
+    needs: [...(lead?.estimate?.needs ?? []), ...(lead?.estimate?.addOns ?? []).map((x) => `Add-on requested: ${x.label}`)],
       offer: lead?.estimate?.offer ?? null,
     },
     internalNotes: lead?.internalNotes ?? null,

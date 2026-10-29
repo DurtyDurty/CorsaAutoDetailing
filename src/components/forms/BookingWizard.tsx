@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { submitBookingRequest } from "@/app/actions/leads";
 import { business, getService } from "@/config/business";
 import { dict, type Lang } from "@/i18n/dictionary";
-import { BOOKING_CONDITION_FLAGS, formatUsd } from "@/lib/pricing";
+import { BOOKING_CONDITION_FLAGS, formatUsd, optionalAddOns } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { DayPartPicker } from "./DayPartPicker";
@@ -14,6 +14,7 @@ import { Field, FormMessage, FormMeta, Select, SubmitButton, TextInput, useLeadF
 const FIELD_STEP: Record<string, number> = {
   serviceId: 0,
   conditionFlags: 0,
+  addOns: 0,
   vehicleYear: 1,
   vehicleMake: 1,
   vehicleModel: 1,
@@ -104,6 +105,7 @@ export function BookingWizard({
 
   const packages = business.services.filter((s) => !s.plan);
   const club = business.services.find((s) => s.plan);
+  const addOns = optionalAddOns();
   const holdService = serviceId === "help" ? business.booking.helpHoldService : serviceId;
 
   function goNext() {
@@ -214,6 +216,23 @@ export function BookingWizard({
             </p>
           )}
         </fieldset>
+        {addOns.length > 0 && (
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1.5 text-sm font-medium">
+              {f.addOnsLegend} <span className="font-normal text-ink-muted">({f.optional})</span>
+            </legend>
+            {addOns.map((a) => (
+              <label key={a.id} className="choice">
+                <input type="checkbox" name="addOns" value={a.id} className="checkbox" />
+                <span className="min-w-0">
+                  <span className="block font-medium leading-snug">{lang === "es" ? a.es.name : a.name}</span>
+                  {a.description && <span className="mt-0.5 block text-sm text-ink-muted">{lang === "es" ? (a.es.description ?? a.description) : a.description}</span>}
+                  <span className="mt-0.5 block text-xs font-semibold uppercase tracking-[0.08em] text-apex-deep">{f.addOnPriced}</span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+        )}
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1.5 text-sm font-medium">
             {f.flagsLegend} <span className="font-normal text-ink-muted">({f.optional})</span>
