@@ -73,12 +73,10 @@ export const isQuotable = (a: AppointmentRecord) => a.status === "held" && a.dep
 const easternHhmm = (iso: string) =>
   new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: business.timeZone }).format(new Date(iso));
 
-/** Half-hour arrival times in working hours that leave room for the job; the current one is always included. */
+/** Every quarter hour from 6 AM to 10 PM (the owner's call, not just working hours); the current one is always included. */
 function arrivalOptions(a: AppointmentRecord): string[] {
-  const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3));
-  const minutes = Math.round((Date.parse(a.endsAt) - Date.parse(a.startsAt)) / 60_000);
   const out = new Set<string>();
-  for (let t = toMin(business.scheduling.workHours.start); t + minutes <= toMin(business.scheduling.workHours.end); t += 30) {
+  for (let t = 6 * 60; t <= 22 * 60; t += 15) {
     out.add(`${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
   }
   out.add(easternHhmm(a.startsAt));

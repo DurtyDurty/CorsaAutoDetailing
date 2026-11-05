@@ -12,7 +12,7 @@ import { Field } from "@/design/Field";
 import { Segmented } from "@/design/Segmented";
 import { Text } from "@/design/Text";
 import { colors, radius, space } from "@/design/theme";
-import { formatLongDate, pickerDate } from "@/lib/format";
+import { formatLongDate, pickerDate, pickerTime } from "@/lib/format";
 
 type Line = { key: string; label: string; amount: string };
 type Days = "1" | "2" | "3" | "5" | "7";
@@ -147,22 +147,20 @@ export function QuoteSheet({ appt, draft, visible, onClose }: { appt: Appointmen
               </Text>
             </View>
             <Text variant="label">Arrival time</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-              {draft.arrivalOptions.map((t) => (
-                <Pressable
-                  key={t}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: arrival === t }}
-                  accessibilityLabel={`Arrive ${clock(t)}`}
-                  onPress={() => setArrival(t)}
-                  style={[styles.chip, arrival === t && styles.chipOn]}
-                >
-                  <Text variant="caption" style={arrival === t ? styles.chipOnText : undefined}>
-                    {clock(t)}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+            <View style={styles.dayRow}>
+              <DateTimePicker
+                value={new Date(day.getFullYear(), day.getMonth(), day.getDate(), Number(arrival.slice(0, 2)), Number(arrival.slice(3, 5)))}
+                mode="time"
+                minuteInterval={15}
+                display={Platform.OS === "ios" ? "compact" : "default"}
+                themeVariant="dark"
+                accentColor={colors.accent}
+                onChange={(_, d) => d && setArrival(pickerTime(d))}
+              />
+              <Text variant="caption" style={styles.flex}>
+                Any time, Eastern
+              </Text>
+            </View>
 
             {lines.map((l, i) => (
               <View key={l.key} style={styles.line}>
@@ -267,6 +265,4 @@ const styles = StyleSheet.create({
   totalValue: { color: colors.text },
   error: { color: colors.error },
   asked: { borderLeftWidth: 3, borderLeftColor: colors.warning, paddingLeft: space.md, gap: space.xs },
-  chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-  chipOnText: { color: colors.text },
 });
