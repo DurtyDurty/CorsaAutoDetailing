@@ -242,6 +242,12 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
               <Text variant="caption">Agreed by text or phone instead of the quote link? Book it yourself.</Text>
             </>
           )}
+          {a.status === "held" && (
+            <>
+              <Button label="Change day or time" variant="ghost" onPress={() => setMoving(true)} fullWidth />
+              <Text variant="caption">Move it first, then send the quote or book it. A quote already sent stops working, so send a new one for the new day.</Text>
+            </>
+          )}
         </Card>
       )}
       {a.status === "completed" && b.balanceDueCents > 0 && (

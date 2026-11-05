@@ -511,6 +511,8 @@ export interface QuoteDraft {
   latestExpiry: string;
   /** What the customer asked for on the website, e.g. "Morning, around 9:30". */
   requested: string | null;
+  /** The day held now ("2026-11-08", Eastern); the quote can move the job to another day. */
+  arrivalDate: string;
   /** The arrival time held now ("08:00", Eastern) and the times you can set with the quote. */
   arrivalTime: string;
   arrivalOptions: string[];
@@ -536,7 +538,12 @@ export const sendQuoteSchema = z
     discountCents: z.coerce.number().int().min(0).max(1_000_000).default(0),
     notes: z.string().trim().max(1000).optional(),
     expiresInDays: z.coerce.number().int().min(1).max(14).default(3),
-    /** Set the exact arrival time (Eastern, same day) as the quote goes out. */
+    /** Move the job to this day (Eastern) as the quote goes out. Leave it out to keep the day. */
+    arrivalDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a day.")
+      .optional(),
+    /** Set the exact arrival time (Eastern) as the quote goes out. */
     arrivalTime: z
       .string()
       .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Pick an arrival time.")

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { QUOTE_STATUS_LABELS, type AppointmentDetail } from "@shared/api";
 import { formatCents } from "@shared/money";
-import { formatEastern } from "@/lib/time";
+import { formatEastern, todayEastern } from "@/lib/time";
 import { ConfirmSubmit } from "@/components/admin/work/ConfirmSubmit";
 import { QuoteLines } from "@/components/admin/work/QuoteLines";
 import { sendQuoteAction } from "@/app/admin/jobs/actions";
@@ -79,16 +79,23 @@ function QuoteForm({ a, back, revising }: { a: AppointmentDetail; back: string; 
               Customer asked for: <strong>{draft.requested}</strong>
             </p>
           )}
-          <label className="flex flex-col gap-1 text-sm sm:w-64">
-            <span className="font-medium">Arrival time (Eastern, same day)</span>
-            <select name="arrivalTime" defaultValue={draft.arrivalTime} className="field min-h-10 py-2">
-              {draft.arrivalOptions.map((t) => (
-                <option key={t} value={t}>
-                  {clock(t)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <label className="flex flex-col gap-1 text-sm sm:w-48">
+              <span className="font-medium">Day</span>
+              <input type="date" name="arrivalDate" defaultValue={draft.arrivalDate} min={todayEastern()} required className="field min-h-10 py-2" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm sm:w-48">
+              <span className="font-medium">Arrival time (Eastern)</span>
+              <select name="arrivalTime" defaultValue={draft.arrivalTime} className="field min-h-10 py-2">
+                {draft.arrivalOptions.map((t) => (
+                  <option key={t} value={t}>
+                    {clock(t)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <p className="-mt-2 text-xs text-ink-muted">Change the day to move the job; the quote goes out for the new day.</p>
           <QuoteLines initial={lines} extras={draft.extras} initialDiscountCents={revising && q ? q.discountCents : 0} />
           <label className="flex flex-col gap-1 text-sm sm:w-64">
               <span className="font-medium">Customer has to answer within</span>

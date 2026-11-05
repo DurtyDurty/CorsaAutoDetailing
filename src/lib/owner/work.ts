@@ -52,7 +52,14 @@ export async function rescheduleAppointment(store: LeadStore, actor: string, id:
   const { start, end } = await assertCanSchedule(store, { ...input, excludeId: id });
   let updated: AppointmentRecord | null;
   try {
-    updated = await store.updateAppointmentIfStatus(id, appt.status, { startsAt: start.toISOString(), endsAt: end.toISOString() });
+    updated = await store.updateAppointmentIfStatus(id, appt.status, {
+      startsAt: start.toISOString(),
+      endsAt: end.toISOString(),
+      // A held time moved later is held afresh (as a new request would be), so the old hold doesn't release it.
+      ...(appt.status === "held"
+        ? { holdExpiresAt: new Date(Math.min(Date.now() + business.booking.requestHoldHours * 3600_000, start.getTime())).toISOString() }
+        : {}),
+    });
   } catch (err) {
     if (err instanceof SlotTakenError) throw new ApiError("conflict", overlapMessage(business.scheduling.travelBufferMinutes));
     throw err;

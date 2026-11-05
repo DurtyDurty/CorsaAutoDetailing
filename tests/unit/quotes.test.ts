@@ -237,6 +237,27 @@ describe("sending a quote", () => {
     expect((await s.getAppointment(appt.id))!.startsAt).toBe(job.startsAt);
   });
 
+  it("moves the job to another day as the quote goes out", async () => {
+    const appt = await request("dana@example.com", { dayPart: "morning", preferredTime: "around 9:30" });
+    const { easternToUtc, formatEastern, todayEastern } = await import("@/lib/time");
+    const { getAppointmentDetail } = await import("@/lib/owner/appointments");
+    expect((await getAppointmentDetail(await store(), appt.id)).quoteDraft!.arrivalDate).toBe(todayEastern(new Date(appt.startsAt)));
+
+    const later = todayEastern(new Date(Date.parse(appt.startsAt) + 3 * 86_400_000));
+    const res = await sendQuote(appt.id, { arrivalDate: later, arrivalTime: "11:00" });
+    expect(res.status).toBe(200);
+    const job = (await (await store()).getAppointment(appt.id))!;
+    expect(job.startsAt).toBe(easternToUtc(later, "11:00").toISOString());
+    expect(Date.parse(job.endsAt) - Date.parse(job.startsAt)).toBe(Date.parse(appt.endsAt) - Date.parse(appt.startsAt));
+    expect(res.body.appointment.events.some((e) => e.type === "rescheduled" && e.note?.startsWith("Moved from"))).toBe(true);
+    const mail = (await outbox()).filter((m) => m.subject.startsWith("Your quote")).at(-1)!;
+    expect(mail.text).toContain(formatEastern(job.startsAt, { dateStyle: "full", timeStyle: undefined }));
+    // The hold now runs to the quote's expiry (never past the new start), not the old day.
+    expect(job.holdExpiresAt).toBe(new Date(Math.min(Date.parse(res.body.quote.expiresAt), Date.parse(job.startsAt))).toISOString());
+
+    expect((await sendQuote(appt.id, { arrivalDate: "2020-01-01", arrivalTime: "11:00" })).status).toBe(422);
+  });
+
   it("refuses anyone but the owner, and checks the numbers", async () => {
     const appt = await request();
     expect((await sendQuote(appt.id, {}, "")).status).toBe(401);

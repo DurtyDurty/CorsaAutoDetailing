@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import * as Haptics from "expo-haptics";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ON_SITE_PRICE, QUOTE_MAX_LINES, type AppointmentDetail, type QuoteDraft } from "@shared/api";
@@ -11,6 +12,7 @@ import { Field } from "@/design/Field";
 import { Segmented } from "@/design/Segmented";
 import { Text } from "@/design/Text";
 import { colors, radius, space } from "@/design/theme";
+import { formatLongDate, pickerDate } from "@/lib/format";
 
 type Line = { key: string; label: string; amount: string };
 type Days = "1" | "2" | "3" | "5" | "7";
@@ -25,6 +27,11 @@ const dollars = (cents: number) => (cents / 100).toFixed(2).replace(/\.00$/, "")
 const toCents = (s: string) => {
   const t = s.replace(/[$,\s]/g, "");
   return t === "" ? 0 : Math.round(Number(t) * 100);
+};
+/** "2026-11-08" → that day at noon on the device clock (noon keeps it on the same date across time zones). */
+const dayFrom = (ymd: string) => {
+  const [y = 1970, m = 1, d = 1] = ymd.split("-").map(Number);
+  return new Date(y, m - 1, d, 12);
 };
 let seq = 0;
 const line = (label: string, cents: number): Line => ({ key: `l${seq++}`, label, amount: cents ? dollars(cents) : "" });
@@ -42,6 +49,9 @@ export function QuoteSheet({ appt, draft, visible, onClose }: { appt: Appointmen
   const [notes, setNotes] = useState(prior?.notes ?? "");
   const [days, setDays] = useState<Days>(String(draft.defaultExpiresInDays) as Days);
   const [arrival, setArrival] = useState(draft.arrivalTime);
+  const heldDay = draft.arrivalDate ?? appt.startsAt.slice(0, 10);
+  const [day, setDay] = useState(() => dayFrom(heldDay));
+  const moved = pickerDate(day) !== heldDay;
   const [error, setError] = useState<string | null>(null);
   // One id per intended send: a retry after a dropped connection sends once.
   const requestId = useRef(newRequestId());
@@ -62,13 +72,24 @@ export function QuoteSheet({ appt, draft, visible, onClose }: { appt: Appointmen
     if (!Number.isFinite(discountCents) || discountCents < 0) return setError("Check the discount.");
     if (payload.length === 0 || total <= 0) return setError("The total must be more than $0.");
     setError(null);
-    Alert.alert(`Send ${formatCents(total)} quote?`, `Arrival ${clock(arrival)}. ${appt.customerName} gets it by email with a PDF and a link to accept. Accepting confirms the job.`, [
+    Alert.alert(
+      `Send ${formatCents(total)} quote?`,
+      `${moved ? "Moves the job to " : ""}${formatLongDate(day)}, arrival ${clock(arrival)}. ${appt.customerName} gets it by email with a PDF and a link to accept. Accepting confirms the job.`,
+      [
       { text: "Not yet", style: "cancel" },
       {
         text: "Send",
         onPress: () =>
           send.mutate(
-            { requestId: requestId.current, lines: payload, discountCents, notes: notes.trim() || undefined, expiresInDays: Number(days), arrivalTime: arrival },
+            {
+              requestId: requestId.current,
+              lines: payload,
+              discountCents,
+              notes: notes.trim() || undefined,
+              expiresInDays: Number(days),
+              arrivalDate: pickerDate(day),
+              arrivalTime: arrival,
+            },
             {
               onSuccess: (res) => {
                 requestId.current = newRequestId();
@@ -88,7 +109,8 @@ export function QuoteSheet({ appt, draft, visible, onClose }: { appt: Appointmen
             },
           ),
       },
-    ]);
+      ],
+    );
   };
 
   return (
@@ -109,7 +131,22 @@ export function QuoteSheet({ appt, draft, visible, onClose }: { appt: Appointmen
                 <Text variant="bodyStrong">{draft.requested}</Text>
               </View>
             )}
-            <Text variant="label">Arrival time (same day)</Text>
+            <Text variant="label">Day</Text>
+            <View style={styles.dayRow}>
+              <DateTimePicker
+                value={day}
+                mode="date"
+                display={Platform.OS === "ios" ? "compact" : "default"}
+                themeVariant="dark"
+                accentColor={colors.accent}
+                minimumDate={new Date()}
+                onChange={(_, d) => d && setDay(new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12))}
+              />
+              <Text variant="caption" style={styles.flex}>
+                {moved ? `Moves the job to ${formatLongDate(day)}` : "Change it to move the job to another day"}
+              </Text>
+            </View>
+            <Text variant="label">Arrival time</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
               {draft.arrivalOptions.map((t) => (
                 <Pressable
@@ -216,6 +253,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: space.lg, gap: space.lg, paddingBottom: space.xxl },
   head: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  dayRow: { flexDirection: "row", alignItems: "center", gap: space.md },
   line: { flexDirection: "row", gap: space.sm, alignItems: "flex-end" },
   lineLabel: { flex: 1 },
   lineAmount: { width: 96 },
