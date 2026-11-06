@@ -1,4 +1,4 @@
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { business } from "@/config/business";
 import { computeAvailability, isSlotAvailable } from "@/lib/availability";
 import { easternToUtc } from "@/lib/time";
@@ -8,6 +8,7 @@ const NOW = easternToUtc("2026-10-21", "15:00");
 const at = (date: string, time: string) => easternToUtc(date, time).toISOString();
 const times = (date: string, list: string[]) => list.map((t) => at(date, t));
 const ARRIVALS = [...business.booking.arrivalWindows];
+const MAX_PER_DAY = business.scheduling.maxJobsPerDay;
 const D = "2026-10-22";
 const MORNING = ["09:30", "10:00", "10:30", "11:00", "11:30"];
 const AFTERNOON = ["12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00"];
@@ -17,8 +18,32 @@ describe("computeAvailability", () => {
   beforeAll(() => {
     Object.assign(business.booking.durationMinutes, { "signature-full": 180, "platinum-full": 300 });
   });
+  // The window tests below describe two visits a day; the daily limit has its own tests.
+  beforeEach(() => {
+    Object.assign(business.scheduling, { maxJobsPerDay: null });
+  });
   afterEach(() => {
     business.booking.arrivalWindows.splice(0, Infinity, ...ARRIVALS);
+    Object.assign(business.scheduling, { maxJobsPerDay: MAX_PER_DAY });
+  });
+
+  it("with one job a day, any job that day closes the whole day", () => {
+    Object.assign(business.scheduling, { maxJobsPerDay: 1 });
+    // A short afternoon job that would otherwise leave the morning open.
+    const busy = [{ start: at(D, "14:00"), busyUntil: at(D, "15:45") }];
+    const days = computeAvailability({ serviceId: "signature-full", busy, now: NOW });
+    expect(days[0]).toEqual({ date: D, slots: [] });
+    // The next day is untouched.
+    expect(days[1]!.slots.length).toBeGreaterThan(0);
+    expect(isSlotAvailable({ serviceId: "signature-full", busy, now: NOW, startIso: at(D, "09:30") })).toBe(false);
+  });
+
+  it("with two jobs a day, the day stays open until the second one", () => {
+    Object.assign(business.scheduling, { maxJobsPerDay: 2 });
+    const one = [{ start: at(D, "14:00"), busyUntil: at(D, "17:45") }];
+    expect(computeAvailability({ serviceId: "signature-full", busy: one, now: NOW })[0]!.slots).toEqual(times(D, ["09:30", "10:00"]));
+    const two = [...one, { start: at(D, "09:30"), busyUntil: at(D, "10:30") }];
+    expect(computeAvailability({ serviceId: "signature-full", busy: two, now: NOW })[0]!.slots).toEqual([]);
   });
 
   it("offers every day of the week, from tomorrow up to 30 days out", () => {

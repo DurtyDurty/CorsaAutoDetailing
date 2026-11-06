@@ -12,7 +12,7 @@ import { isBlocking } from "@shared/appointment-status";
 import { ApiError } from "@/lib/api/http";
 import { SlotTakenError, type AppointmentRecord, type LeadStore, type NewLead } from "@/lib/leads/types";
 import { computeEstimate } from "@/lib/pricing";
-import { easternToUtc, isIsoDate, overlapsWithBuffer, withinWorkHours } from "@/lib/time";
+import { easternToUtc, isIsoDate, overlapsWithBuffer, todayEastern, withinWorkHours } from "@/lib/time";
 import { lookupZip } from "@/lib/zip";
 import { getAppointmentDetail, logAppointmentEvent } from "./appointments";
 import { appointmentConfirmationEmail, sendOwnerEmail } from "./email";
@@ -28,7 +28,7 @@ export interface ScheduleInput {
   priceCents: number;
   serviceId: string | null;
   notes: string | null;
-  /** Allow outside working hours / days off. Never allows overlapping another job. */
+  /** Allow outside working hours / days off / a day that already has its jobs. Never allows overlapping another job. */
   override: boolean;
   /** Hold the time for a quote instead of confirming it (the customer accepting the quote confirms). */
   quoteFirst?: boolean;
@@ -38,8 +38,8 @@ export interface ScheduleInput {
 
 /**
  * The checks every booking passes: open for business, a real future time,
- * working hours and days off (unless overridden), and no overlap with another
- * job including the travel buffer. Throws ApiError the owner can act on.
+ * working hours, days off and the daily job limit (unless overridden), and no
+ * overlap with another job including the travel buffer. Throws ApiError the owner can act on.
  */
 export async function assertCanSchedule(
   store: LeadStore,
@@ -63,20 +63,30 @@ export async function assertCanSchedule(
     if (dayOff) throw new ApiError("conflict", "That date is marked as a day off. Book anyway?", { override: OVERRIDABLE });
   }
 
-  const buffer = business.scheduling.travelBufferMinutes;
+  const { travelBufferMinutes: buffer, maxJobsPerDay } = business.scheduling;
   const nearby = await store.listAppointments({
     from: new Date(start.getTime() - 24 * 3600_000).toISOString(),
     to: new Date(end.getTime() + 24 * 3600_000).toISOString(),
   });
   const nowIso = new Date().toISOString();
-  const clash = nearby.find(
+  const active = nearby.filter(
     (a) =>
       a.id !== input.excludeId &&
       isBlocking(a.status) &&
-      !(a.status === "held" && a.holdExpiresAt !== null && a.holdExpiresAt < nowIso) &&
-      overlapsWithBuffer({ start: new Date(a.startsAt), end: new Date(a.endsAt) }, { start, end }, buffer),
+      !(a.status === "held" && a.holdExpiresAt !== null && a.holdExpiresAt < nowIso),
   );
+  const clash = active.find((a) => overlapsWithBuffer({ start: new Date(a.startsAt), end: new Date(a.endsAt) }, { start, end }, buffer));
   if (clash) throw new ApiError("conflict", overlapMessage(buffer));
+
+  // Moving a job within its own day doesn't add a job to that day.
+  const moving = nearby.find((a) => a.id === input.excludeId);
+  const staysOnDay = moving !== undefined && todayEastern(new Date(moving.startsAt)) === input.date;
+  if (!input.override && maxJobsPerDay !== null && !staysOnDay) {
+    const sameDay = active.filter((a) => todayEastern(new Date(a.startsAt)) === input.date).length;
+    if (sameDay >= maxJobsPerDay) {
+      throw new ApiError("conflict", "You already have a job booked that day. Book anyway?", { override: OVERRIDABLE });
+    }
+  }
   return { start, end };
 }
 

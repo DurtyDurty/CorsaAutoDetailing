@@ -624,6 +624,12 @@ export const business = {
     workDays: [0, 1, 2, 3, 4, 5, 6],
     /** Minutes reserved between confirmed appointments for travel and setup. */
     travelBufferMinutes: 45,
+    /**
+     * Jobs per day (2026-11-06: one). Once a day has this many active jobs (confirmed,
+     * or a request still held), the website shows it as full and the app asks before
+     * booking another. null = no daily limit (the arrival windows and travel buffer still apply).
+     */
+    maxJobsPerDay: 1 as number | null,
     /** Default appointment duration used for conflict checks until validated. */
     defaultDurationMinutes: 120,
     timeWindows: [

@@ -60,7 +60,7 @@ async function nextTuesday(): Promise<string> {
   return d;
 }
 
-async function book(t: string, time: string, email = "sam@example.com") {
+async function book(t: string, time: string, email = "sam@example.com", override = false) {
   const { POST } = await import("@/app/api/owner/v1/appointments/route");
   const res = await POST(
     req("/appointments", {
@@ -75,6 +75,7 @@ async function book(t: string, time: string, email = "sam@example.com") {
         durationMinutes: 120,
         priceCents: 29900,
         sendConfirmation: false,
+        override,
       },
     }),
   );
@@ -102,8 +103,28 @@ describe("working a job", () => {
     const r = await routes();
     const t = await token();
     const a = await book(t, "10:00");
-    const b = await book(t, "14:00", "pat@example.com");
     const date = await nextTuesday();
+    // One job a day: a second job that day needs "Book anyway?".
+    const { POST } = await import("@/app/api/owner/v1/appointments/route");
+    const second = await POST(
+      req("/appointments", {
+        method: "POST",
+        token: t,
+        body: {
+          requestId: crypto.randomUUID(),
+          customer: { new: { firstName: "Pat", email: "pat@example.com", serviceAddress: "1 Oak St", zip: "32003" } },
+          serviceId: "platinum-full",
+          date,
+          time: "14:00",
+          durationMinutes: 120,
+          priceCents: 29900,
+          sendConfirmation: false,
+        },
+      }),
+    );
+    expect(second.status).toBe(409);
+    expect(((await second.json()) as { error: { message: string } }).error.message).toMatch(/already have a job/);
+    const b = await book(t, "14:00", "pat@example.com", true);
     const move = (id: string, time: string, requestId = crypto.randomUUID()) =>
       r.reschedule.POST(req(`/appointments/${id}/reschedule`, { method: "POST", token: t, body: { requestId, date, time, durationMinutes: 120 } }), params({ id }));
 

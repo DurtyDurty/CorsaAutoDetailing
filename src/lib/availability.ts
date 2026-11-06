@@ -79,12 +79,23 @@ export function computeAvailability({ serviceId, busy, daysOff = [], now = new D
   const dayEnd = toMin(workHours.end);
   const off = new Set(daysOff);
   const windows = busy.map((b) => ({ s: Date.parse(b.start), e: Date.parse(b.busyUntil) }));
+  const { maxJobsPerDay } = business.scheduling;
+  const jobsOn = new Map<string, number>();
+  for (const b of busy) {
+    const day = todayEastern(new Date(b.start));
+    jobsOn.set(day, (jobsOn.get(day) ?? 0) + 1);
+  }
 
   const days: AvailableDay[] = [];
   const last = lastBookableDate(now);
   for (let date = firstBookableDate(now); date <= last; date = addDays(date, 1)) {
     if (!(workDays as readonly number[]).includes(weekdayOf(date)) || off.has(date)) continue;
     const slots: string[] = [];
+    // Daily limit reached: the day shows as full.
+    if (maxJobsPerDay !== null && (jobsOn.get(date) ?? 0) >= maxJobsPerDay) {
+      days.push({ date, slots });
+      continue;
+    }
     for (const group of dayGroups(dayStart, dayEnd, slotIntervalMinutes)) {
       // One visit per window: anything already starting in it takes the whole window.
       if (group.occupies) {
