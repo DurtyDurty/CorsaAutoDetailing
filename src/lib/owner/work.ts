@@ -4,7 +4,7 @@ import type { AppointmentDetail, ChangeTotalInput, RecordPaymentInput, Reschedul
 import { computeBalance, formatCents, PAYMENT_METHOD_LABELS } from "@shared/money";
 import { ApiError } from "@/lib/api/http";
 import { SlotTakenError, type AppointmentRecord, type LeadStore } from "@/lib/leads/types";
-import { formatEastern } from "@/lib/time";
+import { easternToUtc, formatEastern } from "@/lib/time";
 import { getAppointmentDetail, logAppointmentEvent, priceChangeNote, WORK_CONFIRMATION_SENT } from "./appointments";
 import { sendOwnerEmail } from "./email";
 import { createInvoiceUrl, invoiceDocument, invoiceFilename, isInvoiceable, renderInvoice } from "./invoice";
@@ -49,6 +49,10 @@ export async function rescheduleAppointment(store: LeadStore, actor: string, id:
     throw new ApiError("conflict", "Only an upcoming appointment can be moved.");
   }
 
+  // A held time waits on a quote, so it needs a time still to come; a confirmed job can be moved back to record when it really happened.
+  if (appt.status === "held" && easternToUtc(input.date, input.time).getTime() <= Date.now()) {
+    throw new ApiError("invalid", "A quote needs a time that hasn't started yet.", { time: "Pick a later time." });
+  }
   const { start, end } = await assertCanSchedule(store, { ...input, excludeId: id });
   let updated: AppointmentRecord | null;
   try {
@@ -79,7 +83,8 @@ export async function rescheduleAppointment(store: LeadStore, actor: string, id:
   });
 
   let customerEmail = SKIPPED;
-  if (input.notifyCustomer) {
+  // Moved to a time that's already passed (recording when it really happened): nothing to tell the customer.
+  if (input.notifyCustomer && start.getTime() > Date.now()) {
     const lead = await store.getLead(appt.leadId);
     customerEmail = await emailCustomer(
       store,

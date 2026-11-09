@@ -178,7 +178,7 @@ export function BookForm({
         </label>
         {state.canOverride && (
           <label className="flex items-center gap-2 text-sm text-[#8a5a12]">
-            <input type="checkbox" name="override" className="checkbox" /> {quoting ? "Hold it anyway" : "Book anyway"} (outside working hours or a day off)
+            <input type="checkbox" name="override" className="checkbox" /> {quoting ? "Hold it anyway" : "Book anyway"} (outside working hours, a day off, or a time that&apos;s passed)
           </label>
         )}
       </section>

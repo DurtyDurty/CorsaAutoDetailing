@@ -65,7 +65,7 @@ export function RescheduleSheet({ appt, visible, onClose }: { appt: AppointmentD
           <Text variant="caption">{appt.customerName} · {appt.serviceName ?? "Service"}</Text>
           <Text variant="label">New time (Eastern)</Text>
           <View style={styles.pickers}>
-            <DateTimePicker value={when} mode="date" display={Platform.OS === "ios" ? "compact" : "default"} themeVariant="dark" accentColor={colors.accent} minimumDate={new Date()} onChange={(_, d) => d && setWhen((w) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), w.getHours(), w.getMinutes()))} />
+            <DateTimePicker value={when} mode="date" display={Platform.OS === "ios" ? "compact" : "default"} themeVariant="dark" accentColor={colors.accent} onChange={(_, d) => d && setWhen((w) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), w.getHours(), w.getMinutes()))} />
             <DateTimePicker value={when} mode="time" minuteInterval={15} display={Platform.OS === "ios" ? "compact" : "default"} themeVariant="dark" accentColor={colors.accent} onChange={(_, d) => d && setWhen((w) => new Date(w.getFullYear(), w.getMonth(), w.getDate(), d.getHours(), d.getMinutes()))} />
           </View>
           <Text variant="label">How long</Text>

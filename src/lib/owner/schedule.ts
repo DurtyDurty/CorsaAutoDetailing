@@ -17,8 +17,11 @@ import { lookupZip } from "@/lib/zip";
 import { getAppointmentDetail, logAppointmentEvent } from "./appointments";
 import { appointmentConfirmationEmail, sendOwnerEmail } from "./email";
 
-/** A booking may start up to this long ago (the owner entering a job they're already at). */
+/** A booking may start up to this long ago (the owner entering a job they're already at) without asking. */
 const PAST_GRACE_MS = 15 * 60_000;
+
+/** Earlier than that is a job already done that the owner is recording: allowed once he confirms. */
+const PAST_MESSAGE = "That time has already passed. Go ahead anyway to keep a record of the job?";
 
 export interface ScheduleInput {
   leadId: string;
@@ -37,8 +40,8 @@ export interface ScheduleInput {
 }
 
 /**
- * The checks every booking passes: open for business, a real future time,
- * working hours, days off and the daily job limit (unless overridden), and no
+ * The checks every booking passes: open for business, a valid time, and a future
+ * time, working hours, days off and the daily job limit (unless overridden), and no
  * overlap with another job including the travel buffer. Throws ApiError the owner can act on.
  */
 export async function assertCanSchedule(
@@ -54,9 +57,8 @@ export async function assertCanSchedule(
   if (!isIsoDate(input.date) || !/^\d{2}:\d{2}$/.test(input.time)) throw new ApiError("invalid", "Enter a valid date and time.");
   const start = easternToUtc(input.date, input.time);
   const end = new Date(start.getTime() + input.durationMinutes * 60_000);
-  if (start.getTime() < Date.now() - PAST_GRACE_MS) throw new ApiError("invalid", "That time is in the past.");
-
   if (!input.override) {
+    if (start.getTime() < Date.now() - PAST_GRACE_MS) throw new ApiError("conflict", PAST_MESSAGE, { override: OVERRIDABLE });
     const hours = withinWorkHours(start, end);
     if (!hours.ok) throw new ApiError("conflict", `${hours.reason} Book anyway?`, { override: OVERRIDABLE });
     const dayOff = (await store.listTimeOff({ from: input.date })).find((t) => t.day === input.date);
@@ -202,11 +204,14 @@ export async function bookFromApp(store: LeadStore, actor: string, input: Create
     return { appointment, confirmation: "skipped", confirmationError: null, alreadyBooked: true };
   }
 
-  // Check the time before creating anything, so a refused booking leaves no stray customer behind.
-  const { start } = await assertCanSchedule(store, input);
-  if (input.quoteFirst && start.getTime() <= Date.now()) {
+  // A quote is for a job still to come; say so before offering "book anyway" for a past time.
+  if (input.quoteFirst && isIsoDate(input.date) && /^\d{2}:\d{2}$/.test(input.time) && easternToUtc(input.date, input.time).getTime() <= Date.now()) {
     throw new ApiError("invalid", "A quote needs a time that hasn't started yet.", { time: "Pick a later time." });
   }
+  // Check the time before creating anything, so a refused booking leaves no stray customer behind.
+  const { start } = await assertCanSchedule(store, input);
+  // A job already done (recorded after the fact): the customer isn't sent a confirmation for it.
+  const alreadyStarted = start.getTime() <= Date.now();
 
   let leadId: string;
   if ("leadId" in input.customer) {
@@ -237,7 +242,7 @@ export async function bookFromApp(store: LeadStore, actor: string, input: Create
   // Quote first: nothing is confirmed yet, so the customer hears from us when the quote is sent.
   const lead = (await store.getLead(leadId))!;
   // No email on file (booked by phone): nothing to send, which isn't a failure.
-  if (input.sendConfirmation && !input.quoteFirst && lead.email) {
+  if (input.sendConfirmation && !input.quoteFirst && lead.email && !alreadyStarted) {
     const email = appointmentConfirmationEmail({
       firstName: lead.firstName,
       serviceName: service.name,

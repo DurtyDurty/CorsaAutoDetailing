@@ -280,6 +280,26 @@ describe("working a job", () => {
   });
 });
 
+describe("recording a job after the fact", () => {
+  it("moves a confirmed job back to when it really happened without emailing the new time", async () => {
+    const r = await routes();
+    const t = await token();
+    const a = await book(t, "10:00");
+    const move = (override: boolean) =>
+      r.reschedule.POST(
+        req(`/appointments/${a.id}/reschedule`, { method: "POST", token: t, body: { requestId: crypto.randomUUID(), date: "2020-01-07", time: "10:00", durationMinutes: 120, override, notifyCustomer: true } }),
+        params({ id: a.id }),
+      );
+    expect((await move(false)).status).toBe(409);
+    const res = await move(true);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as WorkResponse;
+    expect(body.customerEmail.status).toBe("skipped");
+    expect(body.appointment.startsAt.startsWith("2020-01-07")).toBe(true);
+    expect((await outbox()).some((m) => m.subject.startsWith("New time"))).toBe(false);
+  });
+});
+
 describe("adding a customer's email", () => {
   it("adds the email of a customer who booked without one, logs it on the job, and emails go to it", async () => {
     const t = await token();

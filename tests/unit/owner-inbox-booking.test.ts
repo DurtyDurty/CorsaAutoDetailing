@@ -374,12 +374,33 @@ describe("booking from the app", () => {
     expect(((await res.json()) as CreateAppointmentResponse).confirmation).toBe("skipped");
   });
 
-  it("rejects an unknown service and a time in the past", async () => {
+  it("rejects an unknown service", async () => {
     const r = await routes();
     const t = await token();
     const base = { requestId: crypto.randomUUID(), customer: { new: newCustomer }, time: "10:00", durationMinutes: 60, priceCents: 0 };
     expect((await r.appointments.POST(req("/appointments", { method: "POST", token: t, body: { ...base, serviceId: "boat-wash", date: await nextTuesday() } }))).status).toBe(422);
-    expect((await r.appointments.POST(req("/appointments", { method: "POST", token: t, body: { ...base, serviceId: "signature-full", date: "2020-01-07" } }))).status).toBe(422);
+  });
+
+  it("books a job that already happened once the owner confirms, without emailing the customer", async () => {
+    const r = await routes();
+    const t = await token();
+    const body = { requestId: crypto.randomUUID(), customer: { new: newCustomer }, serviceId: "signature-full", date: "2020-01-07", time: "10:00", durationMinutes: 60, priceCents: 19900, sendConfirmation: true };
+    const post = (extra: Record<string, unknown>) => r.appointments.POST(req("/appointments", { method: "POST", token: t, body: { ...body, ...extra } }));
+
+    // A quote is only for a job still to come.
+    expect((await post({ quoteFirst: true })).status).toBe(422);
+    const ask = await post({});
+    expect(ask.status).toBe(409);
+    const asked = (await ask.json()) as { error: { message: string; fields?: Record<string, string> } };
+    expect(asked.error.message).toMatch(/already passed/);
+    expect(asked.error.fields?.override).toBe((await import("@shared/api")).OVERRIDABLE);
+
+    const res = await post({ override: true });
+    expect(res.status).toBe(201);
+    const booked = (await res.json()) as CreateAppointmentResponse;
+    expect(booked.confirmation).toBe("skipped");
+    expect(booked.appointment.status).toBe("confirmed");
+    expect(booked.appointment.allowedTransitions).toContain("completed");
   });
 });
 
