@@ -327,20 +327,20 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
           <View style={styles.actions}>
             <Button label="Email" variant="secondary" onPress={() => router.push({ pathname: "/conversation/[leadId]", params: { leadId: a.leadId } })} style={styles.action} />
             <Button label="Mail app" variant="ghost" onPress={() => void sendEmail(a.email)} style={styles.action} />
-            {!editingEmail && (
-              <Button
-                label="Change email"
-                variant="ghost"
-                onPress={() => {
-                  setEmailText(a.email);
-                  setEditingEmail(true);
-                }}
-                style={styles.action}
-              />
-            )}
           </View>
         ) : (
           <Text variant="caption">No email on file, so quotes, confirmations and receipts can&apos;t be emailed. Add one to send them.</Text>
+        )}
+        {a.email && !editingEmail && (
+          <Button
+            label="Change email"
+            variant="secondary"
+            onPress={() => {
+              setEmailText(a.email);
+              setEditingEmail(true);
+            }}
+            fullWidth
+          />
         )}
         {(!a.email || editingEmail) && (
           <>

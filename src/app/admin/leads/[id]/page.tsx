@@ -109,7 +109,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
                     <details>
                       <summary className="cursor-pointer">
                         <span className="font-medium">{e.subject}</span>
-                        <span className="text-ink-muted"> · {formatEastern(e.createdAt)} ET</span>
+                        <span className="text-ink-muted"> · to {e.toEmail} · {formatEastern(e.createdAt)} ET</span>
                         {e.status === "failed" && <span className="text-error"> · not sent</span>}
                       </summary>
                       <p className="mt-2 whitespace-pre-wrap break-words text-ink-muted">{e.body}</p>

@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ON_SITE_PRICE, QUOTE_MAX_LINES, type AppointmentDetail, type QuoteDraft } from "@shared/api";
 import { formatCents } from "@shared/money";
 import { ApiClientError } from "@/api/client";
-import { newRequestId, useSendQuote } from "@/api/queries";
+import { newRequestId, useSendQuote, useSetCustomerEmail } from "@/api/queries";
 import { Button } from "@/design/Button";
 import { Field } from "@/design/Field";
 import { Segmented } from "@/design/Segmented";
@@ -35,6 +35,76 @@ const dayFrom = (ymd: string) => {
 };
 let seq = 0;
 const line = (label: string, cents: number): Line => ({ key: `l${seq++}`, label, amount: cents ? dollars(cents) : "" });
+
+/** Where the quote goes, so a mistyped or missing address is fixed before sending. */
+function SendTo({ appt }: { appt: AppointmentDetail }) {
+  const save = useSetCustomerEmail(appt.id);
+  const [editing, setEditing] = useState(false);
+  const [email, setEmail] = useState("");
+  const requestId = useRef(newRequestId());
+  const open = editing || !appt.email;
+
+  const submit = () =>
+    save.mutate(
+      { requestId: requestId.current, email: email.trim() },
+      {
+        onSuccess: () => {
+          requestId.current = newRequestId();
+          setEditing(false);
+          setEmail("");
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        },
+        onError: (err) => {
+          const offline = err instanceof ApiClientError && (err.code === "network" || err.code === "timeout");
+          if (!offline) requestId.current = newRequestId();
+          Alert.alert("Email not saved", err.message);
+        },
+      },
+    );
+
+  return (
+    <View style={styles.sendTo}>
+      <Text variant="label">Sends to</Text>
+      {appt.email && !editing ? (
+        <View style={styles.dayRow}>
+          <Text variant="bodyStrong" style={styles.flex}>
+            {appt.email}
+          </Text>
+          <Button
+            label="Change"
+            variant="secondary"
+            onPress={() => {
+              setEmail(appt.email);
+              setEditing(true);
+            }}
+          />
+        </View>
+      ) : (
+        !appt.email && <Text variant="caption">No email on file. Add one so the customer gets the quote.</Text>
+      )}
+      {open && (
+        <>
+          <Field
+            label={appt.email ? "Customer email" : "Add email"}
+            value={email}
+            onChangeText={setEmail}
+            placeholder="customer@example.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="off"
+            textContentType="emailAddress"
+            maxLength={254}
+          />
+          <View style={styles.dayRow}>
+            <Button label="Save email" variant="secondary" loading={save.isPending} disabled={!email.trim()} onPress={submit} style={styles.flex} />
+            {editing && <Button label="Cancel" variant="ghost" onPress={() => setEditing(false)} />}
+          </View>
+        </>
+      )}
+    </View>
+  );
+}
 
 /**
  * Price a held time (a website request, or one entered in the app) and email
@@ -125,6 +195,7 @@ export function QuoteSheet({ appt, draft, visible, onClose }: { appt: Appointmen
             <Text variant="caption">
               {appt.customerName} · {appt.serviceName ?? "Service"}
             </Text>
+            <SendTo appt={appt} />
             {draft.requested && (
               <View style={styles.asked}>
                 <Text variant="caption">Customer asked for</Text>
@@ -264,5 +335,6 @@ const styles = StyleSheet.create({
   totalLabel: { color: colors.textMuted },
   totalValue: { color: colors.text },
   error: { color: colors.error },
+  sendTo: { gap: space.sm, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: space.md },
   asked: { borderLeftWidth: 3, borderLeftColor: colors.warning, paddingLeft: space.md, gap: space.xs },
 });
