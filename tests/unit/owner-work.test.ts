@@ -279,3 +279,71 @@ describe("working a job", () => {
     expect((await outbox()).filter((m) => m.to === "sam@example.com")).toHaveLength(1);
   });
 });
+
+describe("adding a customer's email", () => {
+  it("adds the email of a customer who booked without one, logs it on the job, and emails go to it", async () => {
+    const t = await token();
+    // Booked by hand with no email: allowed, and the confirmation is skipped rather than failed.
+    const { POST: create } = await import("@/app/api/owner/v1/appointments/route");
+    const booked = await create(
+      req("/appointments", {
+        method: "POST",
+        token: t,
+        body: {
+          requestId: crypto.randomUUID(),
+          customer: { new: { firstName: "Sam", phone: "9045550123", serviceAddress: "12 Pine St", zip: "32003" } },
+          serviceId: "platinum-full",
+          date: await nextTuesday(),
+          time: "10:00",
+          durationMinutes: 120,
+          priceCents: 29900,
+          sendConfirmation: true,
+        },
+      }),
+    );
+    expect(booked.status).toBe(201);
+    const created = (await booked.json()) as CreateAppointmentResponse;
+    expect(created.confirmation).toBe("skipped");
+    expect(created.appointment.email).toBe("");
+    const a = created.appointment;
+    const { getLeadStore } = await import("@/lib/leads/store");
+    const leadStore = (await getLeadStore())!;
+    expect((await leadStore.getLead(a.leadId))?.email).toBeNull();
+
+    const r = await routes();
+    const route = await import("@/app/api/owner/v1/appointments/[id]/customer-email/route");
+    const setEmail = (body: unknown, signedIn = true) =>
+      route.POST(req(`/appointments/${a.id}/customer-email`, { method: "POST", token: signedIn ? t : undefined, body }), params({ id: a.id }));
+
+    // Without an email, a receipt can't go out.
+    await r.payments.POST(req(`/appointments/${a.id}/payments`, { method: "POST", token: t, body: { requestId: crypto.randomUUID(), method: "digital", amountCents: 29900 } }), params({ id: a.id }));
+    const before = (await (await r.receipt.POST(req(`/appointments/${a.id}/receipt`, { method: "POST", token: t, body: { requestId: crypto.randomUUID() } }), params({ id: a.id }))).json()) as WorkResponse;
+    expect(before.customerEmail.status).toBe("failed");
+    expect(before.customerEmail.error).toMatch(/didn't leave an email/);
+
+    expect((await setEmail({ requestId: crypto.randomUUID(), email: "sam@example.com" }, false)).status).toBe(401);
+    expect((await setEmail({ requestId: crypto.randomUUID(), email: "not-an-email" })).status).toBe(422);
+
+    const requestId = crypto.randomUUID();
+    const res = await setEmail({ requestId, email: "  New.Sam@Example.com " });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as WorkResponse;
+    expect(body.unchanged).toBe(false);
+    expect(body.appointment.email).toBe("new.sam@example.com");
+    expect(body.appointment.events.some((e) => e.note === "Customer email added: new.sam@example.com")).toBe(true);
+    expect((await leadStore.getLead(a.leadId))?.email).toBe("new.sam@example.com");
+
+    // A retry of the same save is applied once.
+    const again = (await (await setEmail({ requestId, email: "new.sam@example.com" })).json()) as WorkResponse;
+    expect(again.unchanged).toBe(true);
+    expect(again.appointment.events.filter((e) => e.note?.startsWith("Customer email")).length).toBe(1);
+
+    // Fixing a typo is kept in the history too.
+    const fixed = (await (await setEmail({ requestId: crypto.randomUUID(), email: "sam2@example.com" })).json()) as WorkResponse;
+    expect(fixed.appointment.events.some((e) => e.note === "Customer email changed from new.sam@example.com to sam2@example.com")).toBe(true);
+
+    const receipt = (await (await r.receipt.POST(req(`/appointments/${a.id}/receipt`, { method: "POST", token: t, body: { requestId: crypto.randomUUID() } }), params({ id: a.id }))).json()) as WorkResponse;
+    expect(receipt.customerEmail.status).toBe("sent");
+    expect((await outbox()).some((m) => m.to === "sam2@example.com")).toBe(true);
+  });
+});

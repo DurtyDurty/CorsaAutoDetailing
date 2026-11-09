@@ -107,7 +107,7 @@ export function BookForm({
           <div className="grid gap-3 sm:grid-cols-2">
             <Input label="First name" name="firstName" required autoComplete="off" />
             <Input label="Last name" name="lastName" autoComplete="off" />
-            <Input label="Email (the quote and confirmation go here)" name="email" type="email" required />
+            <Input label="Email (optional: the quote and confirmation go here)" name="email" type="email" />
             <Input label="Phone" name="phone" type="tel" />
             <Input label="Service address" name="serviceAddress" required />
             <div className="grid grid-cols-[1fr_7rem] gap-3">

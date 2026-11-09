@@ -77,6 +77,12 @@ export async function bookAction(_prev: BookState, fd: FormData): Promise<BookSt
     redirect(`/admin/jobs/${result.appointment.id}?ok=${encodeURIComponent(note)}#quote`);
   }
   const email =
-    result.confirmation === "sent" ? " Confirmation emailed." : result.confirmation === "failed" ? ` The confirmation email didn't send: ${result.confirmationError}` : "";
+    result.confirmation === "sent"
+      ? " Confirmation emailed."
+      : result.confirmation === "failed"
+        ? ` The confirmation email didn't send: ${result.confirmationError}`
+        : !result.appointment.email
+          ? " No email on file, so no confirmation was sent. You can add one below."
+          : "";
   redirect(`/admin/jobs/${result.appointment.id}?ok=${encodeURIComponent(`${result.alreadyBooked ? "Already booked." : "Booked."}${email}`)}`);
 }

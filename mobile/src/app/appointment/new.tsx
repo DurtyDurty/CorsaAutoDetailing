@@ -162,7 +162,9 @@ export default function NewAppointmentScreen() {
             ? "Confirmation email sent."
             : res.confirmation === "failed"
               ? `The confirmation email didn't send: ${res.confirmationError ?? "unknown error"}. You can resend it from the Inbox.`
-              : "No confirmation email was sent.";
+              : res.appointment.email
+                ? "No confirmation email was sent."
+                : "No email on file, so no confirmation was sent. You can add their email on the job.";
         Alert.alert(res.alreadyBooked ? "Already booked" : "Booked", `${res.appointment.customerName} · ${res.appointment.serviceName ?? ""}\n${email}`, [
           { text: "Done", onPress: () => router.back() },
         ]);
@@ -239,7 +241,7 @@ export default function NewAppointmentScreen() {
                         <Field label="Last name" value={customer.lastName} onChangeText={setField("lastName")} autoComplete="off" />
                       </View>
                     </View>
-                    <Field label="Email" value={customer.email} onChangeText={setField("email")} error={errors.email} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} hint="The quote and confirmation go here." />
+                    <Field label="Email (optional)" value={customer.email} onChangeText={setField("email")} error={errors.email} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} hint="The quote and confirmation go here. No email? Book anyway and add one later on the job." />
                     <Field label="Phone" value={customer.phone} onChangeText={setField("phone")} error={errors.phone} keyboardType="phone-pad" />
                     <Field label="Service address" value={customer.serviceAddress} onChangeText={setField("serviceAddress")} error={errors.serviceAddress} />
                     <View style={styles.row2}>

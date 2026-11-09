@@ -9,6 +9,8 @@ import { getLeadStore } from "@/lib/leads/store";
 import { logAppointmentEvent } from "@/lib/owner/appointments";
 import { sendOwnerEmail } from "@/lib/owner/email";
 import { scheduleAppointment } from "@/lib/owner/schedule";
+import { updateCustomerEmail } from "@/lib/owner/work";
+import { customerEmailSchema } from "@shared/api";
 import { ApiError } from "@/lib/api/http";
 import { LEAD_STAGES, type LeadStage } from "@/lib/leads/types";
 import { retryFailedNotifications } from "@/lib/notifications";
@@ -48,6 +50,23 @@ export async function updateLeadAction(formData: FormData) {
   const s = await store();
   await s.updateLead(id, { stage: stage as LeadStage, followUpOn: followUp || null, internalNotes: notes || null });
   return back(id, { ok: "Saved." });
+}
+
+/** Add the email of a customer who booked without one (or fix a mistyped one). */
+export async function updateLeadEmailAction(formData: FormData) {
+  await requireOwner();
+  const id = String(formData.get("leadId") ?? "");
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) redirect("/admin/leads");
+  const parsed = customerEmailSchema.shape.email.safeParse(String(formData.get("email") ?? ""));
+  if (!parsed.success) return back(id, { error: parsed.error.issues[0]?.message ?? "Enter a valid email address." });
+  try {
+    await updateCustomerEmail(await store(), id, parsed.data);
+  } catch (err) {
+    if (err instanceof ApiError) return back(id, { error: err.message });
+    throw err;
+  }
+  revalidatePath(`/admin/inbox/${id}`);
+  return back(id, { ok: `Email saved: ${parsed.data}.` });
 }
 
 export async function archiveLeadAction(formData: FormData) {

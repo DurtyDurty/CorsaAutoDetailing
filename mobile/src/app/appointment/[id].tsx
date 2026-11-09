@@ -7,7 +7,7 @@ import { QUOTE_STATUS_LABELS, type AppointmentDetail } from "@shared/api";
 import { APPOINTMENT_STATUS_LABELS, statusLabel, type AppointmentStatus } from "@shared/appointment-status";
 import { formatCents, PAYMENT_METHOD_LABELS } from "@shared/money";
 import { ApiClientError } from "@/api/client";
-import { newRequestId, useAddNote, useAppointment, useChangeStatus, usePreviewWorkConfirmation, useSendReceipt, useSendWorkConfirmation } from "@/api/queries";
+import { newRequestId, useAddNote, useAppointment, useChangeStatus, usePreviewWorkConfirmation, useSendReceipt, useSendWorkConfirmation, useSetCustomerEmail } from "@/api/queries";
 import { Button } from "@/design/Button";
 import { Card } from "@/design/Card";
 import { Field } from "@/design/Field";
@@ -96,6 +96,10 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
   const confirmation = useSendWorkConfirmation(a.id);
   const confirmationId = useRef(newRequestId());
   const preview = usePreviewWorkConfirmation(a.id);
+  const setEmail = useSetCustomerEmail(a.id);
+  const [email, setEmailText] = useState("");
+  const [editingEmail, setEditingEmail] = useState(false);
+  const emailId = useRef(newRequestId());
 
   const step = nextStep(a.status);
   const allowed = new Set(a.allowedTransitions);
@@ -196,6 +200,23 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
         onError: (err) => {
           if (!offline(err)) noteId.current = newRequestId();
           Alert.alert("Note not saved", err.message);
+        },
+      },
+    );
+
+  const saveEmail = () =>
+    setEmail.mutate(
+      { requestId: emailId.current, email: email.trim() },
+      {
+        onSuccess: () => {
+          emailId.current = newRequestId();
+          setEmailText("");
+          setEditingEmail(false);
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        },
+        onError: (err) => {
+          if (!offline(err)) emailId.current = newRequestId();
+          Alert.alert("Email not saved", err.message);
         },
       },
     );
@@ -302,10 +323,47 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
           {a.phone && <Button label="Text" variant="secondary" onPress={() => void textPhone(a.phone!)} style={styles.action} />}
           {address && <Button label="Navigate" variant="secondary" onPress={() => void navigateTo(address)} style={styles.action} />}
         </View>
-        <View style={styles.actions}>
-          <Button label="Email" variant="secondary" onPress={() => router.push({ pathname: "/conversation/[leadId]", params: { leadId: a.leadId } })} style={styles.action} />
-          <Button label="Mail app" variant="ghost" onPress={() => void sendEmail(a.email)} style={styles.action} />
-        </View>
+        {a.email ? (
+          <View style={styles.actions}>
+            <Button label="Email" variant="secondary" onPress={() => router.push({ pathname: "/conversation/[leadId]", params: { leadId: a.leadId } })} style={styles.action} />
+            <Button label="Mail app" variant="ghost" onPress={() => void sendEmail(a.email)} style={styles.action} />
+            {!editingEmail && (
+              <Button
+                label="Change email"
+                variant="ghost"
+                onPress={() => {
+                  setEmailText(a.email);
+                  setEditingEmail(true);
+                }}
+                style={styles.action}
+              />
+            )}
+          </View>
+        ) : (
+          <Text variant="caption">No email on file, so quotes, confirmations and receipts can&apos;t be emailed. Add one to send them.</Text>
+        )}
+        {(!a.email || editingEmail) && (
+          <>
+            <Field
+              label={a.email ? "Change email" : "Add email"}
+              value={email}
+              onChangeText={setEmailText}
+              placeholder="customer@example.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="off"
+              textContentType="emailAddress"
+              maxLength={254}
+              returnKeyType="done"
+              onSubmitEditing={() => email.trim() && saveEmail()}
+            />
+            <View style={styles.actions}>
+              <Button label="Save email" variant="secondary" loading={setEmail.isPending} disabled={!email.trim()} onPress={saveEmail} style={styles.action} />
+              {editingEmail && <Button label="Cancel" variant="ghost" onPress={() => setEditingEmail(false)} style={styles.action} />}
+            </View>
+          </>
+        )}
       </Card>
 
       <Card style={styles.card}>

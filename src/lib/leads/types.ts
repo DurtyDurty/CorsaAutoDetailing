@@ -120,7 +120,7 @@ export type NewLead = Omit<LeadRecord, "id" | "createdAt" | "updatedAt" | "stage
 };
 
 export type LeadPatch = Partial<
-  Pick<LeadRecord, "stage" | "followUpOn" | "internalNotes" | "archivedAt" | "photoRefs">
+  Pick<LeadRecord, "stage" | "followUpOn" | "internalNotes" | "archivedAt" | "photoRefs" | "email">
 >;
 
 

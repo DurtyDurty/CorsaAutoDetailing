@@ -273,6 +273,7 @@ export function usePreviewWorkConfirmation(id: string) {
   return useMutation({ mutationFn: () => apiRequest<PreviewResponse>(`/appointments/${id}/work-confirmation/preview`, { method: "POST", body: {} }) });
 }
 export const useAddNote = (id: string) => useWork<{ requestId: string; note: string }>(() => `/appointments/${id}/notes`, (v) => v);
+export const useSetCustomerEmail = (id: string) => useWork<{ requestId: string; email: string }>(() => `/appointments/${id}/customer-email`, (v) => v);
 
 export function useSendQuote(id: string) {
   const qc = useQueryClient();

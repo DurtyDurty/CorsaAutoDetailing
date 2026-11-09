@@ -307,6 +307,29 @@ async function workConfirmationEmail(appt: AppointmentRecord, detail: Appointmen
   };
 }
 
+/**
+ * Save the email of a customer who booked without one (the short form makes it
+ * optional), or fix a mistyped one. Returns the previous value, null if none.
+ */
+export async function updateCustomerEmail(store: LeadStore, leadId: string, email: string): Promise<{ previous: string | null }> {
+  const lead = await store.getLead(leadId);
+  if (!lead) throw new ApiError("not_found", "That customer doesn't exist.");
+  if (lead.email !== email) await store.updateLead(leadId, { email });
+  return { previous: lead.email };
+}
+
+/** Customer email added from a job; the change is kept in the job history. */
+export async function setCustomerEmail(store: LeadStore, actor: string, id: string, requestId: string, email: string): Promise<WorkResponse> {
+  const again = await replayed(store, requestId, id);
+  if (again) return again;
+  const appt = await requireAppointment(store, id);
+  const { previous } = await updateCustomerEmail(store, appt.leadId, email);
+  if (previous === email) return { appointment: await getAppointmentDetail(store, id), customerEmail: SKIPPED, unchanged: true };
+  const note = previous ? `Customer email changed from ${previous} to ${email}` : `Customer email added: ${email}`;
+  await store.addAppointmentEvent({ appointmentId: id, type: "note", fromStatus: null, toStatus: null, note, actor, requestId });
+  return { appointment: await getAppointmentDetail(store, id), customerEmail: SKIPPED, unchanged: false };
+}
+
 /** A private note on the job (never sent to the customer). */
 export async function addNote(store: LeadStore, actor: string, id: string, requestId: string, note: string): Promise<WorkResponse> {
   await requireAppointment(store, id);

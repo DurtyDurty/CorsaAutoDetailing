@@ -322,7 +322,8 @@ export interface SendMessageResponse {
 const newCustomerSchema = z.object({
   firstName: z.string().trim().min(1, "Enter a first name.").max(80),
   lastName: z.string().trim().max(80).optional(),
-  email: z.string().trim().toLowerCase().email("Enter a valid email address.").max(254),
+  /** Optional: a customer without one is reached by phone or text; one can be added to the job later. */
+  email: z.string().trim().toLowerCase().email("Enter a valid email address.").max(254).optional(),
   phone: z
     .string()
     .trim()
@@ -427,6 +428,13 @@ export const noteSchema = z.object({
   requestId: z.string().uuid(),
   note: z.string().trim().min(1, "Write a note.").max(1000),
 });
+
+/** Add (or fix) the email of a customer who booked without one. */
+export const customerEmailSchema = z.object({
+  requestId: z.string().uuid(),
+  email: z.string().trim().toLowerCase().email("Enter a valid email address.").max(254),
+});
+export type CustomerEmailInput = z.infer<typeof customerEmailSchema>;
 
 export const receiptSchema = z.object({ requestId: z.string().uuid() });
 

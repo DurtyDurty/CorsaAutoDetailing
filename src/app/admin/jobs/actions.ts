@@ -3,14 +3,14 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { z } from "zod";
-import { changeTotalSchema, noteSchema, OVERRIDABLE, recordPaymentSchema, rescheduleSchema, sendQuoteSchema, statusChangeSchema } from "@shared/api";
+import { changeTotalSchema, customerEmailSchema, noteSchema, OVERRIDABLE, recordPaymentSchema, rescheduleSchema, sendQuoteSchema, statusChangeSchema } from "@shared/api";
 import { formatCents } from "@shared/money";
 import { requireOwner } from "@/lib/auth/owner";
 import { ApiError } from "@/lib/api/http";
 import { getLeadStore } from "@/lib/leads/store";
 import { changeAppointmentStatus, getAppointmentDetail } from "@/lib/owner/appointments";
 import { sendQuote } from "@/lib/quotes/service";
-import { addNote, changeTotal, previewWorkConfirmation, recordPayment, rescheduleAppointment, sendReceipt, sendWorkConfirmation } from "@/lib/owner/work";
+import { addNote, changeTotal, previewWorkConfirmation, recordPayment, rescheduleAppointment, sendReceipt, sendWorkConfirmation, setCustomerEmail } from "@/lib/owner/work";
 
 /**
  * Job actions for the web dashboard. Same services as the owner app, so a
@@ -162,6 +162,14 @@ export async function noteAction(formData: FormData) {
   const input = parse(formData, id, noteSchema, { requestId: str(formData, "requestId"), note: str(formData, "note") });
   await attempt(formData, id, async () => addNote(await store(), owner.email, id, input.requestId, input.note));
   backTo(formData, id, { ok: "Note saved." });
+}
+
+export async function customerEmailAction(formData: FormData) {
+  const owner = await requireOwner();
+  const id = jobId(formData);
+  const input = parse(formData, id, customerEmailSchema, { requestId: str(formData, "requestId"), email: str(formData, "email") });
+  await attempt(formData, id, async () => setCustomerEmail(await store(), owner.email, id, input.requestId, input.email));
+  backTo(formData, id, { ok: `Email saved: ${input.email}.` });
 }
 
 /** Dollars typed in a form field, as cents (blank = 0, junk = NaN so validation rejects it). */

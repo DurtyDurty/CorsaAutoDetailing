@@ -21,6 +21,7 @@ import {
   deleteLeadAction,
   retryNotificationsAction,
   updateLeadAction,
+  updateLeadEmailAction,
 } from "../../actions";
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
@@ -83,7 +84,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
           <section className="border border-line bg-white rounded-md p-5">
             <h2 className="font-medium">Contact</h2>
             <dl className="mt-3">
-              <Row label="Email" value={<a href={`mailto:${lead.email}`} className="underline underline-offset-4">{lead.email}</a>} />
+              <Row label="Email" value={lead.email ? <a href={`mailto:${lead.email}`} className="underline underline-offset-4">{lead.email}</a> : null} />
               <Row label="Phone" value={lead.phone ? <a href={`tel:+1${lead.phone}`} className="underline underline-offset-4">{formatPhone(lead.phone)}</a> : null} />
               <Row label="Prefers" value={lead.preferredContact} />
               <Row label="Marketing email" value={lead.consent.marketingEmail ? `Opted in (${lead.consent.marketingTextVersion})` : "Not opted in"} />
@@ -235,8 +236,24 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
             <section className="border border-line bg-white rounded-md p-5 text-sm">
               <h2 className="font-medium">Email</h2>
               <p className="mt-2 text-ink-muted">
-                {lead.firstName} didn&rsquo;t leave an email. Call or text {lead.phone ? formatPhone(lead.phone) : "them"} instead.
+                {lead.firstName} didn&rsquo;t leave an email. Call or text {lead.phone ? formatPhone(lead.phone) : "them"}, or add one here to email them quotes, confirmations and receipts.
               </p>
+              <form action={updateLeadEmailAction} className="mt-3 flex gap-2">
+                <input type="hidden" name="leadId" value={lead.id} />
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  maxLength={254}
+                  placeholder="customer@example.com"
+                  aria-label="Customer email"
+                  autoComplete="off"
+                  className="field min-h-10 py-2 flex-1 min-w-0"
+                />
+                <Button type="submit" variant="secondary" size="sm">
+                  Add email
+                </Button>
+              </form>
             </section>
           )}
           <form action={updateLeadAction} className="border border-line bg-white rounded-md p-5 flex flex-col gap-4">

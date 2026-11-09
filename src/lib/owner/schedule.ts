@@ -152,7 +152,7 @@ function newLeadFromApp(input: CreateAppointmentInput, c: NewCustomerInput): New
     idempotencyKey: input.requestId,
     firstName: c.firstName,
     lastName: c.lastName || null,
-    email: c.email,
+    email: c.email || null,
     phone: c.phone ? c.phone.replace(/\D/g, "") : null,
     preferredContact: null,
     vehicleCategory: null,
@@ -235,8 +235,9 @@ export async function bookFromApp(store: LeadStore, actor: string, input: Create
   let confirmation: CreateAppointmentResponse["confirmation"] = "skipped";
   let confirmationError: string | null = null;
   // Quote first: nothing is confirmed yet, so the customer hears from us when the quote is sent.
-  if (input.sendConfirmation && !input.quoteFirst) {
-    const lead = (await store.getLead(leadId))!;
+  const lead = (await store.getLead(leadId))!;
+  // No email on file (booked by phone): nothing to send, which isn't a failure.
+  if (input.sendConfirmation && !input.quoteFirst && lead.email) {
     const email = appointmentConfirmationEmail({
       firstName: lead.firstName,
       serviceName: service.name,

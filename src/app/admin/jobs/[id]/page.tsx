@@ -20,7 +20,7 @@ import { StatusBadge } from "@/components/admin/work/StatusBadge";
 import { StepButton } from "@/components/admin/work/StepButton";
 import { QuoteCard } from "@/components/admin/work/QuoteCard";
 import { nextStepFor } from "@/components/admin/work/next-step";
-import { changeTotalAction, noteAction, previewConfirmationAction, receiptAction, recordPaymentAction, rescheduleAction, changeStatusAction, workConfirmationAction } from "../actions";
+import { changeTotalAction, customerEmailAction, noteAction, previewConfirmationAction, receiptAction, recordPaymentAction, rescheduleAction, changeStatusAction, workConfirmationAction } from "../actions";
 
 export const metadata: Metadata = { title: "Job" };
 
@@ -35,6 +35,31 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
       <dt className="text-ink-muted">{label}</dt>
       <dd>{value}</dd>
     </div>
+  );
+}
+
+/** Add (or fix) the customer's email; it's saved on their record and noted in the job history. */
+function EmailForm({ id, back, defaultValue, label }: { id: string; back: string; defaultValue?: string; label: string }) {
+  return (
+    <form action={customerEmailAction} className="flex gap-2 mt-1.5">
+      <input type="hidden" name="id" value={id} />
+      <input type="hidden" name="requestId" value={randomUUID()} />
+      <input type="hidden" name="back" value={back} />
+      <input
+        name="email"
+        type="email"
+        required
+        maxLength={254}
+        defaultValue={defaultValue}
+        placeholder="customer@example.com"
+        aria-label="Customer email"
+        autoComplete="off"
+        className="field min-h-10 py-2 flex-1 min-w-0"
+      />
+      <Button type="submit" variant="secondary" size="sm">
+        {label}
+      </Button>
+    </form>
   );
 }
 
@@ -180,15 +205,28 @@ export default async function JobPage({ params, searchParams }: PageProps<"/admi
                 Text
               </ButtonLink>
             )}
-            <ButtonLink href={`/admin/inbox/${a.leadId}`} variant="secondary" size="sm">
-              Email
-            </ButtonLink>
+            {a.email && (
+              <ButtonLink href={`/admin/inbox/${a.leadId}`} variant="secondary" size="sm">
+                Email
+              </ButtonLink>
+            )}
             {address && (
               <a href={`https://maps.google.com/?daddr=${encodeURIComponent(address)}`} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-sm border border-asphalt px-3.5 py-2 text-[0.8rem] font-semibold uppercase tracking-[0.08em] min-h-10">
                 Navigate
               </a>
             )}
           </div>
+          {a.email ? (
+            <details className="text-sm">
+              <summary className="cursor-pointer text-ink-muted w-fit">Change email</summary>
+              <EmailForm id={a.id} back={back} defaultValue={a.email} label="Save" />
+            </details>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              <p className="text-sm text-ink-muted">No email on file, so quotes, confirmations and receipts can&apos;t be emailed. Add one to send them.</p>
+              <EmailForm id={a.id} back={back} label="Add email" />
+            </div>
+          )}
         </Card>
 
         <Card title="Job">
