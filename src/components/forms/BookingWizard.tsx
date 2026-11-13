@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { submitBookingRequest } from "@/app/actions/leads";
 import { business, getService } from "@/config/business";
 import { dict, type Lang } from "@/i18n/dictionary";
-import { BOOKING_CONDITION_FLAGS, formatUsd, optionalAddOns } from "@/lib/pricing";
+import { BOOKING_CONDITION_FLAGS, formatUsd, optionalAddOns, sizedPrice } from "@/lib/pricing";
 import { cn, formatPhone } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { DayPartPicker } from "./DayPartPicker";
@@ -12,6 +12,7 @@ import { Field, FormMessage, FormMeta, Select, SubmitButton, TextInput, useLeadF
 
 /** Which step each server-validated field lives on, so an error jumps back to it. */
 const FIELD_STEP: Record<string, number> = {
+  vehicleCategory: 0,
   serviceId: 0,
   conditionFlags: 0,
   addOns: 0,
@@ -75,6 +76,7 @@ export function BookingWizard({
   });
   const [step, setStep] = useState(0);
   const [serviceId, setServiceId] = useState(initialService && (getService(initialService) || initialService === "help") ? initialService : "");
+  const [vehicle, setVehicle] = useState("");
   const [town, setTown] = useState("");
   const [firstTime, setFirstTime] = useState(firstTimeOffer);
   const [photoError, setPhotoError] = useState<string | null>(null);
@@ -203,11 +205,40 @@ export function BookingWizard({
         </p>
       </div>
 
-      {/* Step 1: package and anything we should know */}
+      {/* Step 1: vehicle size, package and anything we should know */}
       <div data-step="0" hidden={step !== 0} className="flex flex-col gap-5">
+        {/* Sized packages cost more for SUVs and trucks (owner, 2026-10-07): the size picks the price shown below. */}
+        <fieldset className="flex flex-col gap-2" aria-describedby={fieldError("vehicleCategory") ? "size-err size-hint" : "size-hint"}>
+          <legend className="mb-1.5 text-sm font-medium">{f.sizeLegend}</legend>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {f.sizes.map((s) => (
+              <label
+                key={s.id}
+                className={cn(
+                  "flex cursor-pointer flex-col rounded-md border bg-white px-4 py-3 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-apex-deep",
+                  vehicle === s.id ? "border-2 border-apex-deep px-[15px] py-[11px]" : "border-line hover:border-ink-muted",
+                )}
+              >
+                <input type="radio" name="vehicleCategory" value={s.id} required checked={vehicle === s.id} onChange={() => setVehicle(s.id)} className="sr-only" />
+                <span className="font-semibold leading-snug">{s.title}</span>
+                <span className="mt-0.5 text-xs text-ink-muted">{s.eg}</span>
+              </label>
+            ))}
+          </div>
+          <p id="size-hint" className="text-xs text-ink-muted">
+            {f.sizeHint}
+          </p>
+          {fieldError("vehicleCategory") && (
+            <p id="size-err" className="text-sm text-error" role="alert">
+              {fieldError("vehicleCategory")}
+            </p>
+          )}
+        </fieldset>
         <fieldset className="flex flex-col gap-2.5" aria-describedby={fieldError("serviceId") ? "svc-err" : undefined}>
           <legend className="mb-1.5 text-sm font-medium">{f.packageLegend}</legend>
-          {packages.map((s) => option(s.id, s.name, `${formatUsd(s.price)}+`, null, s.badge ? t.packages.popular : null))}
+          {packages.map((s) =>
+            option(s.id, s.name, vehicle ? formatUsd(sizedPrice(s, vehicle)) : `${formatUsd(s.price)}+`, null, s.badge ? t.packages.popular : null),
+          )}
           {club && option(club.id, club.name, `${formatUsd(club.price)}`, `${t.packages.perVisit}. ${f.clubNote}`)}
           {option("help", f.help.title, null, f.help.body(phone ? formatPhone(phone.replace(/\D/g, "").slice(-10)) : null))}
           {fieldError("serviceId") && (

@@ -9,7 +9,7 @@ export interface EstimateSnapshot {
   pricingVersion: string;
   serviceId: string;
   serviceName: string;
-  /** Older estimates were priced by vehicle size; newer ones have none. */
+  /** The vehicle the price is for. `null` on estimates saved without one (Sept 30 – Nov 13, 2026: sedan price). */
   vehicleCategoryId: string | null;
   vehicleCategoryLabel: string | null;
   /** Older estimates: `null` when the vehicle category needed a custom quote. */
@@ -37,7 +37,7 @@ export interface EstimateSnapshot {
 
 export interface EstimateInput {
   serviceId: string;
-  /** Recorded if supplied; never changes the price. */
+  /** Prices sized packages for this vehicle (`sizePrices`). None = the sedan price. */
   vehicleCategoryId?: string | null;
   addOnIds?: string[];
   condition?: "normal" | "deeper" | "unsure" | null;
@@ -82,15 +82,15 @@ export function conditionFlagLabel(flag: string): string {
 export const CONDITION_FLAGS = Object.keys(CONDITION_FLAG_LABELS);
 
 /**
- * Compute a price estimate from configuration only. Condition and travel
- * answers never change the number — they only add review notes. The owner
- * approves any extra work and charge with the customer before service.
+ * Compute a price estimate from configuration only: the package's price for the vehicle's size. Condition and
+ * travel answers never change the number — they only add review notes. The owner approves any extra work and
+ * charge with the customer before service.
  */
 export function computeEstimate(input: EstimateInput): EstimateSnapshot | null {
   const service = getService(input.serviceId);
   if (!service) return null;
   const vehicle = input.vehicleCategoryId ? getVehicleCategory(input.vehicleCategoryId) : undefined;
-  const basePrice = service.price;
+  const basePrice = sizedPrice(service, vehicle?.id);
 
   const addOns: EstimateLine[] = (input.addOnIds ?? [])
     .map((id) => business.addOns.find((a) => a.id === id))
@@ -209,6 +209,12 @@ export function sizePrices(service: Pick<ServiceDefinition, "price" | "sizeStep"
   const step = service.sizeStep;
   if (!step) return null;
   return business.vehicleSizes.map((size, i) => ({ size, price: service.price + step * i }));
+}
+
+/** A package's price for a vehicle category (Essential: sedan $150, SUV $170, truck $190). Unknown or none = sedan. */
+export function sizedPrice(service: Pick<ServiceDefinition, "price" | "sizeStep">, vehicleCategoryId: string | null | undefined): number {
+  const size = vehicleCategoryId ? (getVehicleCategory(vehicleCategoryId)?.size ?? 0) : 0;
+  return service.price + (service.sizeStep ?? 0) * size;
 }
 
 /**

@@ -246,7 +246,7 @@ const fullName = line(100).pipe(z.string().min(1, "Enter your name.").regex(NAME
 
 /**
  * The booking form (/, /book and /es, 2026-10-28 redesign), three steps:
- * 1. a package, Corsa Club, or "help" (we recommend one), plus optional condition flags;
+ * 1. the vehicle size, a package, Corsa Club, or "help" (we recommend one), plus optional condition flags;
  * 2. vehicle, town (or a ZIP when it isn't listed), name, phone, optional email, discounts, optional photos;
  * 3. a day and part of the day (the owner sets the exact time with the quote).
  * Sending it is the acknowledgment printed above its button. `lang` only picks the confirmation page.
@@ -266,6 +266,8 @@ export const bookingWizardSchema = z
       .transform((v) => v ?? "")
       .pipe(z.union([z.literal(""), emailSchema]))
       .transform((v) => v || null),
+    // The size the price is for (2026-11-13). The form offers the three sizes; any known category is accepted.
+    vehicleCategory: z.enum(vehicleIds, { message: "Choose your vehicle size." }),
     vehicleYear: quoteRequestFields.shape.vehicleYear,
     vehicleMake: quoteRequestFields.shape.vehicleMake,
     vehicleModel: quoteRequestFields.shape.vehicleModel,

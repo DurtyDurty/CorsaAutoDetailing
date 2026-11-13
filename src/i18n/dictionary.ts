@@ -141,6 +141,14 @@ const en = {
     aria: "Booking request",
     stepLabels: ["Package", "Your car and you", "Day and time"],
     stepOf: (n: number, total: number) => `Step ${n} of ${total}`,
+    sizeLegend: "What do you drive?",
+    // Ids are `business.vehicleCategories`; each is priced at its `size`.
+    sizes: [
+      { id: "sedan", title: "Car or sedan", eg: "Civic, Camry, Mustang" },
+      { id: "suv2", title: "SUV or minivan", eg: "RAV4, Wrangler, Odyssey" },
+      { id: "large", title: "Pickup or 3-row SUV", eg: "F-150, Silverado, Tahoe" },
+    ],
+    sizeHint: "Lifted or oversized? We'll confirm the price before we start.",
     packageLegend: "What does your car need?",
     help: {
       title: "Help me choose",
@@ -190,6 +198,7 @@ const en = {
     failed: (phone: string | null) => (phone ? `Sorry, your request didn't go through. Call or text us at ${phone} and we'll book you directly.` : "Sorry, your request didn't go through. Please try again in a few minutes."),
     errors: {
       serviceId: "Choose a package, Corsa Club or Help me choose.",
+      vehicleCategory: "Choose your vehicle size.",
       name: "Enter your name, using letters only.",
       phone: "Enter a 10-digit U.S. phone number.",
       email: "Enter a valid email address, or leave it blank.",
@@ -388,6 +397,13 @@ const es: Dict = {
     aria: "Solicitud de cita",
     stepLabels: ["Paquete", "Tu carro y tú", "Día y hora"],
     stepOf: (n: number, total: number) => `Paso ${n} de ${total}`,
+    sizeLegend: "¿Qué manejas?",
+    sizes: [
+      { id: "sedan", title: "Carro o sedán", eg: "Civic, Camry, Mustang" },
+      { id: "suv2", title: "SUV o minivan", eg: "RAV4, Wrangler, Odyssey" },
+      { id: "large", title: "Pickup o SUV de 3 filas", eg: "F-150, Silverado, Tahoe" },
+    ],
+    sizeHint: "¿Levantada o muy grande? Confirmamos el precio antes de empezar.",
     packageLegend: "¿Qué necesita tu carro?",
     help: {
       title: "Ayúdame a elegir",
@@ -438,6 +454,7 @@ const es: Dict = {
     failed: (phone: string | null) => (phone ? `Lo sentimos, tu solicitud no se envió. Llámanos o escríbenos al ${phone} y te agendamos directamente.` : "Lo sentimos, tu solicitud no se envió. Inténtalo de nuevo en unos minutos."),
     errors: {
       serviceId: "Elige un paquete, el Corsa Club o Ayúdame a elegir.",
+      vehicleCategory: "Elige el tamaño de tu vehículo.",
       name: "Escribe tu nombre, solo con letras.",
       phone: "Escribe un número de teléfono de EE. UU. de 10 dígitos.",
       email: "Escribe un correo válido o déjalo en blanco.",

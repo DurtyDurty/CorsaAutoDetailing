@@ -87,6 +87,8 @@ async function fillWizard(
   const next = es ? "Continuar" : "Continue";
   if (opts.service !== "help") await expect(form.getByRole("radio", { name: new RegExp(opts.packageName) })).toBeChecked();
   else await form.getByText(es ? "Ayúdame a elegir" : "Help me choose").click();
+  // The car below is a Lexus IS F: priced as a sedan.
+  await form.getByText(es ? "Carro o sedán" : "Car or sedan").click();
   for (const a of opts.addOns ?? []) await form.getByRole("checkbox", { name: new RegExp(a) }).check();
   for (const f of opts.flags ?? []) await form.getByRole("checkbox", { name: f }).check();
   await form.getByRole("button", { name: next }).click();
@@ -126,6 +128,11 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     const form = page.getByRole("form", { name: "Booking request" });
     await expect(form.getByRole("radio", { name: /Signature Full Detail/ })).toBeChecked();
     for (const price of ["$90+", "$150+", "$200+", "$89"]) await expect(form).toContainText(price);
+    // Picking the size shows that size's prices (a Wrangler is an SUV).
+    await form.getByText("SUV or minivan").click();
+    await expect(form.getByRole("radio", { name: /SUV or minivan/ })).toBeChecked();
+    for (const price of ["$105", "$170", "$225", "$89"]) await expect(form).toContainText(price);
+    await expect(form).not.toContainText("$150+");
     await expect(form.getByRole("radio", { name: /Help me choose/ })).toHaveCount(1);
     // Add-ons sit in the same list as the condition boxes; smoke or odor is gone.
     for (const box of ["Pets or pet hair", "Paint enhancement", "Headlight restoration"]) await expect(form.getByRole("checkbox", { name: new RegExp(box) })).toHaveCount(1);

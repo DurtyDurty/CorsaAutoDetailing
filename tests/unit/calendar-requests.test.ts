@@ -142,6 +142,34 @@ describe("calendar requests (deposits off)", () => {
     expect(isSlotAvailable({ serviceId: "platinum-full", ...(await calendarState(s)), startIso: slot })).toBe(false);
   });
 
+  it("prices a booking-form request for the vehicle size it was sent with", async () => {
+    const slot = await firstOpenSlot("signature-full");
+    const { submitBookingRequest } = await import("@/app/actions/leads");
+    const f = new FormData();
+    const fields: Record<string, string> = {
+      idempotencyKey: crypto.randomUUID(),
+      serviceId: "signature-full",
+      vehicleCategory: "suv2",
+      vehicleYear: "2021",
+      vehicleMake: "Jeep",
+      vehicleModel: "Wrangler",
+      town: "middleburg",
+      name: "Ana Ruiz",
+      phone: "904-555-0102",
+      slotStart: slot,
+      dayPart: "either",
+    };
+    for (const [k, v] of Object.entries(fields)) f.append(k, v);
+    expect((await submitBookingRequest(null, f)).status).toBe("ok");
+
+    const s = await store();
+    const [appt] = await s.listAppointments();
+    expect(appt!.quotedPriceCents).toBe(17000);
+    const lead = (await s.getLead(appt!.leadId))!;
+    expect(lead.vehicleCategory).toBe("suv2");
+    expect(lead.estimate).toMatchObject({ basePrice: 170, total: 170, vehicleCategoryId: "suv2", vehicleCategoryLabel: "Small crossover or two-row SUV" });
+  });
+
   it("tells a second customer the time was just taken", async () => {
     const slot = await firstOpenSlot();
     const { submitCalendarRequest } = await import("@/app/actions/leads");

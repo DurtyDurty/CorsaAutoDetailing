@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { business, getService } from "@/config/business";
-import { addOnPrice, BOOKING_CONDITION_FLAGS, computeEstimate, conditionFlagLabel, formatServicePrice, groupStartingPrice, optionalAddOns, recommendService, sizePrices } from "@/lib/pricing";
+import { addOnPrice, BOOKING_CONDITION_FLAGS, computeEstimate, conditionFlagLabel, formatServicePrice, groupStartingPrice, optionalAddOns, recommendService, sizedPrice, sizePrices } from "@/lib/pricing";
 
 const getAddOn = (id: string) => business.additionalServices.find((a) => a.id === id)!;
 
@@ -33,8 +33,8 @@ describe("computeEstimate", () => {
     }
   });
 
-  it("never changes the price for vehicle size, condition answers or flags", () => {
-    const base = computeEstimate({ serviceId: "platinum-full" });
+  it("never changes the price for condition answers or flags", () => {
+    const base = computeEstimate({ serviceId: "platinum-full", vehicleCategoryId: "large" });
     const worse = computeEstimate({
       serviceId: "platinum-full",
       vehicleCategoryId: "large",
@@ -44,6 +44,30 @@ describe("computeEstimate", () => {
     expect(worse?.total).toBe(base?.total);
     expect(worse?.vehicleCategoryLabel).toBe("Pickup truck or three-row SUV");
     expect(worse?.reviewNotes.length).toBeGreaterThan(0);
+  });
+
+  it("prices the sized packages for the vehicle (a Wrangler is an SUV: Essential $170)", () => {
+    const price = (serviceId: string, vehicleCategoryId?: string) => computeEstimate({ serviceId, vehicleCategoryId })?.total;
+    expect(price("signature-full", "sedan")).toBe(150);
+    expect(price("signature-full", "suv2")).toBe(170);
+    expect(price("signature-full", "minivan")).toBe(170);
+    expect(price("signature-full", "large")).toBe(190);
+    expect(price("basic-full", "suv2")).toBe(105);
+    expect(price("platinum-full", "large")).toBe(250);
+    // Oversized is quoted by the owner; the estimate starts at the truck price.
+    expect(price("platinum-full", "oversized")).toBe(250);
+    // No vehicle, an unknown one, or an unsized category: the sedan price.
+    expect(price("signature-full")).toBe(150);
+    expect(price("signature-full", "boat")).toBe(150);
+    expect(price("signature-full", "other")).toBe(150);
+    // Corsa Club is one price for every size.
+    expect(price("monthly-maintenance", "large")).toBe(89);
+    // Discount notes use the sized price.
+    expect(computeEstimate({ serviceId: "signature-full", vehicleCategoryId: "suv2", firstTimeOffer: true })?.offer).toBe(
+      "First-time customer: 10% off (about $17 off the $170 starting price)",
+    );
+    // Every size the booking form offers is a known category priced at the matching size.
+    for (const [i, id] of ["sedan", "suv2", "large"].entries()) expect(sizedPrice(getService("signature-full")!, id)).toBe(150 + 20 * i);
   });
 
   it("ignores unknown add-ons and unknown flags", () => {

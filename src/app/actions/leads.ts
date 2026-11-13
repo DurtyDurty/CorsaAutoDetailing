@@ -221,7 +221,14 @@ function buildWizardLead(d: BookingWizardInput): NewLead {
   const help = d.serviceId === "help";
   const estimate = help
     ? null
-    : computeEstimate({ serviceId: d.serviceId, conditionFlags: d.conditionFlags, firstTimeOffer: d.firstTimeOffer, military: d.military, optionalAddOnIds: d.addOns });
+    : computeEstimate({
+        serviceId: d.serviceId,
+        vehicleCategoryId: d.vehicleCategory,
+        conditionFlags: d.conditionFlags,
+        firstTimeOffer: d.firstTimeOffer,
+        military: d.military,
+        optionalAddOnIds: d.addOns,
+      });
   // "Help me choose" has no estimate to carry the claimed discounts, so they go in the notes.
   const notes = help
     ? [
@@ -248,6 +255,7 @@ function buildWizardLead(d: BookingWizardInput): NewLead {
     vehicleYear: d.vehicleYear,
     vehicleMake: d.vehicleMake,
     vehicleModel: d.vehicleModel,
+    vehicleCategory: d.vehicleCategory,
     serviceId: help ? null : d.serviceId,
     conditionFlags: d.conditionFlags,
     zip: d.zip,
@@ -260,7 +268,7 @@ function buildWizardLead(d: BookingWizardInput): NewLead {
   };
 }
 type HoldInput = Pick<CalendarRequestInput, "serviceId" | "slotStart" | "dayPart" | "preferredTime"> &
-  Partial<Pick<CalendarRequestInput, "condition" | "conditionFlags">>;
+  Partial<Pick<CalendarRequestInput, "condition" | "conditionFlags">> & { vehicleCategory?: string | null };
 
 /** Any error the steps below didn't expect: logged for the owner, and the customer gets the phone number. */
 async function holdRequest<T extends HoldInput>(
@@ -386,8 +394,10 @@ function holdServiceFor(id: string): ServiceId {
   return (getService(id) ? id : business.booking.helpHoldService) as ServiceId;
 }
 
-function quotedCents(d: Pick<QuoteRequestInput, "serviceId"> & Partial<Pick<QuoteRequestInput, "condition" | "conditionFlags">>): number {
-  const estimate = computeEstimate({ serviceId: d.serviceId, condition: d.condition, conditionFlags: d.conditionFlags });
+function quotedCents(
+  d: Pick<QuoteRequestInput, "serviceId"> & Partial<Pick<QuoteRequestInput, "condition" | "conditionFlags">> & { vehicleCategory?: string | null },
+): number {
+  const estimate = computeEstimate({ serviceId: d.serviceId, vehicleCategoryId: d.vehicleCategory, condition: d.condition, conditionFlags: d.conditionFlags });
   return Math.round((estimate?.total ?? 0) * 100);
 }
 

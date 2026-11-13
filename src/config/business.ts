@@ -28,10 +28,15 @@ export type ServiceId =
 /** One group since the interior-only and exterior-only packages were removed (2026-10-07). */
 export type PackageGroupId = "popular";
 
-/** Vehicle sizes are no longer asked for (2026-09-30); kept so older leads still show a label. */
+/**
+ * What the customer drives. The booking form asks for one of the three sized ones again (2026-11-13), so the
+ * estimate uses the size price; the rest stay so older leads and the membership form still show a label.
+ */
 export interface VehicleCategory {
   id: VehicleCategoryId;
   label: string;
+  /** Index into `business.vehicleSizes` this vehicle is priced at. Unset = priced like a sedan until the owner quotes it. */
+  size?: number;
 }
 
 export interface PackageGroup {
@@ -183,7 +188,8 @@ export const business = {
    * Bump whenever a price or service scope changes. Stored with each lead's
    * estimate so old inquiries can be understood later.
    */
-  pricingVersion: "2026-10-v15",
+  // v16 (2026-11-13): booking estimates priced by vehicle size.
+  pricingVersion: "2026-11-v16",
   /** Shown next to all prices while in PRELAUNCH mode. */
   priceLabel: {
     PRELAUNCH: "Planned starting prices",
@@ -203,11 +209,12 @@ export const business = {
   },
 
   vehicleCategories: [
-    { id: "sedan", label: "Coupe or sedan" },
-    { id: "suv2", label: "Small crossover or two-row SUV" },
-    { id: "large", label: "Pickup truck or three-row SUV" },
-    { id: "minivan", label: "Minivan" },
-    { id: "oversized", label: "Oversized or lifted truck" },
+    { id: "sedan", label: "Coupe or sedan", size: 0 },
+    { id: "suv2", label: "Small crossover or two-row SUV", size: 1 },
+    { id: "large", label: "Pickup truck or three-row SUV", size: 2 },
+    { id: "minivan", label: "Minivan", size: 1 },
+    // Quoted individually (`customQuoteConditions`); at least the truck price meanwhile.
+    { id: "oversized", label: "Oversized or lifted truck", size: 2 },
     { id: "other", label: "Other" },
   ] satisfies VehicleCategory[],
 

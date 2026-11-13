@@ -15,6 +15,7 @@ const valid = {
   serviceId: "signature-full",
   name: " Ana Maria Ruiz ",
   phone: "(904) 555-0100",
+  vehicleCategory: "suv2",
   vehicleYear: "2019",
   vehicleMake: "Toyota",
   vehicleModel: "RAV4",
@@ -51,14 +52,18 @@ describe("bookingWizardSchema", () => {
     if (!r.success) expect(fieldErrors(r.error).email).toBeDefined();
   });
 
-  it("requires phone, name, town, package and a day", () => {
+  it("requires phone, name, town, vehicle size, package and a day", () => {
     const r = parse({ idempotencyKey: KEY, phone: "", name: "", vehicleYear: "2019", vehicleMake: "Kia", vehicleModel: "Soul" });
     expect(r.success).toBe(false);
     if (!r.success) {
       const errs = fieldErrors(r.error);
-      expect(Object.keys(errs)).toEqual(expect.arrayContaining(["phone", "name", "town", "serviceId", "slotStart", "dayPart"]));
+      expect(Object.keys(errs)).toEqual(expect.arrayContaining(["phone", "name", "town", "vehicleCategory", "serviceId", "slotStart", "dayPart"]));
       expect(errs.phone).toBe("Enter your phone number.");
+      expect(errs.vehicleCategory).toBe("Choose your vehicle size.");
     }
+    expect(parse({ ...valid, vehicleCategory: "boat" }).success).toBe(false);
+    const ok = parse(valid);
+    expect(ok.success && ok.data.vehicleCategory).toBe("suv2");
   });
 
   it("only accepts towns we list, or 'other' with a ZIP", () => {
