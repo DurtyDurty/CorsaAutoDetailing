@@ -31,9 +31,9 @@ campaign:
     - { id: 1015119, name: "Middleburg, Florida, United States", type: City }
     - { id: 1015041, name: "Green Cove Springs, Florida, United States", type: City }
     - { id: 9196545, name: "Fleming Island, Florida, United States", type: City }
-    # Added 2026-10-19: St. Johns County core areas from the site. 32092 = World Golf Village's ZIP.
-    - { id: 9197497, name: "Saint Johns, Florida, United States", type: City }
-    - { id: 9011488, name: "32092, Florida, United States", type: Postal Code }
+    # Saint Johns (9197497) and ZIP 32092 (World Golf Village), added 2026-10-19, were removed 2026-11-14 at the
+    # owner's go-ahead: 27 clicks, $72.55 and no leads in 30 days, while Clay County brought all 8.
+    # The account doesn't drop them on its own: remove_targets_and_keywords.py removed them live.
     # Added 2026-10-27 at the owner's request: all of Clay County, and Orange Park by name (it's inside the county).
     - { id: 9057255, name: "Clay County, Florida, United States", type: County }
     - { id: 1015149, name: "Orange Park, Florida, United States", type: City }
@@ -98,28 +98,29 @@ negative_keywords:
   - { text: car wax, match: PHRASE }
   - { text: a1, match: PHRASE }
   - { text: auto spa, match: PHRASE }
+  # 2026-11-14 audit (owner approved): car-wash shoppers, deal hunters and how-to searches that clicked without booking.
+  # Exact on "car wash near me" so the "mobile car wash near me" keyword keeps running.
+  - { text: car wash near me, match: EXACT }
+  - { text: hand car wash, match: PHRASE }
+  - { text: car wash by hand, match: PHRASE }
+  - { text: special, match: BROAD }
+  - { text: coupon, match: BROAD }
+  - { text: coupons, match: BROAD }
+  - { text: guide, match: BROAD }
 
 ad_groups:
   - name: Mobile Detailing
     final_url: /book
     keywords:
-      - { text: mobile detailing near me, match: PHRASE }
       - { text: mobile car detailing, match: PHRASE }
       - { text: mobile auto detailing, match: PHRASE }
       - { text: mobile detailing middleburg, match: PHRASE }
       - { text: mobile detailing green cove springs, match: PHRASE }
       - { text: mobile detailing fleming island, match: PHRASE }
-      - { text: mobile auto detailing near me, match: EXACT }
-      # 2026-10-05: no impressions in the first 3 days. Most local searches don't say "mobile" or a town name.
-      - { text: car detailing near me, match: PHRASE }
-      - { text: auto detailing near me, match: PHRASE }
-      - { text: detailing near me, match: PHRASE }
       # 2026-10-27: Google flagged the campaign as missing relevant keywords.
       - { text: mobile detailing, match: PHRASE }
-      - { text: mobile car wash near me, match: PHRASE }
-      # 2026-10-27: two of Google's own suggestions for the 'missing relevant keywords' warning (skipped 'interior cleaning': house cleaning too).
-      - { text: car detail service near me, match: PHRASE }
-      - { text: auto cleaning near me, match: PHRASE }
+      # 2026-11-14: the "near me" keywords moved to their own ad group (Near Me Detailing) for ad relevance.
+      # "auto cleaning near me" (a Google suggestion, 2026-10-27) was dropped: quality score 1, 5 clicks, no leads.
     ad:
       path1: Mobile
       path2: Detailing
@@ -188,6 +189,43 @@ ad_groups:
         - Signature adds clay bar, sanitation, interior deep clean and a 1 month protectant wax.
         - Exterior hand wash, sealant application, wheels cleaned, tire shine and windows.
         - Veteran-owned mobile auto detailing. Pick a day online; we text or call to confirm.
+
+  # 2026-11-14: Google kept rating ad relevance below average on the "near me" keywords while they shared
+  # the Mobile Detailing ad. Here they get an ad whose headlines repeat the searches word for word.
+  - name: Near Me Detailing
+    final_url: /book
+    keywords:
+      - { text: car detailing near me, match: PHRASE }
+      - { text: auto detailing near me, match: PHRASE }
+      - { text: detailing near me, match: PHRASE }
+      - { text: mobile detailing near me, match: PHRASE }
+      - { text: mobile auto detailing near me, match: EXACT }
+      - { text: car detail service near me, match: PHRASE }
+      - { text: mobile car wash near me, match: PHRASE }
+    ad:
+      path1: Detailing
+      path2: Near-Me
+      headlines:
+        - Car Detailing Near Me
+        - Mobile Detailing Near Me
+        - Auto Detailing Near Me
+        - Detailing Near Me
+        - Car Detail Service Near Me
+        - Mobile Car Detailing Near Me
+        - We Come to You
+        - Detailing From $90
+        - Full Detail From $150
+        - Veteran-Owned Detailing
+        - Book Your Detail Online
+        - No Water or Power Needed
+        - Se Habla Español
+        - At Your Home or Work
+        - Clay County Mobile Detailing
+      descriptions:
+        - Car detailing near me? We come to your home or work anywhere in Clay County.
+        - Mobile detailing near you, inside and out in one visit. Basic, Essential or Signature.
+        - Auto detailing near you from $90. Pick a day online and we text or call to confirm.
+        - Veteran-owned mobile car detailing. No water or power hookup needed from you.
 
 assets:
   callouts:

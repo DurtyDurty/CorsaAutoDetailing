@@ -102,7 +102,8 @@ class ConfigTests(unittest.TestCase):
 
     def test_locations_are_the_verified_areas_only(self):
         c = config.load()
-        self.assertEqual({l["id"] for l in c.campaign["locations"]}, {1015119, 1015041, 9196545, 9197497, 9011488, 9057255, 1015149})
+        # Saint Johns and ZIP 32092 came off on 2026-11-14 (no leads in 30 days); they stay verified geo ids.
+        self.assertEqual({l["id"] for l in c.campaign["locations"]}, {1015119, 1015041, 9196545, 9057255, 1015149})
         # Clay County became a verified target on 2026-10-27; Jacksonville is still served on request only.
         jacksonville = [{"id": 1015067, "name": "Jacksonville, Florida, United States", "type": "City"}]
         self.assertIn("not one of the verified", " ".join(cfg_with(**{"campaign.locations": jacksonville}).errors))
@@ -144,7 +145,13 @@ class ConfigTests(unittest.TestCase):
         self.assertIn(("mobile auto detailing near me", "EXACT"), kws)
         self.assertIn(("mobile detailing near me", "PHRASE"), kws)
         self.assertIn(("car detailing near me", "PHRASE"), kws)
-        self.assertEqual(len(kws), 24)
+        self.assertNotIn(("auto cleaning near me", "PHRASE"), kws)
+        self.assertEqual(len(kws), 23)
+        # 2026-11-14: every "near me" keyword sits in its own ad group, whose ad repeats them.
+        near = next(grp for grp in c.ad_groups if grp.name == "Near Me Detailing")
+        self.assertTrue(all("near me" in k.text for k in near.keywords))
+        self.assertFalse([k.text for grp in c.ad_groups if grp is not near for k in grp.keywords if "near me" in k.text])
+        self.assertIn("Car Detailing Near Me", near.headlines)
         self.assertTrue(cfg_with(**{"ad_groups.0.keywords.0.match": "BROAD"}).errors)
         self.assertTrue(cfg_with(**{"ad_groups.0.keywords.0.text": '"mobile detailing"'}).errors)
         dup = cfg_with(**{"ad_groups.1.keywords.0.text": "mobile car detailing", "ad_groups.1.keywords.0.match": "PHRASE"})
@@ -182,8 +189,9 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(steps, plan.desired(c))
         kinds = [s.kind for s in steps]
         self.assertEqual(kinds[:2], ["budget", "campaign"])
-        self.assertEqual(kinds.count("location"), 7)
-        self.assertEqual(kinds.count("keyword"), 24)
+        self.assertEqual(kinds.count("location"), 5)
+        self.assertEqual(kinds.count("keyword"), 23)
+        self.assertEqual(kinds.count("ad_group"), 3)
         self.assertEqual(kinds.count("call"), 1)
         no_phone = cfg_with(**{"assets.call.phone": None})
         self.assertEqual([s.kind for s in plan.desired(no_phone)].count("call"), 0, "no call asset without a phone number")
@@ -250,23 +258,25 @@ class BuildTests(unittest.TestCase):
     def test_criteria(self):
         crit = self.kind("campaign_criterion_operation")
         geos = sorted(c.location.geo_target_constant for c in crit if c.location.geo_target_constant)
-        self.assertEqual(geos, ["geoTargetConstants/1015041", "geoTargetConstants/1015119", "geoTargetConstants/1015149", "geoTargetConstants/9011488", "geoTargetConstants/9057255", "geoTargetConstants/9196545", "geoTargetConstants/9197497"])
+        self.assertEqual(geos, ["geoTargetConstants/1015041", "geoTargetConstants/1015119", "geoTargetConstants/1015149", "geoTargetConstants/9057255", "geoTargetConstants/9196545"])
         self.assertEqual([c.language.language_constant for c in crit if c.language.language_constant], ["languageConstants/1000"])
         sched = [c.ad_schedule for c in crit if c.ad_schedule.start_hour or c.ad_schedule.end_hour]
         self.assertEqual(len(sched), 7)
         self.assertTrue(all(s.start_hour == 8 and s.end_hour == 19 for s in sched))
-        self.assertEqual(sum(1 for c in crit if c.negative), 43)
+        self.assertEqual(sum(1 for c in crit if c.negative), 50)
+        exact = next(c for c in crit if c.negative and c.keyword.text == "car wash near me")
+        self.assertEqual(exact.keyword.match_type, self.client.enums.KeywordMatchTypeEnum.EXACT, "exact, so 'mobile car wash near me' still runs")
 
     def test_keywords_and_ads(self):
         kws = self.kind("ad_group_criterion_operation")
-        self.assertEqual(len(kws), 24)
+        self.assertEqual(len(kws), 23)
         # Since 2026-10-25 every ad lands on the booking page; town keywords no longer override it.
         town = next(k for k in kws if k.keyword.text == "mobile detailing middleburg")
         self.assertEqual(list(town.final_urls), [])
         ads = self.kind("ad_group_ad_operation")
-        self.assertEqual(len(ads), 2)
+        self.assertEqual(len(ads), 3)
         self.assertEqual(len(ads[0].ad.responsive_search_ad.headlines), 15)
-        self.assertEqual([list(a.ad.final_urls) for a in ads], [["https://corsaautodetailing.com/book"]] * 2)
+        self.assertEqual([list(a.ad.final_urls) for a in ads], [["https://corsaautodetailing.com/book"]] * 3)
 
     def test_assets(self):
         assets = self.kind("asset_operation")
