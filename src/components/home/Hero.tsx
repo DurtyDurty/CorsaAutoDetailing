@@ -35,8 +35,9 @@ export function Hero({ lang }: { lang: Lang }) {
       <div className="carbon relative px-5 pb-10 pt-4 sm:px-8 sm:pb-14 lg:flex lg:flex-col lg:justify-center lg:py-20 lg:pl-[max(2rem,calc((100vw-72rem)/2+2rem))] lg:pr-14">
         {/* First under the photos, so a phone shows them without scrolling (owner, 2026-10-25). */}
         <TrustPoints lang={lang} className="mb-4 lg:order-last lg:mb-0 lg:mt-6" />
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-apex">{d.eyebrow}</p>
-        <h1 className="mt-3 font-display text-[2.6rem] leading-[0.95] text-balance sm:text-6xl xl:text-7xl">{d.title}</h1>
+        {/* The small keyword line is the h1 (what Google weighs most); the big tagline is styling only (SEO, 2026-11-18). */}
+        <h1 className="text-xs font-semibold uppercase tracking-[0.16em] text-apex">{d.eyebrow}</h1>
+        <p className="mt-3 font-display text-[2.6rem] leading-[0.95] text-balance sm:text-6xl xl:text-7xl">{d.title}</p>
         <p className="mt-3 max-w-xl leading-relaxed text-chalk/80 sm:mt-4 sm:text-lg">{d.sub(townList(lang))}</p>
         <div className="mt-6 flex flex-wrap gap-3">
           <a

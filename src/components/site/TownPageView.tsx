@@ -8,6 +8,7 @@ import { Section, SectionHeading } from "@/components/ui/Section";
 import { PageHero } from "./PageHero";
 import { PackageGrid } from "./PackageGrid";
 import { ZipChecker } from "./ZipChecker";
+import { townDetail } from "@/content/town-details";
 
 /** One SEO landing page per served community (`page: true`), at /service-areas/<slug> and /es/service-areas/<slug>. */
 export const towns = business.serviceAreas.communities.filter((c) => c.page);
@@ -45,8 +46,19 @@ export function TownPageView({ slug, lang }: { slug: string; lang: Lang }) {
   const nearby = towns.filter((c) => c.slug !== town.slug);
   const path = `/service-areas/${town.slug}`;
   const book = isPrelaunch ? primaryCta().href : localePath(lang, "/book");
+  const detail = townDetail(town.slug, lang);
 
   const jsonLd = [
+    ...(detail && detail.faq.length > 0
+      ? [
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            inLanguage: lang,
+            mainEntity: detail.faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+          },
+        ]
+      : []),
     {
       "@context": "https://schema.org",
       "@type": "Service",
@@ -87,7 +99,7 @@ export function TownPageView({ slug, lang }: { slug: string; lang: Lang }) {
       <Section tone="night2">
         <div className="grid items-start gap-12 lg:grid-cols-2">
           <div>
-            <SectionHeading title={d.serving(town.name)} onDark />
+            <SectionHeading title={d.serving(town.name)} lede={detail?.around} onDark />
             <dl className="mt-8 divide-y divide-white/10 border-y border-white/10">
               <div className="flex flex-col gap-1 py-4 sm:flex-row sm:gap-6">
                 <dt className="w-40 shrink-0 text-xs font-semibold uppercase tracking-[0.14em] text-chalk/65">{d.coverage}</dt>
@@ -116,7 +128,28 @@ export function TownPageView({ slug, lang }: { slug: string; lang: Lang }) {
         </div>
       </Section>
 
-      <Section tone="night">
+      {detail && detail.faq.length > 0 && (
+        <Section tone="night">
+          <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr]">
+            <SectionHeading title={d.faqTitle(town.name)} onDark />
+            <div className="divide-y divide-white/10 border-y-2 border-brand-red/70">
+              {detail.faq.map((f) => (
+                <details key={f.q} className="group">
+                  <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-4 text-lg font-semibold hover:text-apex [&::-webkit-details-marker]:hidden">
+                    <span>{f.q}</span>
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true" className="flex-none text-apex transition-transform group-open:rotate-45">
+                      <path d="M9 3v12M3 9h12" />
+                    </svg>
+                  </summary>
+                  <p className="max-w-2xl pb-5 leading-relaxed text-chalk/75">{f.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </Section>
+      )}
+
+      <Section tone="night2">
         <SectionHeading title={d.others} onDark />
         <ul className="mt-8 grid gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-3">
           {nearby.map((c) => (

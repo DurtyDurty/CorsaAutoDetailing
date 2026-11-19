@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { business } from "@/config/business";
+import { servicePages } from "@/content/service-pages";
 import { photos } from "@/config/photos";
 import { Section, SectionHeading } from "@/components/ui/Section";
 import { PageHero } from "@/components/site/PageHero";
@@ -67,6 +69,22 @@ export default function ServicesPage() {
             ))}
           </ul>
         </div>
+      </Section>
+
+      <Section tone="chalk">
+        <SectionHeading title="Services in detail" lede="What we do for interiors, paint, pet hair and headlights, and how each one is priced." />
+        <ul className="mt-8 grid gap-px overflow-hidden border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+          {servicePages().map((p) => (
+            <li key={p.slug}>
+              <Link href={`/services/${p.slug}`} className="group flex min-h-14 items-center justify-between gap-4 bg-white px-5 py-4 font-medium hover:text-apex-deep">
+                {p.name}
+                <span aria-hidden="true" className="text-apex-deep transition-transform group-hover:translate-x-1">
+                  →
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </Section>
 
       <CorsaClub lang="en" />

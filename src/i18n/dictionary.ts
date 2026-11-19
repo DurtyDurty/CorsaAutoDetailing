@@ -46,7 +46,7 @@ const en = {
     switchToAria: "Ver esta página en español",
   },
   hero: {
-    eyebrow: "Mobile detailing · Clay County, FL",
+    eyebrow: "Mobile auto detailing in Clay County & Jacksonville, FL",
     title: "Detailing, wherever you park.",
     sub: (towns: string) =>
       `Mobile auto detailing for ${towns}. Our trailer carries its own water and power, and every package covers the inside and the outside.`,
@@ -264,6 +264,7 @@ const en = {
     goodToKnow: "Good to know",
     zips: "ZIP codes",
     others: "Other areas we serve",
+    faqTitle: (town: string) => `Detailing in ${town}: questions`,
     cta: (town: string) => `Detailing in ${town}, at your door.`,
   },
   offer: {
@@ -302,7 +303,7 @@ const es: Dict = {
     switchToAria: "View this page in English",
   },
   hero: {
-    eyebrow: "Detallado móvil · Condado de Clay, FL",
+    eyebrow: "Detallado móvil de autos en el condado de Clay y Jacksonville, FL",
     title: "Detallado, donde estaciones.",
     sub: (towns: string) =>
       `Detallado móvil de autos en ${towns}. Nuestro tráiler lleva su propia agua y electricidad, y cada paquete cubre el interior y el exterior.`,
@@ -520,6 +521,7 @@ const es: Dict = {
     goodToKnow: "Bueno saber",
     zips: "Códigos postales",
     others: "Otras zonas que atendemos",
+    faqTitle: (town: string) => `Preguntas sobre el detallado en ${town}`,
     cta: (town: string) => `Detallado en ${town}, en la puerta de tu casa.`,
   },
   offer: {

@@ -33,6 +33,7 @@ Things the website is deliberately silent or provisional about until you decide.
 - [ ] **St. Johns County towns (added 2026-09-28).** St. Johns (32259), World Golf Village (32092) and Orangedale (no ZIP set yet: tell me which ZIP(s) to use) are marked core coverage, each with its own page. Check the one-line intro on each town page (`business.serviceAreas.communities[].intro`), e.g. "Orangedale sits on the St. Johns County side of the Shands Bridge", and correct anything that's off.
 - [ ] **Orange Park.** No town page, per your call. It's still listed as "travel confirmed on review" and its ZIPs still get that answer. Remove it entirely if you don't want Orange Park jobs.
 - [ ] **Jacksonville coverage.** Added 2026-09-26 as "travel confirmed on review" with 33 Duval County ZIPs (32099, 322xx). Remove any you won't drive to (e.g. the Beaches), or move nearby ones to core coverage. → `business.serviceAreas.communities[jacksonville]`
+- [ ] **Check the neighborhood names on the town pages (added 2026-11-18 for SEO).** Each town page now names the neighborhoods and roads we go to (e.g. Jacksonville: Oakleaf, Argyle Forest, the Westside, Mandarin) and has 2-3 local questions. Remove any place you won't drive to. → `src/content/town-details.ts`
 - [ ] **Decide which Orange Park locations count as "selected".** The site says travel eligibility is confirmed on review. → `business.serviceAreas.communities[orange-park].blurb`
 - [ ] **Travel radius / cutoff policy** (currently: no surcharges, we just say yes or no).
 

@@ -11,6 +11,7 @@ export function BusinessJsonLd({ withOffers = true, lang = "en" }: { withOffers?
   const id = absoluteUrl("/#business");
   const packagePrices = business.services.filter((s) => !s.plan).map((s) => s.price);
   const reviews = shownReviews();
+  const sameAs = [business.contact.social.instagram, business.contact.social.facebook].filter((u): u is string => Boolean(u));
 
   const areaServed = [
     { "@type": "AdministrativeArea", name: "Clay County, FL" },
@@ -87,6 +88,8 @@ export function BusinessJsonLd({ withOffers = true, lang = "en" }: { withOffers?
           },
         }
       : {}),
+    // Ties the site to the business's other profiles (only the ones that are set).
+    ...(sameAs.length > 0 ? { sameAs } : {}),
     ...(business.contact.email ? { email: business.contact.email } : {}),
     ...(business.contact.phone ? { telephone: `+1-${business.contact.phone}` } : {}),
   };
