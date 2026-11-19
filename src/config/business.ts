@@ -542,11 +542,14 @@ export const business = {
         county: "Clay",
         coverage: "confirm",
         blurb: "Selected locations. Travel eligibility is confirmed when we review your request.",
-        intro: "",
-        page: false,
+        intro:
+          "Orange Park sits on the St. Johns River along US-17, just north of Fleming Island. We bring interior and exterior detailing to homes and workplaces in Orange Park and nearby Oakleaf, Lakeside and Bellair-Meadowbrook, and confirm travel for your exact address when we review your request.",
+        // Page added 2026-11-19 (SEO; owner: "fix what you need"): Orange Park has far more searches than the
+        // core towns and has brought ad leads. Coverage stays "confirm".
+        page: true,
         es: {
           blurb: "Algunas zonas. Confirmamos si podemos llegar cuando revisamos tu solicitud.",
-          intro: "",
+          intro: "Orange Park está junto al río St. Johns, sobre la US-17, justo al norte de Fleming Island. Llevamos el detallado interior y exterior a casas y lugares de trabajo en Orange Park y en Oakleaf, Lakeside y Bellair-Meadowbrook, y confirmamos el traslado a tu dirección exacta cuando revisamos tu solicitud.",
         },
         zips: ["32065", "32073"],
       },

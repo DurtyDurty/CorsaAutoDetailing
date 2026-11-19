@@ -146,7 +146,7 @@ class ConfigTests(unittest.TestCase):
         self.assertIn(("mobile detailing near me", "PHRASE"), kws)
         self.assertIn(("car detailing near me", "PHRASE"), kws)
         self.assertNotIn(("auto cleaning near me", "PHRASE"), kws)
-        self.assertEqual(len(kws), 23)
+        self.assertEqual(len(kws), 27)
         # 2026-11-14: every "near me" keyword sits in its own ad group, whose ad repeats them.
         near = next(grp for grp in c.ad_groups if grp.name == "Near Me Detailing")
         self.assertTrue(all("near me" in k.text for k in near.keywords))
@@ -190,7 +190,7 @@ class PlanTests(unittest.TestCase):
         kinds = [s.kind for s in steps]
         self.assertEqual(kinds[:2], ["budget", "campaign"])
         self.assertEqual(kinds.count("location"), 5)
-        self.assertEqual(kinds.count("keyword"), 23)
+        self.assertEqual(kinds.count("keyword"), 27)
         self.assertEqual(kinds.count("ad_group"), 3)
         self.assertEqual(kinds.count("call"), 1)
         no_phone = cfg_with(**{"assets.call.phone": None})
@@ -263,13 +263,13 @@ class BuildTests(unittest.TestCase):
         sched = [c.ad_schedule for c in crit if c.ad_schedule.start_hour or c.ad_schedule.end_hour]
         self.assertEqual(len(sched), 7)
         self.assertTrue(all(s.start_hour == 8 and s.end_hour == 19 for s in sched))
-        self.assertEqual(sum(1 for c in crit if c.negative), 50)
+        self.assertEqual(sum(1 for c in crit if c.negative), 61)
         exact = next(c for c in crit if c.negative and c.keyword.text == "car wash near me")
         self.assertEqual(exact.keyword.match_type, self.client.enums.KeywordMatchTypeEnum.EXACT, "exact, so 'mobile car wash near me' still runs")
 
     def test_keywords_and_ads(self):
         kws = self.kind("ad_group_criterion_operation")
-        self.assertEqual(len(kws), 23)
+        self.assertEqual(len(kws), 27)
         # Since 2026-10-25 every ad lands on the booking page; town keywords no longer override it.
         town = next(k for k in kws if k.keyword.text == "mobile detailing middleburg")
         self.assertEqual(list(town.final_urls), [])

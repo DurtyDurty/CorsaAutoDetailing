@@ -107,6 +107,19 @@ negative_keywords:
   - { text: coupon, match: BROAD }
   - { text: coupons, match: BROAD }
   - { text: guide, match: BROAD }
+  # 2026-11-18 audit (owner approved 2026-11-19): product shoppers (clay bar kits, Chemical Guys, Collinite,
+  # Magic Blue tire shine, engine bay cleaners), other detailers' names, and bargain hunters.
+  - { text: clay bar, match: EXACT }
+  - { text: clay bar car, match: EXACT }
+  - { text: collinite, match: BROAD }
+  - { text: chemical guys, match: BROAD }
+  - { text: magic blue, match: BROAD }
+  - { text: cleaner, match: BROAD }
+  - { text: engine bay, match: BROAD }
+  - { text: panda, match: PHRASE }
+  - { text: slick shine, match: PHRASE }
+  - { text: elite mobile, match: PHRASE }
+  - { text: cheapest, match: PHRASE }
 
 ad_groups:
   - name: Mobile Detailing
@@ -119,6 +132,10 @@ ad_groups:
       - { text: mobile detailing fleming island, match: PHRASE }
       # 2026-10-27: Google flagged the campaign as missing relevant keywords.
       - { text: mobile detailing, match: PHRASE }
+      # 2026-11-19 (owner approved): Orange Park converts; Jacksonville searchers from the Clay County side.
+      - { text: mobile detailing orange park, match: PHRASE }
+      - { text: mobile car detailing jacksonville, match: PHRASE }
+      - { text: car detailing that comes to your house, match: PHRASE }  # this ad says "We Come to You"
       # 2026-11-14: the "near me" keywords moved to their own ad group (Near Me Detailing) for ad relevance.
       # "auto cleaning near me" (a Google suggestion, 2026-10-27) was dropped: quality score 1, 5 clicks, no leads.
     ad:
@@ -202,6 +219,8 @@ ad_groups:
       - { text: mobile auto detailing near me, match: EXACT }
       - { text: car detail service near me, match: PHRASE }
       - { text: mobile car wash near me, match: PHRASE }
+      # 2026-11-19 (owner approved): seen in the 2026-11-18 audit.
+      - { text: interior car detailing near me, match: PHRASE }
     ad:
       path1: Detailing
       path2: Near-Me

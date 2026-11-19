@@ -10,7 +10,7 @@ import { ZipChecker } from "@/components/site/ZipChecker";
 export const metadata: Metadata = {
   title: { absolute: "Service Areas: Clay County, St. Johns & Jacksonville | Corsa" },
   description:
-    "Mobile auto detailing in Middleburg, Fleming Island, Green Cove Springs, St. Johns, Orangedale, World Golf Village and Jacksonville, FL. Check your ZIP.",
+    "Mobile auto detailing in Middleburg, Fleming Island, Green Cove Springs, Orange Park, St. Johns, Orangedale, World Golf Village and Jacksonville, FL. Check your ZIP.",
   alternates: { canonical: "/service-areas" },
 };
 

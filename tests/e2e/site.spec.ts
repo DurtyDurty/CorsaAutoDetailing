@@ -89,8 +89,8 @@ test.describe("public site", () => {
     expect(text).toMatch(/Any applicable tax will be disclosed/);
   });
 
-  test("town pages render in both languages, link to each other, and skip Orange Park", async ({ page, request }) => {
-    const towns = ["middleburg", "fleming-island", "green-cove-springs", "st-johns", "orangedale", "world-golf-village", "jacksonville"];
+  test("town pages render in both languages and link to each other", async ({ page, request }) => {
+    const towns = ["middleburg", "fleming-island", "green-cove-springs", "st-johns", "orangedale", "world-golf-village", "orange-park", "jacksonville"];
     for (const slug of towns) {
       const res = await page.goto(`/service-areas/${slug}`);
       expect(res?.status(), slug).toBe(200);
@@ -98,7 +98,7 @@ test.describe("public site", () => {
       await expectNoHorizontalOverflow(page);
     }
     expect((await request.get("/es/service-areas/fleming-island")).status()).toBe(200);
-    expect((await request.get("/service-areas/orange-park")).status()).toBe(404);
+    expect((await request.get("/es/service-areas/orange-park")).status()).toBe(200);
     await page.goto("/service-areas");
     await page.getByRole("link", { name: "Fleming Island" }).first().click();
     await expect(page).toHaveURL(/\/service-areas\/fleming-island$/);
@@ -206,7 +206,7 @@ test.describe("public site", () => {
     expect(sitemap).toContain("/service-areas/fleming-island");
     expect(sitemap).toContain("/es/service-areas/fleming-island");
     expect(sitemap).toContain('hreflang="es"');
-    expect(sitemap).not.toContain("/service-areas/orange-park");
+    expect(sitemap).toContain("/service-areas/orange-park");
     expect(sitemap).not.toContain("/admin");
     expect(sitemap).not.toContain("/thanks");
   });

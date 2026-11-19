@@ -197,6 +197,40 @@ const details: Record<string, Record<Lang, TownDetail>> = {
       ],
     },
   },
+  "orange-park": {
+    en: {
+      around:
+        "We come to Orange Park homes off Kingsley Avenue, Blanding Boulevard and US-17, and out to Oakleaf Plantation, Lakeside and Bellair-Meadowbrook.",
+      faq: [
+        {
+          q: "Do you come to Orange Park?",
+          a: "Yes, to selected locations. Orange Park borders our core Fleming Island area, and we confirm travel for your exact address when we review your request. If we can't reach you, we'll tell you clearly.",
+        },
+        {
+          q: "Is there a travel fee for Orange Park?",
+          a: "No. There are no travel surcharges anywhere we serve.",
+        },
+        GATED_EN,
+        WORK_EN,
+      ],
+    },
+    es: {
+      around:
+        "Vamos a casas de Orange Park cerca de Kingsley Avenue, Blanding Boulevard y la US-17, y también a Oakleaf Plantation, Lakeside y Bellair-Meadowbrook.",
+      faq: [
+        {
+          q: "¿Van a Orange Park?",
+          a: "Sí, a algunas zonas. Orange Park colinda con Fleming Island, que es parte de nuestra zona principal, y confirmamos el traslado a tu dirección exacta cuando revisamos tu solicitud. Si no podemos llegar, te lo decimos con claridad.",
+        },
+        {
+          q: "¿Cobran por traslado a Orange Park?",
+          a: "No. No cobramos recargo por traslado en ninguna zona que atendemos.",
+        },
+        GATED_ES,
+        WORK_ES,
+      ],
+    },
+  },
   jacksonville: {
     en: {
       around:
