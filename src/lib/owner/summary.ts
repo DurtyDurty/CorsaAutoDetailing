@@ -75,6 +75,14 @@ export async function todaySummary(store: LeadStore, now: Date = new Date()): Pr
     .filter((a) => a.status === "held" && a.depositStatus === "none" && a.endsAt >= nowIso)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 
+  // The days ahead, so a Sunday doesn't show a week that's already over.
+  const through = addDays(today, 6);
+  const next7End = startOf(addDays(today, 7));
+  const next7 = bookedTotal(items, dayStart, next7End);
+  const waitingIn = (from: string, to: string) => toConfirm.filter((a) => a.startsAt >= from && a.startsAt < to);
+  const waiting7 = waitingIn(dayStart, next7End);
+  const waitingMonth = waitingIn(monthStart, monthEnd);
+
   return {
     date: today,
     generatedAt: nowIso,
@@ -87,6 +95,13 @@ export async function todaySummary(store: LeadStore, now: Date = new Date()): Pr
     },
     week: bookedTotal(items, weekStart, weekEnd),
     month: bookedTotal(items, monthStart, monthEnd),
+    next7: {
+      ...next7,
+      waitingCents: waiting7.reduce((n, a) => n + a.balance.totalCents, 0),
+      waiting: waiting7.length,
+      through,
+    },
+    monthWaiting: { cents: waitingMonth.reduce((n, a) => n + a.balance.totalCents, 0), jobs: waitingMonth.length },
     newRequests: requests.length,
     unreadMessages: unreadMessageLeads.size,
     awaitingConfirmation: toConfirm.length,

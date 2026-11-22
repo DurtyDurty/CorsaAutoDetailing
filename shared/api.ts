@@ -256,8 +256,16 @@ export interface TodaySummary {
     collectedCents: number;
     outstandingCents: number;
   };
+  /** Monday to Sunday. */
   week: { bookedCents: number; jobs: number };
   month: { bookedCents: number; jobs: number };
+  /**
+   * Today through 6 days from now: booked jobs, and held times still waiting on the customer (a quote out or
+   * to send), which aren't booked yet. `through` is the last day (YYYY-MM-DD). Optional: older servers don't send it.
+   */
+  next7?: { bookedCents: number; jobs: number; waitingCents: number; waiting: number; through: string };
+  /** Held times this month still waiting on the customer. Optional like `next7`. */
+  monthWaiting?: { cents: number; jobs: number };
   /** Website requests nobody has acted on yet. */
   newRequests: number;
   /** Website contact messages not yet handled. */

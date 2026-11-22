@@ -27,6 +27,15 @@ function greeting(): string {
   return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
 }
 
+/** "Sat Nov 28" from a YYYY-MM-DD day. */
+const shortDay = (d: string) => new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`));
+
+/** "3 booked · +1 waiting on a quote ($180, not counted)": what the total covers, and what it leaves out. */
+function bookedHint(jobs: number, waiting: number, waitingCents: number): string {
+  const booked = `${jobs} booked`;
+  return waiting > 0 ? `${booked} · +${waiting} waiting on a quote (${formatCents(waitingCents)}, not counted)` : booked;
+}
+
 function Stat({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
     <div className="border border-line bg-white rounded-md px-4 py-3">
@@ -221,8 +230,16 @@ export default async function TodayPage({ searchParams }: PageProps<"/admin">) {
       <dl className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Stat label="Booked today" value={formatCents(s.today.bookedCents)} hint={`${s.today.jobs} ${s.today.jobs === 1 ? "job" : "jobs"}`} />
         <Stat label="Still to collect" value={formatCents(s.today.outstandingCents)} hint={`${formatCents(s.today.collectedCents)} collected`} />
-        <Stat label="This week" value={formatCents(s.week.bookedCents)} hint={`${s.week.jobs} booked`} />
-        <Stat label="This month" value={formatCents(s.month.bookedCents)} hint={`${s.month.jobs} booked`} />
+        {s.next7 ? (
+          <Stat
+            label={`Next 7 days (through ${shortDay(s.next7.through)})`}
+            value={formatCents(s.next7.bookedCents)}
+            hint={bookedHint(s.next7.jobs, s.next7.waiting, s.next7.waitingCents)}
+          />
+        ) : (
+          <Stat label="This week" value={formatCents(s.week.bookedCents)} hint={`${s.week.jobs} booked`} />
+        )}
+        <Stat label="This month" value={formatCents(s.month.bookedCents)} hint={bookedHint(s.month.jobs, s.monthWaiting?.jobs ?? 0, s.monthWaiting?.cents ?? 0)} />
       </dl>
 
       {turnedAway.length > 0 && (

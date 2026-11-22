@@ -100,6 +100,35 @@ describe("sourceLabel", () => {
   });
 });
 
+describe("todaySummary on a Sunday", () => {
+  // Sun Nov 22 2026, 3 PM Eastern: the Monday-to-Sunday week ends tonight.
+  const SUNDAY = new Date("2026-11-22T20:00:00Z");
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(SUNDAY);
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("shows the next 7 days with the jobs ahead, and quotes still out apart from booked", async () => {
+    const { todaySummary } = await import("@/lib/owner/summary");
+    const s = await store();
+    const l = (await s.createLead(lead())).lead;
+    await job(l, "2026-11-20T15:00:00Z", "completed", 20000); // Friday, this week
+    await job(l, "2026-11-23T15:00:00Z", "confirmed", 16000); // tomorrow
+    await job(l, "2026-11-25T15:00:00Z", "confirmed", 20000);
+    await job(l, "2026-11-28T15:00:00Z", "confirmed", 10000); // Saturday, the 7th day
+    await job(l, "2026-11-29T15:00:00Z", "confirmed", 30000); // a week from today: not in the next 7 days
+    const held = await job(l, "2026-11-24T15:00:00Z", "confirmed", 18000);
+    await s.updateAppointment(held.id, { status: "held", holdExpiresAt: "2026-11-23T20:00:00Z" });
+
+    const t = await todaySummary(s, SUNDAY);
+    expect(t.week).toEqual({ bookedCents: 20000, jobs: 1 });
+    expect(t.next7).toEqual({ bookedCents: 46000, jobs: 3, waitingCents: 18000, waiting: 1, through: "2026-11-28" });
+    expect(t.month).toEqual({ bookedCents: 96000, jobs: 5 });
+    expect(t.monthWaiting).toEqual({ cents: 18000, jobs: 1 });
+  });
+});
+
 describe("computeAnalytics", () => {
   // Wed Oct 21 2026, 3 PM Eastern.
   const NOW = new Date("2026-10-21T19:00:00Z");
