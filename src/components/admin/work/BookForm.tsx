@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import type { BookingOptions, CustomerOption } from "@shared/api";
 import { bookAction, type BookState } from "@/app/admin/book/actions";
 import { Button } from "@/components/ui/Button";
@@ -65,7 +65,17 @@ export function BookForm({
   const quoting = after === "quote";
 
   return (
-    <form action={action} className="flex flex-col gap-5 max-w-3xl">
+    <form
+      // Not `action={action}`: React clears every typed field after a form action, so a warning like
+      // "already a job that day, book anyway?" used to wipe the whole customer (2026-11-22). Submitting
+      // by hand keeps what was typed.
+      onSubmit={(e) => {
+        e.preventDefault();
+        const fd = new FormData(e.currentTarget);
+        startTransition(() => action(fd));
+      }}
+      className="flex flex-col gap-5 max-w-3xl"
+    >
       <input type="hidden" name="requestId" value={requestId} />
       <input type="hidden" name="mode" value={mode} />
       <input type="hidden" name="after" value={after} />
