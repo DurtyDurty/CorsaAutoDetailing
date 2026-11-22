@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { business } from "@/config/business";
-import { computeAvailability, isSlotAvailable } from "@/lib/availability";
+import { computeAvailability, isSlotAvailable, visitMinutes } from "@/lib/availability";
 import { easternToUtc } from "@/lib/time";
 
 // Wednesday, Oct 21 2026, 3:00 PM Eastern.
@@ -60,6 +60,16 @@ describe("computeAvailability", () => {
     expect(first.slots).toEqual(times(D, [...MORNING, ...AFTERNOON.slice(0, 5)]));
     const [sig] = computeAvailability({ serviceId: "platinum-full", busy: [], now: NOW });
     expect(sig.slots).toEqual(times(D, [...MORNING, "12:00"]));
+  });
+
+  it("two cars: adds both packages' time, and a visit longer than the day starts at opening", () => {
+    expect(visitMinutes(["signature-full", "signature-full"])).toBe(360);
+    // 5h + 3h is more than the 7.5-hour day: it takes the whole day.
+    expect(visitMinutes(["platinum-full", "signature-full"])).toBe(450);
+    const [six] = computeAvailability({ serviceId: "signature-full", durationMinutes: 360, busy: [], now: NOW });
+    expect(six!.slots).toEqual(times(D, ["09:30", "10:00", "10:30", "11:00"]));
+    const [day] = computeAvailability({ serviceId: "platinum-full", durationMinutes: 450, busy: [], now: NOW });
+    expect(day!.slots).toEqual(times(D, ["09:30"]));
   });
 
   it("takes one visit per window: a morning visit closes the morning, and the afternoon starts after it", () => {

@@ -303,6 +303,51 @@ describe("booking from the app", () => {
     expect((await outbox()).map((m) => m.to)).toEqual(["sam@example.com", "sam@example.com"]);
   });
 
+  it("books two cars on one ticket: both prices add up, each car gets a quote line, and both show on the job", async () => {
+    const r = await routes();
+    const t = await token();
+    const body = {
+      requestId: crypto.randomUUID(),
+      customer: { new: newCustomer },
+      serviceId: "signature-full",
+      date: await nextTuesday(),
+      time: "09:30",
+      durationMinutes: 360,
+      priceCents: 15000,
+      secondCar: { serviceId: "platinum-full", year: 2021, make: "Toyota", model: "RAV4", priceCents: 25000 },
+      quoteFirst: true,
+    };
+    const res = await r.appointments.POST(req("/appointments", { method: "POST", token: t, body }));
+    expect(res.status).toBe(201);
+    const held = ((await res.json()) as CreateAppointmentResponse).appointment;
+    expect(held.quotedPriceCents).toBe(40000);
+    expect(held.serviceName).toBe("Essential Full Detail + Signature Full Detail");
+    expect(held.extraVehicles).toEqual([
+      expect.objectContaining({ year: 2021, make: "Toyota", model: "RAV4", serviceId: "platinum-full", serviceName: "Signature Full Detail", priceCents: 25000 }),
+    ]);
+    expect(held.quoteDraft?.lines).toEqual([
+      { label: "Essential Full Detail · 2020 Honda Accord", amountCents: 15000 },
+      { label: "Signature Full Detail · 2021 Toyota RAV4", amountCents: 25000 },
+    ]);
+    // Six hours from 9:30 plus travel: the afternoon is taken too.
+    const clash = await r.appointments.POST(req("/appointments", { method: "POST", token: t, body: { ...body, requestId: crypto.randomUUID(), time: "15:00", secondCar: undefined, override: true } }));
+    expect(clash.status).toBe(409);
+  });
+
+  it("refuses a second car without a package", async () => {
+    const r = await routes();
+    const t = await token();
+    const res = await r.appointments.POST(
+      req("/appointments", {
+        method: "POST",
+        token: t,
+        body: { requestId: crypto.randomUUID(), customer: { new: newCustomer }, serviceId: "signature-full", date: await nextTuesday(), time: "10:00", durationMinutes: 180, priceCents: 15000, secondCar: { serviceId: "boat-wash", priceCents: 100 } },
+      }),
+    );
+    expect(res.status).toBe(422);
+    expect(await outbox()).toHaveLength(0);
+  });
+
   it("quote first: dropping the held time frees it without emailing the customer", async () => {
     const r = await routes();
     const t = await token();

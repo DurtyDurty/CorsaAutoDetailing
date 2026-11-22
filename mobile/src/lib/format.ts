@@ -1,3 +1,5 @@
+import { vehiclesText, type AppointmentSummary, type ExtraVehicleSummary } from "@shared/api";
+import { formatCents } from "@shared/money";
 import { BUSINESS_TIME_ZONE } from "@/config";
 
 const time = new Intl.DateTimeFormat("en-US", { timeZone: BUSINESS_TIME_ZONE, hour: "numeric", minute: "2-digit" });
@@ -21,6 +23,19 @@ export function greeting(now: Date = new Date()): string {
 export function vehicleLine(v: { year: number | null; make: string | null; model: string | null }): string | null {
   const s = [v.year, v.make, v.model].filter(Boolean).join(" ");
   return s || null;
+}
+
+/** Every car on a job: "2019 Toyota RAV4 + 2021 Honda Civic", or the one car. */
+export function jobVehicleLine(a: Pick<AppointmentSummary, "vehicle" | "extraVehicles">): string | null {
+  return vehiclesText(a) || null;
+}
+
+/** "2021 Honda Civic (Coupe or sedan) · Signature Full Detail · $150" */
+export function extraVehicleText(v: ExtraVehicleSummary, index = 0): string {
+  const car = vehicleLine(v) ?? `Car ${index + 2}`;
+  return [`${car}${v.sizeLabel ? ` (${v.sizeLabel})` : ""}`, v.serviceName ?? "Package to choose", v.priceCents > 0 ? formatCents(v.priceCents) : null]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 export function addressLine(a: { serviceAddress: string | null; city: string | null; zip: string | null }): string | null {

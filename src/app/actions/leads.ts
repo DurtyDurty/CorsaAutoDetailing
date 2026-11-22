@@ -4,7 +4,8 @@ import { headers } from "next/headers";
 import type { z } from "zod";
 import { business, getService, reachUsLine, type ServiceId } from "@/config/business";
 import { reportFormFailure } from "@/lib/site-errors";
-import { isSlotAvailable } from "@/lib/availability";
+import { isSlotAvailable, visitMinutes } from "@/lib/availability";
+import type { ExtraVehicle } from "@shared/api";
 import { bookingEnabled, calendarRequestsEnabled, calendarState, releaseToken } from "@/lib/booking";
 import { notifyForLead } from "@/lib/notifications";
 import { todayEastern } from "@/lib/time";
@@ -14,7 +15,7 @@ import { intake, baseLead, type IntakeResult } from "@/lib/leads/intake";
 import { OFFER_SIGNUP_NOTE } from "@/lib/leads/shared";
 import { getLeadStore } from "@/lib/leads/store";
 import { photosEnabled, storeLeadPhotos } from "@/lib/photos";
-import { computeEstimate, firstTimeOfferNote, militaryNote, optionalAddOns } from "@/lib/pricing";
+import { computeEstimate, firstTimeOfferNote, militaryNote, optionalAddOns, sizedPrice } from "@/lib/pricing";
 import { normalizeEmail, normalizePhone } from "@/lib/utils";
 import { lookupZip } from "@/lib/zip";
 import {
@@ -209,7 +210,7 @@ export async function submitCalendarRequest(_prev: FormResult | null, formData: 
  * Spanish submissions confirm on /es/thanks.
  */
 export async function submitBookingRequest(_prev: FormResult | null, formData: FormData): Promise<FormResult> {
-  const result = await holdRequest(formData, { form: "booking_form", schema: bookingWizardSchema, build: buildWizardLead });
+  const result = await holdRequest(formData, { form: "booking_form", schema: bookingWizardSchema, build: buildWizardLead, extras: wizardSecondCar });
   if (formData.get("lang") === "es" && result.redirectTo?.startsWith("/thanks/")) return { ...result, redirectTo: `/es${result.redirectTo}` };
   return result;
 }
@@ -267,14 +268,47 @@ function buildWizardLead(d: BookingWizardInput): NewLead {
     estimate,
   };
 }
+/** The booking form's second car, priced like the first: its package at its size ("help" = priced in the quote). */
+function wizardSecondCar(d: BookingWizardInput): ExtraVehicle[] {
+  if (!d.secondCar || !d.car2ServiceId || !d.car2Category) return [];
+  const service = getService(d.car2ServiceId);
+  return [
+    {
+      year: Number(d.car2Year) || null,
+      make: d.car2Make || null,
+      model: d.car2Model || null,
+      sizeId: d.car2Category,
+      serviceId: service ? service.id : null,
+      priceCents: service ? sizedPrice(service, d.car2Category) * 100 : 0,
+    },
+  ];
+}
+
+/** The second car's package the form asked for, before validation (for the slot re-check). */
+function requestedSecondService(fd: FormData): ServiceId | null {
+  if (fd.get("secondCar") !== "on") return null;
+  const id = String(fd.get("car2ServiceId") ?? "");
+  return getService(id) || id === "help" ? holdServiceFor(id) : null;
+}
+
+/** How long the visit is held for: the first car's package, plus the second car's. */
+function holdMinutes(first: string, second: ServiceId | null): number {
+  return second ? visitMinutes([holdServiceFor(first), second]) : (business.booking.durationMinutes[holdServiceFor(first)] ?? business.scheduling.defaultDurationMinutes);
+}
+
 type HoldInput = Pick<CalendarRequestInput, "serviceId" | "slotStart" | "dayPart" | "preferredTime"> &
   Partial<Pick<CalendarRequestInput, "condition" | "conditionFlags">> & { vehicleCategory?: string | null };
 
 /** Any error the steps below didn't expect: logged for the owner, and the customer gets the phone number. */
-async function holdRequest<T extends HoldInput>(
-  formData: FormData,
-  opts: { form: string; schema: z.ZodType<T>; build: (d: T) => NewLead },
-): Promise<FormResult> {
+type HoldOptions<T> = {
+  form: string;
+  schema: z.ZodType<T>;
+  build: (d: T) => NewLead;
+  /** More cars on the same visit (the booking form's second car). */
+  extras?: (d: T) => ExtraVehicle[];
+};
+
+async function holdRequest<T extends HoldInput>(formData: FormData, opts: HoldOptions<T>): Promise<FormResult> {
   try {
     return await holdRequestSteps(formData, opts);
   } catch (err) {
@@ -287,10 +321,7 @@ async function holdRequest<T extends HoldInput>(
   }
 }
 
-async function holdRequestSteps<T extends HoldInput>(
-  formData: FormData,
-  opts: { form: string; schema: z.ZodType<T>; build: (d: T) => NewLead },
-): Promise<FormResult> {
+async function holdRequestSteps<T extends HoldInput>(formData: FormData, opts: HoldOptions<T>): Promise<FormResult> {
   if (!calendarRequestsEnabled()) {
     return { status: "unavailable", message: `Online scheduling isn't available right now. ${reachUsLine()}` };
   }
@@ -306,7 +337,12 @@ async function holdRequestSteps<T extends HoldInput>(
   if (requestedSlot && typeof requestedPart === "string" && requestedPart && !inPart(requestedSlot, requestedPart)) return SLOT_TAKEN;
   if ((getService(requestedService) || requestedService === "help") && requestedSlot) {
     await store.releaseExpiredHolds();
-    const free = isSlotAvailable({ serviceId: holdServiceFor(requestedService), ...(await calendarState(store)), startIso: requestedSlot });
+    const free = isSlotAvailable({
+      serviceId: holdServiceFor(requestedService),
+      durationMinutes: holdMinutes(requestedService, opts.extras ? requestedSecondService(formData) : null),
+      ...(await calendarState(store)),
+      startIso: requestedSlot,
+    });
     if (!free) return SLOT_TAKEN;
   }
 
@@ -345,8 +381,11 @@ async function holdRequestSteps<T extends HoldInput>(
 
   // "Help me choose" holds the longest package's time; the job gets its package when the owner quotes it.
   const serviceId = getService(d.serviceId) ? (d.serviceId as ServiceId) : null;
+  const extraVehicles = opts.extras?.(d) ?? [];
+  const secondHold = extraVehicles[0] ? holdServiceFor(extraVehicles[0].serviceId ?? "help") : null;
   const startsAt = new Date(d.slotStart);
-  const minutes = business.booking.durationMinutes[holdServiceFor(d.serviceId)] ?? business.scheduling.defaultDurationMinutes;
+  const minutes = holdMinutes(d.serviceId, secondHold);
+  const summary = `${requestSummary(d)}${extraVehicles.length ? ` · ${extraVehicles.length + 1} cars` : ""}`;
   const holdUntil = Math.min(Date.now() + business.booking.requestHoldHours * 3600_000, startsAt.getTime());
   let appt;
   try {
@@ -357,12 +396,13 @@ async function holdRequestSteps<T extends HoldInput>(
       endsAt: new Date(startsAt.getTime() + minutes * 60_000).toISOString(),
       status: "held",
       // Priced from the package on this submission, so a replayed form key can't pair one package with another's price.
-      quotedPriceCents: quotedCents(d),
+      quotedPriceCents: quotedCents(d) + extraVehicles.reduce((s, v) => s + v.priceCents, 0),
       customerAgreed: false,
       completedRevenueCents: null,
-      notes: requestSummary(d),
+      notes: summary,
       source: "online",
       serviceId,
+      extraVehicles,
       depositCents: null,
       depositStatus: "none",
       checkoutSessionId: null,
@@ -381,7 +421,7 @@ async function holdRequestSteps<T extends HoldInput>(
     type: "created",
     fromStatus: null,
     toStatus: "held",
-    note: `Requested on the website: ${requestSummary(d)}. Send a quote with the exact time`,
+    note: `Requested on the website: ${summary}. Send a quote with the exact time`,
     actor: "website",
     requestId: null,
   });

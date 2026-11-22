@@ -79,6 +79,8 @@ async function fillWizard(
     military?: boolean;
     firstTime?: boolean;
     lang?: "en" | "es";
+    /** Adds a second car (English only): a pickup getting the Signature Full Detail, a 2022 Ford F-150. */
+    secondCar?: boolean;
   },
 ) {
   const es = opts.lang === "es";
@@ -88,13 +90,24 @@ async function fillWizard(
   if (opts.service !== "help") await expect(form.getByRole("radio", { name: new RegExp(opts.packageName) })).toBeChecked();
   else await form.getByText(es ? "Ayúdame a elegir" : "Help me choose").click();
   // The car below is a Lexus IS F: priced as a sedan.
-  await form.getByText(es ? "Carro o sedán" : "Car or sedan").click();
+  await form.getByText(es ? "Carro o sedán" : "Car or sedan").first().click();
+  if (opts.secondCar) {
+    await form.getByRole("checkbox", { name: /Add a second car/ }).check();
+    await form.getByRole("group", { name: "Second car's size" }).getByText("Pickup or 3-row SUV").click();
+    await form.getByLabel("Second car's package").selectOption("platinum-full");
+  }
   for (const a of opts.addOns ?? []) await form.getByRole("checkbox", { name: new RegExp(a) }).check();
   for (const f of opts.flags ?? []) await form.getByRole("checkbox", { name: f }).check();
   await form.getByRole("button", { name: next }).click();
-  await form.getByLabel(es ? /^Año/ : /^Year\b/).fill("2019");
-  await form.getByLabel(es ? /^Marca/ : /^Make\b/).fill("Lexus");
-  await form.getByLabel(es ? /^Modelo/ : /^Model\b/).fill("IS F");
+  await form.getByLabel(es ? /^Año/ : /^Year\b/).first().fill("2019");
+  await form.getByLabel(es ? /^Marca/ : /^Make\b/).first().fill("Lexus");
+  await form.getByLabel(es ? /^Modelo/ : /^Model\b/).first().fill("IS F");
+  if (opts.secondCar) {
+    const car2 = form.getByRole("group", { name: "Second car" });
+    await car2.getByLabel(/^Year\b/).fill("2022");
+    await car2.getByLabel(/^Make\b/).fill("Ford");
+    await car2.getByLabel(/^Model\b/).fill("F-150");
+  }
   await form.getByLabel(es ? "Pueblo o ciudad" : "Town", { exact: true }).selectOption("middleburg");
   await form.getByLabel(es ? "Nombre" : "Name", { exact: true }).fill(opts.name);
   await form.getByLabel(es ? "Teléfono" : "Phone", { exact: true }).fill(phone());
@@ -244,9 +257,32 @@ test.describe("after launch without deposits (LIVE mode, current production setu
     await expect(page.getByText(/Te escribimos o te llamamos al \(904\) 555-/)).toBeVisible();
   });
 
+  test("two cars: both prices add up, the visit holds a morning, and the request goes through", async ({ page }) => {
+    await page.goto("/book?service=signature-full");
+    const preview = page.getByRole("form", { name: "Booking request" });
+    await preview.getByText("Car or sedan").first().click();
+    await preview.getByRole("checkbox", { name: /Add a second car/ }).check();
+    await preview.getByRole("group", { name: "Second car's size" }).getByText("Pickup or 3-row SUV").click();
+    await preview.getByLabel("Second car's package").selectOption("platinum-full");
+    // Essential for a sedan ($150) + Signature for a pickup ($250).
+    await expect(preview).toContainText("Both cars: $400");
+    // 3 h + 5 h is more than the working day, so only the opening time is offered.
+    const res = await page.request.get("/api/availability?service=signature-full&service2=platinum-full");
+    const { days } = (await res.json()) as { days: { slots: string[] }[] };
+    const times = new Set(days.flatMap((d) => d.slots).map((s) => new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "America/New_York" }).format(new Date(s))));
+    expect([...times]).toEqual(["09:30"]);
+
+    const { form } = await fillWizard(page, { service: "signature-full", packageName: "Essential Full Detail", name: `Pair ${word()}`, secondCar: true });
+    await expect(form.getByRole("radio", { name: "Afternoon" })).toHaveCount(0);
+    await form.getByRole("button", { name: "Send my request" }).click();
+    await expect(page).toHaveURL(/\/thanks\/request\?ref=/);
+  });
+
   test("a mistake on step 2 keeps the customer on step 2 with everything typed", async ({ page }) => {
     await page.goto("/book?service=basic-full");
     const form = page.getByRole("form", { name: "Booking request" });
+    // The size is required on step 1 (since 2026-11-13).
+    await form.getByText("Car or sedan").click();
     await form.getByRole("button", { name: "Continue" }).click();
     const name = `Morgan ${word()}`;
     await form.getByLabel("Name", { exact: true }).fill(name);
@@ -312,7 +348,7 @@ test.describe("quotes: request, quote, accept (LIVE mode)", () => {
     const quote = page.getByRole("region", { name: "Quote" });
     await expect(quote.getByText("Customer asked for:")).toBeVisible();
     // The arrival time starts at the time held for the request (moving it is covered by unit tests).
-    const arrival = quote.getByLabel("Arrival time (Eastern, same day)");
+    const arrival = quote.getByLabel("Arrival time (Eastern)");
     await expect(arrival).toHaveValue(/^\d{2}:\d{2}$/);
     await quote.getByRole("button", { name: /^\+ Excessive pet-hair removal/ }).click();
     await expect(quote.getByLabel("Line 2 description")).toHaveValue("Excessive pet-hair removal");

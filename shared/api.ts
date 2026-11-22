@@ -68,6 +68,40 @@ export interface VehicleSummary {
   sizeLabel: string | null;
 }
 
+/**
+ * A second car on the same visit (owner, 2026-11-22: "2 cars per ticket"). The first car is the customer's own
+ * vehicle; extra cars are saved on the appointment with their own package and price.
+ */
+export interface ExtraVehicle {
+  year: number | null;
+  make: string | null;
+  model: string | null;
+  /** Vehicle size id ("sedan", "suv2", "large"), when given. */
+  sizeId: string | null;
+  /** This car's package; null = the customer asked for help choosing. */
+  serviceId: string | null;
+  /** This car's part of the job's price. */
+  priceCents: number;
+}
+
+export interface ExtraVehicleSummary extends ExtraVehicle {
+  sizeLabel: string | null;
+  serviceName: string | null;
+}
+
+/** Cars per visit beyond the first. */
+export const MAX_EXTRA_VEHICLES = 1;
+
+/** "2019 Toyota RAV4", or "" when nothing was given. */
+export const vehicleText = (v: { year: number | null; make: string | null; model: string | null }) => [v.year, v.make, v.model].filter(Boolean).join(" ");
+
+/** Every car on a job: "2019 Toyota RAV4 + 2021 Honda Civic". A car with no details shows as "Car 2". */
+export function vehiclesText(a: { vehicle: { year: number | null; make: string | null; model: string | null }; extraVehicles?: ExtraVehicle[] }): string {
+  const extras = a.extraVehicles ?? [];
+  if (extras.length === 0) return vehicleText(a.vehicle);
+  return [vehicleText(a.vehicle) || "Car 1", ...extras.map((v, i) => vehicleText(v) || `Car ${i + 2}`)].join(" + ");
+}
+
 export interface AppointmentSummary {
   id: string;
   leadId: string;
@@ -83,6 +117,8 @@ export interface AppointmentSummary {
   city: string | null;
   zip: string | null;
   vehicle: VehicleSummary;
+  /** More cars on the same visit (the second car). Optional: older servers don't send it. */
+  extraVehicles?: ExtraVehicleSummary[];
   quotedPriceCents: number;
   discountCents: number;
   depositCents: number | null;
@@ -339,6 +375,16 @@ const newCustomerSchema = z.object({
 });
 export type NewCustomerInput = z.infer<typeof newCustomerSchema>;
 
+/** The second car on a booking: its own package and price. Year, make and model are optional, like the first car's. */
+export const secondCarSchema = z.object({
+  serviceId: z.string({ message: "Choose the second car's package." }).trim().min(1, "Choose the second car's package.").max(60),
+  year: z.coerce.number().int().min(1950, "Enter the second car's year.").max(2100, "Enter the second car's year.").optional(),
+  make: z.string().trim().max(60).optional(),
+  model: z.string().trim().max(60).optional(),
+  priceCents: z.coerce.number().int().min(0, "Enter the second car's price.").max(1_000_000, "That price looks too large."),
+});
+export type SecondCarInput = z.infer<typeof secondCarSchema>;
+
 export const createAppointmentSchema = z.object({
   /** Created when the form opens; a repeated submit books once and emails once. */
   requestId: z.string().uuid(),
@@ -347,7 +393,10 @@ export const createAppointmentSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date."),
   time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Pick a time."),
   durationMinutes: z.coerce.number().int().min(15, "At least 15 minutes.").max(600, "At most 10 hours."),
+  /** The first car's price. With a second car, the job's price is this plus `secondCar.priceCents`. */
   priceCents: z.coerce.number().int().min(0).max(1_000_000),
+  /** A second car on the same visit. */
+  secondCar: secondCarSchema.optional(),
   notes: z.string().trim().max(1000).optional(),
   /** Book even if it's outside working hours or on a day off. Never overrides another booking. */
   override: z.boolean().default(false),

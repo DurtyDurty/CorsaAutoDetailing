@@ -25,7 +25,10 @@ export async function bookAction(_prev: BookState, fd: FormData): Promise<BookSt
   const store = await getLeadStore();
   if (!store) return { error: "The database isn't reachable right now.", canOverride: false };
 
-  const dollars = Number(String(fd.get("price") ?? "").replace(/[$,\s]/g, ""));
+  const toCents = (k: string) => {
+    const dollars = Number(String(fd.get(k) ?? "").replace(/[$,\s]/g, ""));
+    return Number.isFinite(dollars) ? Math.round(dollars * 100) : -1;
+  };
   const mode = fd.get("mode") === "new" ? "new" : "existing";
   const raw = {
     requestId: str(fd, "requestId"),
@@ -52,7 +55,17 @@ export async function bookAction(_prev: BookState, fd: FormData): Promise<BookSt
     date: str(fd, "date"),
     time: str(fd, "time"),
     durationMinutes: str(fd, "durationMinutes"),
-    priceCents: Number.isFinite(dollars) ? Math.round(dollars * 100) : -1,
+    priceCents: toCents("price"),
+    secondCar:
+      fd.get("secondCar") === "on"
+        ? {
+            serviceId: str(fd, "car2ServiceId"),
+            year: str(fd, "car2Year"),
+            make: str(fd, "car2Make"),
+            model: str(fd, "car2Model"),
+            priceCents: toCents("car2Price"),
+          }
+        : undefined,
     notes: str(fd, "notes"),
     override: fd.get("override") === "on",
     sendConfirmation: fd.get("sendConfirmation") === "on",

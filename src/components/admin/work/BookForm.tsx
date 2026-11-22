@@ -5,8 +5,9 @@ import type { BookingOptions, CustomerOption } from "@shared/api";
 import { bookAction, type BookState } from "@/app/admin/book/actions";
 import { Button } from "@/components/ui/Button";
 
-const DURATIONS = [60, 90, 120, 180, 240, 300, 360];
+const DURATIONS = [60, 90, 120, 180, 240, 300, 360, 420, 480, 540, 600];
 const money = (cents: number) => `$${(cents / 100).toFixed(0)}`;
+const dollars = (v: string) => Number(v.replace(/[$,\s]/g, "") || "0");
 
 /** Label tied to its control by id, so the control's name is exactly the label. */
 function Labeled({ id, label, children, className }: { id: string; label: string; children: React.ReactNode; className?: string }) {
@@ -47,6 +48,18 @@ export function BookForm({
   const [serviceId, setServiceId] = useState("");
   const [price, setPrice] = useState("");
   const [duration, setDuration] = useState(options.defaultDurationMinutes);
+  // A second car on the same visit: its own package and price; the time adds up.
+  const [secondCar, setSecondCar] = useState(false);
+  const [car2ServiceId, setCar2ServiceId] = useState("");
+  const [car2Price, setCar2Price] = useState("");
+  const minutesFor = (id: string) => options.services.find((x) => x.id === id)?.durationMinutes ?? options.defaultDurationMinutes;
+  /** The time both packages take, once the packages are chosen. */
+  const fitDuration = (first: string, second: string, withSecond: boolean) => {
+    if (!first) return;
+    const total = minutesFor(first) + (withSecond && second ? minutesFor(second) : 0);
+    setDuration(DURATIONS.find((m) => m >= total) ?? DURATIONS[DURATIONS.length - 1]!);
+  };
+  const totalDollars = dollars(price) + (secondCar ? dollars(car2Price) : 0);
   // Quote first by default, like the app: the time is held and the customer accepting the quote confirms it.
   const [after, setAfter] = useState<"quote" | "book">("quote");
   const quoting = after === "quote";
@@ -90,7 +103,7 @@ export function BookForm({
                 if (s && !serviceId) {
                   setServiceId(s.id);
                   setPrice(String(s.priceCents / 100));
-                  if (s.durationMinutes) setDuration(s.durationMinutes);
+                  fitDuration(s.id, car2ServiceId, secondCar);
                 }
               }}
             >
@@ -138,7 +151,7 @@ export function BookForm({
                 setServiceId(e.target.value);
                 if (s) {
                   setPrice(String(s.priceCents / 100));
-                  if (s.durationMinutes) setDuration(s.durationMinutes);
+                  fitDuration(s.id, car2ServiceId, secondCar);
                 }
               }}
             >
@@ -163,14 +176,68 @@ export function BookForm({
             </select>
           </Labeled>
           <div className="flex flex-col gap-1">
-            <Input label="Price ($)" name="price" inputMode="decimal" required value={price} onChange={(e) => setPrice(e.target.value)} />
+            <Input label={secondCar ? "Price, first car ($)" : "Price ($)"} name="price" inputMode="decimal" required value={price} onChange={(e) => setPrice(e.target.value)} />
             <span className="text-xs text-ink-muted">
               {quoting ? "Starts at the package price; add extras or a discount on the quote." : "Starts at the package price; change it to what you quoted."}
             </span>
           </div>
         </div>
+
+        <div className="flex flex-col gap-3 border-t border-line pt-4">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              name="secondCar"
+              className="checkbox"
+              checked={secondCar}
+              onChange={(e) => {
+                setSecondCar(e.target.checked);
+                fitDuration(serviceId, car2ServiceId, e.target.checked);
+              }}
+            />
+            Add a second car (same visit, same ticket)
+          </label>
+          {secondCar && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Labeled id="book-car2ServiceId" label="Second car's package" className="sm:col-span-2">
+                <select
+                  id="book-car2ServiceId"
+                  name="car2ServiceId"
+                  required
+                  value={car2ServiceId}
+                  className="field min-h-10 py-2"
+                  onChange={(e) => {
+                    const s = options.services.find((x) => x.id === e.target.value);
+                    setCar2ServiceId(e.target.value);
+                    if (s) {
+                      setCar2Price(String(s.priceCents / 100));
+                      fitDuration(serviceId, s.id, true);
+                    }
+                  }}
+                >
+                  <option value="">Choose a package</option>
+                  {options.services.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} · from {money(s.priceCents)}
+                      {s.billing === "monthly" ? "/mo" : ""}
+                    </option>
+                  ))}
+                </select>
+              </Labeled>
+              <div className="grid grid-cols-[6rem_1fr_1fr] gap-3 sm:col-span-2">
+                <Input label="Year" name="car2Year" inputMode="numeric" maxLength={4} />
+                <Input label="Make" name="car2Make" />
+                <Input label="Model" name="car2Model" />
+              </div>
+              <Input label="Price, second car ($)" name="car2Price" inputMode="decimal" required value={car2Price} onChange={(e) => setCar2Price(e.target.value)} />
+              <p className="self-end pb-2 text-sm">
+                Total for both cars: <strong>{Number.isFinite(totalDollars) ? `$${totalDollars.toFixed(totalDollars % 1 ? 2 : 0)}` : "…"}</strong>
+              </p>
+            </div>
+          )}
+        </div>
         <p className="text-xs text-ink-muted">
-          Keeps {options.travelBufferMinutes} minutes free after the job for travel. Working hours {options.workHours.start}–{options.workHours.end}.
+          {secondCar ? "How long adds up both packages; change it if you need. " : ""}Keeps {options.travelBufferMinutes} minutes free after the job for travel. Working hours {options.workHours.start}–{options.workHours.end}.
         </p>
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium">Notes (only you see these)</span>

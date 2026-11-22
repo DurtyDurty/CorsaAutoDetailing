@@ -20,7 +20,7 @@ import { colors, MIN_TOUCH, radius, space } from "@/design/theme";
 import { pickerDate, pickerTime } from "@/lib/format";
 import { useDebounced } from "@/lib/use-debounced";
 
-const DURATIONS = [60, 90, 120, 180, 240, 300, 360];
+const DURATIONS = [60, 90, 120, 180, 240, 300, 360, 420, 480, 540, 600];
 const durationLabel = (m: number) => (m % 60 === 0 ? `${m / 60} hr` : `${Math.floor(m / 60)}.5 hr`);
 
 function tomorrowAtNine(): Date {
@@ -96,9 +96,20 @@ export default function NewAppointmentScreen() {
   // Quote first by default: the time is held and the customer accepting the quote confirms it.
   const [after, setAfter] = useState<"quote" | "book">("quote");
   const [errors, setErrors] = useState<Errors>({});
+  // A second car on the same visit: its own package and price; the time adds up.
+  const [secondCar, setSecondCar] = useState(false);
+  const [car2, setCar2] = useState({ serviceId: null as string | null, price: "", year: "", make: "", model: "" });
 
   const services = useMemo(() => options.data?.services ?? [], [options.data]);
   const minutes = duration ?? options.data?.defaultDurationMinutes ?? 120;
+  const minutesFor = (id: string | null) => services.find((s) => s.id === id)?.durationMinutes ?? options.data?.defaultDurationMinutes ?? 120;
+  /** The time both packages take, once the first package is chosen. */
+  const fitDuration = (first: string | null, second: string | null, withSecond: boolean) => {
+    if (!first) return;
+    const total = minutesFor(first) + (withSecond && second ? minutesFor(second) : 0);
+    setDuration(DURATIONS.find((m) => m >= total) ?? DURATIONS[DURATIONS.length - 1]!);
+  };
+  const totalCents = Math.round((Number(price || "0") + (secondCar ? Number(car2.price || "0") : 0)) * 100);
   const groups = useMemo(() => [...new Set(services.map((s) => s.group))], [services]);
   const setField = (k: keyof typeof emptyCustomer) => (v: string) => setCustomer((c) => ({ ...c, [k]: v }));
 
@@ -123,6 +134,15 @@ export default function NewAppointmentScreen() {
       time: pickerTime(when),
       durationMinutes: minutes,
       priceCents: Math.round(Number(price || "0") * 100),
+      secondCar: secondCar
+        ? {
+            serviceId: car2.serviceId ?? "",
+            year: car2.year.trim() || undefined,
+            make: car2.make.trim() || undefined,
+            model: car2.model.trim() || undefined,
+            priceCents: Math.round(Number(car2.price || "0") * 100),
+          }
+        : undefined,
       notes: notes.trim() || undefined,
       override,
       sendConfirmation,
@@ -135,10 +155,12 @@ export default function NewAppointmentScreen() {
     }
     const next: Errors = {};
     for (const issue of parsed.error.issues) {
+      const key = issue.path.at(-1)?.toString() ?? "form";
       if (issue.path[0] === "customer" && !raw.customer) next.customer = "Choose a customer.";
-      else next[issue.path.at(-1)?.toString() ?? "form"] ??= issue.message;
+      else next[issue.path[0] === "secondCar" ? `secondCar.${key}` : key] ??= issue.message;
     }
     if (!Number.isFinite(Number(price || "0"))) next.priceCents = "Enter a price in dollars.";
+    if (secondCar && !Number.isFinite(Number(car2.price || "0"))) next["secondCar.priceCents"] = "Enter a price in dollars.";
     setErrors(next);
     return null;
   };
@@ -227,7 +249,7 @@ export default function NewAppointmentScreen() {
                       if (!serviceId && match) {
                         setServiceId(match.id);
                         setPrice(String(match.priceCents / 100));
-                        if (match.durationMinutes) setDuration(match.durationMinutes);
+                        fitDuration(match.id, car2.serviceId, secondCar);
                       }
                     }}
                   />
@@ -285,7 +307,7 @@ export default function NewAppointmentScreen() {
                       onPress={() => {
                         setServiceId(s.id);
                         setPrice(String(s.priceCents / 100));
-                        if (s.durationMinutes) setDuration(s.durationMinutes);
+                        fitDuration(s.id, car2.serviceId, secondCar);
                       }}
                     />
                   ))}
@@ -293,13 +315,68 @@ export default function NewAppointmentScreen() {
             ))}
             {errors.serviceId ? <Text style={styles.error}>{errors.serviceId}</Text> : null}
             <Field
-              label="Price ($)"
+              label={secondCar ? "Price, first car ($)" : "Price ($)"}
               value={price}
               onChangeText={setPrice}
               keyboardType="decimal-pad"
               error={errors.priceCents}
               hint={after === "quote" ? "Starts at the package price; add extras or a discount on the quote." : "Starts at the package price; change it to what you quoted."}
             />
+          </Card>
+
+          <Card style={styles.gap}>
+            <View style={styles.switchRow}>
+              <View style={styles.flex}>
+                <Text variant="bodyStrong">Second car</Text>
+                <Text variant="caption">Two cars on the same visit and the same ticket. Each car gets its own package and price.</Text>
+              </View>
+              <Switch
+                value={secondCar}
+                onValueChange={(on) => {
+                  setSecondCar(on);
+                  fitDuration(serviceId, car2.serviceId, on);
+                }}
+                trackColor={{ true: colors.accent }}
+                accessibilityLabel="Add a second car"
+              />
+            </View>
+            {secondCar ? (
+              <>
+                <Text variant="label">Second car&apos;s package</Text>
+                {services.map((s) => (
+                  <Choice
+                    key={s.id}
+                    label={s.name}
+                    detail={`from ${formatCents(s.priceCents)}${s.billing === "monthly" ? "/mo" : ""}`}
+                    selected={car2.serviceId === s.id}
+                    onPress={() => {
+                      setCar2((c) => ({ ...c, serviceId: s.id, price: String(s.priceCents / 100) }));
+                      fitDuration(serviceId, s.id, true);
+                    }}
+                  />
+                ))}
+                {errors["secondCar.serviceId"] ? <Text style={styles.error}>{errors["secondCar.serviceId"]}</Text> : null}
+                <View style={styles.row2}>
+                  <View style={styles.zip}>
+                    <Field label="Year" value={car2.year} onChangeText={(v) => setCar2((c) => ({ ...c, year: v }))} error={errors["secondCar.year"]} keyboardType="number-pad" maxLength={4} />
+                  </View>
+                  <View style={styles.flex}>
+                    <Field label="Make" value={car2.make} onChangeText={(v) => setCar2((c) => ({ ...c, make: v }))} />
+                  </View>
+                  <View style={styles.flex}>
+                    <Field label="Model" value={car2.model} onChangeText={(v) => setCar2((c) => ({ ...c, model: v }))} />
+                  </View>
+                </View>
+                <Field
+                  label="Price, second car ($)"
+                  value={car2.price}
+                  onChangeText={(v) => setCar2((c) => ({ ...c, price: v }))}
+                  keyboardType="decimal-pad"
+                  error={errors["secondCar.priceCents"]}
+                />
+                <Text variant="bodyStrong">Total for both cars: {Number.isFinite(totalCents) ? formatCents(totalCents) : "…"}</Text>
+              </>
+            ) : null}
           </Card>
 
           <Card style={styles.gap}>

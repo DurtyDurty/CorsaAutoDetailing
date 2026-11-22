@@ -66,6 +66,20 @@ describe("bookingWizardSchema", () => {
     expect(ok.success && ok.data.vehicleCategory).toBe("suv2");
   });
 
+  it("takes a second car with its own size, package and vehicle, and requires them once ticked", () => {
+    const two = parse({ ...valid, secondCar: "on", car2Category: "large", car2ServiceId: "platinum-full", car2Year: "2022", car2Make: "Ford", car2Model: "F-150" });
+    expect(two.success).toBe(true);
+    if (two.success) expect(two.data).toMatchObject({ secondCar: true, car2Category: "large", car2ServiceId: "platinum-full", car2Make: "Ford", car2Model: "F-150" });
+    // "Help me choose" works for the second car; Corsa Club doesn't.
+    expect(parse({ ...valid, secondCar: "on", car2Category: "sedan", car2ServiceId: "help", car2Year: "2015", car2Make: "Kia", car2Model: "Soul" }).success).toBe(true);
+    const missing = parse({ ...valid, secondCar: "on", car2ServiceId: "monthly-maintenance" });
+    expect(missing.success).toBe(false);
+    if (!missing.success) expect(Object.keys(fieldErrors(missing.error))).toEqual(expect.arrayContaining(["car2Category", "car2ServiceId", "car2Year", "car2Make", "car2Model"]));
+    // Not ticked: stray fields are ignored.
+    const one = parse({ ...valid, car2ServiceId: "platinum-full" });
+    expect(one.success && one.data.secondCar).toBe(false);
+  });
+
   it("only accepts towns we list, or 'other' with a ZIP", () => {
     expect(parse({ ...valid, town: "other", zip: "32656" }).success).toBe(true);
     const noZip = parse({ ...valid, town: "other" });

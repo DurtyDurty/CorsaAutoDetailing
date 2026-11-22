@@ -1,13 +1,14 @@
 import "server-only";
 import { createHash, randomInt } from "node:crypto";
 import { business, getService } from "@/config/business";
-import { onSiteLines, type QuoteDraft, type QuoteSummary, type QuoteViewStatus, type SendQuoteInput, type SendQuoteResponse } from "@shared/api";
+import { onSiteLines, vehiclesText, type QuoteDraft, type QuoteSummary, type QuoteViewStatus, type SendQuoteInput, type SendQuoteResponse } from "@shared/api";
 import { formatCents } from "@shared/money";
 import { ApiError } from "@/lib/api/http";
 import { getEmailAdapter } from "@/lib/email";
 import { QuoteConflictError, SlotTakenError, type AppointmentRecord, type LeadRecord, type LeadStore, type QuoteRecord } from "@/lib/leads/types";
 import { easternToUtc, formatEastern, isIsoDate, todayEastern } from "@/lib/time";
 import { requestNotes } from "@/lib/pricing";
+import { jobServiceName, perCarLines } from "@/lib/vehicles";
 import { appointmentConfirmationEmail, sendOwnerEmail } from "@/lib/owner/email";
 import { renderQuotePdf, type QuoteDocument } from "./pdf";
 
@@ -63,8 +64,14 @@ export function toQuoteSummary(q: QuoteRecord): QuoteSummary {
   };
 }
 
-const serviceName = (a: AppointmentRecord, lead: LeadRecord | null) =>
+/** The first car's package. */
+const firstServiceName = (a: AppointmentRecord, lead: LeadRecord | null) =>
   (a.serviceId && getService(a.serviceId)?.name) || lead?.estimate?.serviceName || "Detail";
+
+/** The whole job: both packages when there's a second car. */
+const serviceName = (a: AppointmentRecord, lead: LeadRecord | null) => jobServiceName(firstServiceName(a, lead), a.extraVehicles);
+
+const firstVehicle = (lead: LeadRecord | null) => ({ year: lead?.vehicleYear ?? null, make: lead?.vehicleMake ?? null, model: lead?.vehicleModel ?? null });
 
 /** A held time still waiting on a quote (a website request, or one the owner entered to quote): the only kind of job a quote is for. */
 export const isQuotable = (a: AppointmentRecord) => a.status === "held" && a.depositStatus === "none" && Date.parse(a.startsAt) > Date.now();
@@ -85,8 +92,10 @@ function arrivalOptions(a: AppointmentRecord): string[] {
 
 export function quoteDraft(a: AppointmentRecord, lead: LeadRecord | null): QuoteDraft {
   const service = a.serviceId ? getService(a.serviceId) : undefined;
-  const base = a.quotedPriceCents > 0 ? a.quotedPriceCents : service ? Math.round(service.price * 100) : 0;
-  const lines = [{ label: serviceName(a, lead), amountCents: base }];
+  const extraCents = a.extraVehicles.reduce((s, v) => s + v.priceCents, 0);
+  const base = a.quotedPriceCents > 0 ? a.quotedPriceCents : (service ? Math.round(service.price * 100) : 0) + extraCents;
+  // A second car gets its own line, so the customer sees what each car costs.
+  const lines = perCarLines(firstServiceName(a, lead), firstVehicle(lead), a.extraVehicles, base);
   for (const add of lead?.estimate?.addOns ?? []) lines.push({ label: add.label, amountCents: Math.round(add.amount * 100) });
   return {
     lines,
@@ -127,7 +136,7 @@ export function quoteDocument(q: QuoteRecord, a: AppointmentRecord, lead: LeadRe
       startsAt: a.startsAt,
       endsAt: a.endsAt,
       serviceName: serviceName(a, lead),
-      vehicle: lead ? [lead.vehicleYear, lead.vehicleMake, lead.vehicleModel].filter(Boolean).join(" ") || null : null,
+      vehicle: lead ? vehiclesText({ vehicle: firstVehicle(lead), extraVehicles: a.extraVehicles }) || null : null,
       ...requestNotes(lead?.conditionFlags ?? [], lead?.estimate?.offer),
     },
     lines: q.lines,

@@ -24,6 +24,8 @@ export interface AvailableDay {
 
 export interface AvailabilityInput {
   serviceId: ServiceId;
+  /** How long the visit takes, when it isn't one package's length (two cars: see `visitMinutes`). */
+  durationMinutes?: number;
   busy: BusyWindow[];
   /** YYYY-MM-DD days the owner is off; these are left out entirely. */
   daysOff?: string[];
@@ -71,10 +73,21 @@ export function lastBookableDate(now: Date = new Date()): string {
   return addDays(todayEastern(now), business.booking.maxDaysAhead);
 }
 
-export function computeAvailability({ serviceId, busy, daysOff = [], now = new Date() }: AvailabilityInput): AvailableDay[] {
+/**
+ * How long a visit blocks the calendar: each car's package length added up. Two cars can add up to more than
+ * the working day; then the visit takes the whole day (it starts at opening) and the owner sets the real
+ * time with the quote.
+ */
+export function visitMinutes(serviceIds: readonly ServiceId[]): number {
+  const sum = serviceIds.reduce((s, id) => s + (business.booking.durationMinutes[id] ?? business.scheduling.defaultDurationMinutes), 0);
+  const { start, end } = business.scheduling.workHours;
+  return Math.min(sum, toMin(end) - toMin(start));
+}
+
+export function computeAvailability({ serviceId, durationMinutes, busy, daysOff = [], now = new Date() }: AvailabilityInput): AvailableDay[] {
   const { workHours, workDays, travelBufferMinutes } = business.scheduling;
   const { slotIntervalMinutes } = business.booking;
-  const duration = business.booking.durationMinutes[serviceId] ?? business.scheduling.defaultDurationMinutes;
+  const duration = durationMinutes ?? business.booking.durationMinutes[serviceId] ?? business.scheduling.defaultDurationMinutes;
   const dayStart = toMin(workHours.start);
   const dayEnd = toMin(workHours.end);
   const off = new Set(daysOff);

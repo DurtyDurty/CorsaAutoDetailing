@@ -6,8 +6,10 @@ import {
   type CreateAppointmentInput,
   type CreateAppointmentResponse,
   type CustomerOption,
+  type ExtraVehicle,
   type NewCustomerInput,
 } from "@shared/api";
+import { jobServiceName } from "@/lib/vehicles";
 import { isBlocking } from "@shared/appointment-status";
 import { ApiError } from "@/lib/api/http";
 import { SlotTakenError, type AppointmentRecord, type LeadStore, type NewLead } from "@/lib/leads/types";
@@ -30,6 +32,8 @@ export interface ScheduleInput {
   durationMinutes: number;
   priceCents: number;
   serviceId: string | null;
+  /** A second car on the same visit. `priceCents` is the whole job's price, both cars included. */
+  extraVehicles?: ExtraVehicle[];
   notes: string | null;
   /** Allow outside working hours / days off / a day that already has its jobs. Never allows overlapping another job. */
   override: boolean;
@@ -116,6 +120,7 @@ export async function scheduleAppointment(store: LeadStore, input: ScheduleInput
       notes: input.notes,
       source: "owner",
       serviceId: input.serviceId,
+      extraVehicles: input.extraVehicles ?? [],
       depositCents: null,
       depositStatus: "none",
       checkoutSessionId: null,
@@ -197,6 +202,13 @@ function newLeadFromApp(input: CreateAppointmentInput, c: NewCustomerInput): New
 export async function bookFromApp(store: LeadStore, actor: string, input: CreateAppointmentInput): Promise<CreateAppointmentResponse> {
   const service = getService(input.serviceId);
   if (!service) throw new ApiError("invalid", "Choose a service.", { serviceId: "Choose a service." });
+  const second = input.secondCar;
+  if (second && !getService(second.serviceId)) {
+    throw new ApiError("invalid", "Choose the second car's package.", { "secondCar.serviceId": "Choose the second car's package." });
+  }
+  const extraVehicles: ExtraVehicle[] = second
+    ? [{ year: second.year ?? null, make: second.make || null, model: second.model || null, sizeId: null, serviceId: second.serviceId, priceCents: second.priceCents }]
+    : [];
 
   const replay = await store.findAppointmentEventByRequestId(input.requestId);
   if (replay) {
@@ -228,8 +240,9 @@ export async function bookFromApp(store: LeadStore, actor: string, input: Create
     date: input.date,
     time: input.time,
     durationMinutes: input.durationMinutes,
-    priceCents: input.priceCents,
+    priceCents: input.priceCents + (second?.priceCents ?? 0),
     serviceId: service.id,
+    extraVehicles,
     notes: input.notes || null,
     override: input.override,
     quoteFirst: input.quoteFirst,
@@ -245,7 +258,7 @@ export async function bookFromApp(store: LeadStore, actor: string, input: Create
   if (input.sendConfirmation && !input.quoteFirst && lead.email && !alreadyStarted) {
     const email = appointmentConfirmationEmail({
       firstName: lead.firstName,
-      serviceName: service.name,
+      serviceName: jobServiceName(service.name, extraVehicles),
       startsAt: appt.startsAt,
       address: [lead.serviceAddress, lead.city, lead.zip].filter(Boolean).join(", ") || null,
       priceCents: appt.quotedPriceCents,

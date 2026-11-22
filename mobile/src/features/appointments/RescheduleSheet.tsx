@@ -11,7 +11,7 @@ import { Text } from "@/design/Text";
 import { colors, MIN_TOUCH, radius, space } from "@/design/theme";
 import { pickerDate, pickerTime } from "@/lib/format";
 
-const DURATIONS = [60, 90, 120, 180, 240, 300, 360];
+const DURATIONS = [60, 90, 120, 180, 240, 300, 360, 420, 480, 540, 600];
 const durationLabel = (m: number) => (m % 60 === 0 ? `${m / 60} hr` : `${Math.floor(m / 60)}.5 hr`);
 
 /** Move a job to a new time, with the same checks as booking. */

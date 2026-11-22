@@ -6,6 +6,8 @@ import { cleanLine, cleanText, normalizeEmail, normalizePhone } from "@/lib/util
 
 const serviceIds = business.services.map((s) => s.id) as [string, ...string[]];
 const vehicleIds = business.vehicleCategories.map((v) => v.id) as [string, ...string[]];
+/** Per-visit packages (not Corsa Club): what a second car can get. */
+const packageIds = business.services.filter((s) => !s.plan).map((s) => s.id) as [string, ...string[]];
 const needIds = business.packageNeeds.map((n) => n.id) as [string, ...string[]];
 const windowIds =business.scheduling.timeWindows.map((w) => w.id) as [string, ...string[]];
 const cadenceIds = business.membership.cadences.map((c) => c.id) as [string, ...string[]];
@@ -287,9 +289,28 @@ export const bookingWizardSchema = z
     dayPart: z.enum(["morning", "afternoon", "either"], { message: "Choose morning, afternoon or either." }),
     preferredTime: optionalLine(40),
     lang: z.enum(["en", "es"]).optional().transform((v) => v ?? "en"),
+    // A second car on the same visit (2026-11-22): its size and package (or "help"), then year, make and model.
+    secondCar: z
+      .string()
+      .optional()
+      .transform((v) => v === "on"),
+    car2Category: z.enum(vehicleIds).optional().catch(undefined),
+    car2ServiceId: z.enum([...packageIds, "help"]).optional().catch(undefined),
+    car2Year: z.string().trim().optional(),
+    car2Make: optionalLine(60),
+    car2Model: optionalLine(60),
   })
   .superRefine((d, ctx) => {
     if (d.town === "other" && !d.zip) ctx.addIssue({ code: "custom", path: ["zip"], message: "Enter a 5-digit ZIP code." });
+    if (!d.secondCar) return;
+    if (!d.car2Category) ctx.addIssue({ code: "custom", path: ["car2Category"], message: "Choose the second car's size." });
+    if (!d.car2ServiceId) ctx.addIssue({ code: "custom", path: ["car2ServiceId"], message: "Choose a package for the second car." });
+    const year = Number(d.car2Year);
+    if (!d.car2Year || !Number.isInteger(year) || year < 1950 || year > currentYear + 1) {
+      ctx.addIssue({ code: "custom", path: ["car2Year"], message: `Enter a year between 1950 and ${currentYear + 1}.` });
+    }
+    if (!d.car2Make) ctx.addIssue({ code: "custom", path: ["car2Make"], message: "Enter the second car's make." });
+    if (!d.car2Model) ctx.addIssue({ code: "custom", path: ["car2Model"], message: "Enter the second car's model." });
   });
 export type BookingWizardInput = z.infer<typeof bookingWizardSchema>;
 

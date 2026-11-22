@@ -115,6 +115,7 @@ async function load(): Promise<DemoData> {
           cancelReason: null,
           cancelledBy: null,
           discountCents: 0,
+          extraVehicles: [],
           ...(a as Partial<AppointmentRecord>),
         } as AppointmentRecord),
       ),
@@ -248,6 +249,7 @@ export class DemoLeadStore implements LeadStore {
       const ts = now();
       const appt: AppointmentRecord = withBusy({
         discountCents: 0,
+        extraVehicles: [],
         ...input,
         cancelReason: null,
         cancelledBy: null,
@@ -388,6 +390,7 @@ export class DemoLeadStore implements LeadStore {
         cancelReason: null,
         cancelledBy: null,
         discountCents: 0,
+        extraVehicles: [],
       });
       if (overlapsActive(data.appointments, appt)) {
         await save(data);

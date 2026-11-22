@@ -12,7 +12,7 @@ import { StatusPill } from "@/design/StatusPill";
 import { Text } from "@/design/Text";
 import { space } from "@/design/theme";
 import { nextStep } from "@/features/appointments/next-step";
-import { addressLine, formatShortDay, formatTimeRange, vehicleLine } from "@/lib/format";
+import { addressLine, formatShortDay, formatTimeRange, jobVehicleLine } from "@/lib/format";
 import { callPhone, navigateTo, textPhone } from "@/lib/native";
 
 /** The job that matters right now: underway, or next up. */
@@ -21,7 +21,7 @@ export function FocusCard({ appt, isToday }: { appt: AppointmentSummary; isToday
   // One request id per intended change: a retry after a dropped connection reuses it.
   const pending = useRef<{ to: string; id: string } | null>(null);
   const step = nextStep(appt.status);
-  const vehicle = vehicleLine(appt.vehicle);
+  const vehicle = jobVehicleLine(appt);
   const address = addressLine(appt);
   const underway = appt.status === "en_route" || appt.status === "arrived" || appt.status === "in_progress";
 

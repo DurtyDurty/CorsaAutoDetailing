@@ -192,6 +192,8 @@ export function useCreateAppointment() {
     onSuccess: (data) => {
       qc.setQueryData(keys.appointment(data.appointment.id), data.appointment);
       void qc.invalidateQueries({ queryKey: keys.summary });
+      // The calendar too: a job booked here shows on it right away, not at the next minute's refresh.
+      void qc.invalidateQueries({ queryKey: keys.appointmentsAll });
       void qc.invalidateQueries({ queryKey: keys.conversationsAll });
       void qc.invalidateQueries({ queryKey: keys.conversation(data.appointment.leadId) });
     },

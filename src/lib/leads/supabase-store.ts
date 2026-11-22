@@ -151,6 +151,8 @@ function apptFromRow(r: Row): AppointmentRecord {
     cancelReason: (r.cancel_reason as string | null) ?? null,
     cancelledBy: (r.cancelled_by as AppointmentRecord["cancelledBy"]) ?? null,
     discountCents: (r.discount_cents as number | null) ?? 0,
+    // Missing until migration 0013 is applied.
+    extraVehicles: Array.isArray(r.extra_vehicles) ? (r.extra_vehicles as AppointmentRecord["extraVehicles"]) : [],
   };
 }
 
@@ -411,9 +413,11 @@ export class SupabaseLeadStore implements LeadStore {
   }
 
   async createAppointment(input: NewAppointment) {
+    // One-car jobs leave extra_vehicles to its default, so they still save if migration 0013 isn't applied yet.
+    const { extraVehicles, ...rest } = input;
     const { data, error } = await this.client
       .from("appointments")
-      .insert(snake({ ...input }))
+      .insert(snake({ ...rest, ...(extraVehicles?.length ? { extraVehicles } : {}) }))
       .select("*")
       .single();
     // 23P01 = exclusion_violation: overlaps an active appointment (with travel buffer).

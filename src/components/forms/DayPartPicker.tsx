@@ -37,16 +37,21 @@ function partsOf(day: Day | undefined) {
  * time) that holds the window until the owner answers.
  */
 export function DayPartPicker({
-  serviceId,
+  serviceId: firstServiceId,
+  secondServiceId,
   required,
   error,
   lang = "en",
 }: {
   serviceId: string;
+  /** A second car's package ("help" = not sure yet): only times both cars fit are offered. */
+  secondServiceId?: string;
   required: boolean;
   error?: string;
   lang?: Lang;
 }) {
+  // One key for "what the calendar is for", so changing either car reloads it.
+  const serviceId = firstServiceId && secondServiceId ? `${firstServiceId}&service2=${encodeURIComponent(secondServiceId)}` : firstServiceId;
   const id = useId();
   const t = dict(lang).dayPart;
   const locale = lang === "es" ? "es-US" : "en-US";
@@ -57,14 +62,15 @@ export function DayPartPicker({
   useEffect(() => {
     if (!serviceId) return;
     let alive = true;
-    fetch(`/api/availability?service=${encodeURIComponent(serviceId)}`, { cache: "no-store" })
+    const query = `service=${encodeURIComponent(firstServiceId)}${secondServiceId ? `&service2=${encodeURIComponent(secondServiceId)}` : ""}`;
+    fetch(`/api/availability?${query}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((json: { days: Day[] }) => alive && setData({ service: serviceId, days: json.days, failed: false }))
       .catch(() => alive && setData({ service: serviceId, days: null, failed: true }));
     return () => {
       alive = false;
     };
-  }, [serviceId]);
+  }, [serviceId, firstServiceId, secondServiceId]);
 
   const current = data?.service === serviceId ? data : null;
   const days = current?.days ?? [];

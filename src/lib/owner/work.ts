@@ -1,6 +1,7 @@
 import "server-only";
 import { business, getService } from "@/config/business";
-import type { AppointmentDetail, ChangeTotalInput, RecordPaymentInput, RescheduleInput, WorkResponse } from "@shared/api";
+import { vehiclesText, type AppointmentDetail, type ChangeTotalInput, type RecordPaymentInput, type RescheduleInput, type WorkResponse } from "@shared/api";
+import { jobServiceName } from "@/lib/vehicles";
 import { computeBalance, formatCents, PAYMENT_METHOD_LABELS } from "@shared/money";
 import { ApiError } from "@/lib/api/http";
 import { SlotTakenError, type AppointmentRecord, type LeadStore } from "@/lib/leads/types";
@@ -33,7 +34,7 @@ async function replayed(store: LeadStore, requestId: string, id: string): Promis
 }
 
 const when = (iso: string) => formatEastern(iso, { dateStyle: "full", timeStyle: "short" });
-const serviceName = (a: AppointmentRecord) => (a.serviceId && getService(a.serviceId)?.name) || "detail";
+const serviceName = (a: AppointmentRecord) => jobServiceName((a.serviceId && getService(a.serviceId)?.name) || "detail", a.extraVehicles);
 
 async function emailCustomer(store: LeadStore, leadId: string, subject: string, message: string, sendKey: string, attachments?: EmailAttachment[]): Promise<CustomerEmail> {
   const sent = await sendOwnerEmail(store, leadId, { subject, message, sendKey, attachments });
@@ -274,7 +275,7 @@ export async function previewWorkConfirmation(store: LeadStore, ownerEmail: stri
 
 async function workConfirmationEmail(appt: AppointmentRecord, detail: AppointmentDetail, customerInvoiceUrl: string | null): Promise<{ subject: string; message: string; attachments: EmailAttachment[] }> {
   const { balance } = detail;
-  const vehicle = [detail.vehicle.year, detail.vehicle.make, detail.vehicle.model].filter(Boolean).join(" ");
+  const vehicle = vehiclesText(detail);
   const address = [detail.serviceAddress, detail.city, detail.zip].filter(Boolean).join(", ");
   // The same lines as the attached invoice: what was booked, then anything added on the day.
   const work = invoiceDocument(detail).lines;

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { QUOTE_STATUS_LABELS, type AppointmentSummary } from "@shared/api";
+import { QUOTE_STATUS_LABELS, vehiclesText, type AppointmentSummary } from "@shared/api";
 import { formatCents } from "@shared/money";
 import { requireOwner } from "@/lib/auth/owner";
 import { getLeadStore } from "@/lib/leads/store";
@@ -18,7 +18,7 @@ export const metadata: Metadata = { title: "Today" };
 
 const time = (iso: string) => formatEastern(iso, { dateStyle: undefined, timeStyle: "short" });
 const range = (a: AppointmentSummary) => `${time(a.startsAt)} – ${time(a.endsAt)}`;
-const vehicle = (a: AppointmentSummary) => [a.vehicle.year, a.vehicle.make, a.vehicle.model].filter(Boolean).join(" ");
+const vehicle = (a: AppointmentSummary) => vehiclesText(a);
 const address = (a: AppointmentSummary) => [a.serviceAddress, a.city, a.zip].filter(Boolean).join(", ");
 const mapsUrl = (addr: string) => `https://maps.google.com/?daddr=${encodeURIComponent(addr)}`;
 

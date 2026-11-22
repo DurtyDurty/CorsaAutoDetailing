@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { LeadRecord, NewLead } from "@/lib/leads/types";
@@ -103,6 +103,31 @@ describe("sourceLabel", () => {
 describe("computeAnalytics", () => {
   // Wed Oct 21 2026, 3 PM Eastern.
   const NOW = new Date("2026-10-21T19:00:00Z");
+  // Leads are stamped with the clock when saved, so the clock has to agree with NOW.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("counts every confirmed future job as upcoming income, and held quotes apart", async () => {
+    const { computeAnalytics } = await import("@/lib/owner/analytics");
+    const s = await store();
+    const l = (await s.createLead(lead())).lead;
+    await job(l, "2026-10-23T14:00:00Z", "confirmed", 17900); // in 2 days
+    await job(l, "2026-11-18T14:00:00Z", "confirmed", 40000); // 4 weeks out
+    await job(l, "2027-01-08T15:00:00Z", "confirmed", 25000); // next year
+    await job(l, "2026-11-04T15:00:00Z", "cancelled", 9900);
+    const held = await job(l, "2026-11-01T14:00:00Z", "confirmed", 15000);
+    await s.updateAppointment(held.id, { status: "held", holdExpiresAt: "2026-10-30T00:00:00Z" });
+
+    const a = await computeAnalytics(s, "30d", NOW);
+    expect(a.upcoming).toEqual({ cents: 82900, jobs: 3 });
+    expect(a.next7).toEqual({ cents: 17900, jobs: 1 });
+    expect(a.pending).toEqual({ cents: 15000, jobs: 1 });
+    // Booked revenue for the period stops at today.
+    expect(a.bookedCents.value).toBe(0);
+  });
 
   it("adds up booked and collected revenue, conversion and the funnel for the period", async () => {
     const { computeAnalytics } = await import("@/lib/owner/analytics");

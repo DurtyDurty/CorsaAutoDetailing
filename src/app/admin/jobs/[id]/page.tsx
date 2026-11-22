@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { business } from "@/config/business";
 import { APPOINTMENT_STATUS_LABELS } from "@shared/appointment-status";
+import { vehicleText } from "@shared/api";
 import { formatCents, PAYMENT_METHOD_LABELS } from "@shared/money";
 import { requireOwner } from "@/lib/auth/owner";
 import { ApiError } from "@/lib/api/http";
@@ -26,7 +27,7 @@ export const metadata: Metadata = { title: "Job" };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const when = (iso: string) => formatEastern(iso, { dateStyle: "medium", timeStyle: "short" });
-const DURATIONS = [60, 90, 120, 180, 240, 300, 360];
+const DURATIONS = [60, 90, 120, 180, 240, 300, 360, 420, 480, 540, 600];
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   if (value === null || value === undefined || value === "") return null;
@@ -231,7 +232,20 @@ export default async function JobPage({ params, searchParams }: PageProps<"/admi
 
         <Card title="Job">
           <dl className="flex flex-col gap-1.5">
-            <Row label="Vehicle" value={vehicle ? `${vehicle}${a.vehicle.sizeLabel ? ` (${a.vehicle.sizeLabel})` : ""}` : null} />
+            <Row label={a.extraVehicles?.length ? "First car" : "Vehicle"} value={vehicle ? `${vehicle}${a.vehicle.sizeLabel ? ` (${a.vehicle.sizeLabel})` : ""}` : null} />
+            {(a.extraVehicles ?? []).map((v, i) => (
+              <Row
+                key={i}
+                label={i === 0 ? "Second car" : `Car ${i + 2}`}
+                value={[
+                  `${vehicleText(v) || `Car ${i + 2}`}${v.sizeLabel ? ` (${v.sizeLabel})` : ""}`,
+                  v.serviceName ?? "Package to choose",
+                  v.priceCents > 0 ? formatCents(v.priceCents) : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              />
+            ))}
             <Row label="Offer claimed" value={a.customerNotes.offer} />
             <Row label="Customer checked"value={a.customerNotes.needs?.join("; ")} />
             <Row label="Condition" value={a.customerNotes.condition} />

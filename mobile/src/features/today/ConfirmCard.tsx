@@ -10,7 +10,7 @@ import { Button } from "@/design/Button";
 import { Card } from "@/design/Card";
 import { Text } from "@/design/Text";
 import { colors, space } from "@/design/theme";
-import { addressLine, formatShortDay, formatTimeRange, vehicleLine } from "@/lib/format";
+import { addressLine, formatShortDay, formatTimeRange, jobVehicleLine } from "@/lib/format";
 import { callPhone } from "@/lib/native";
 
 type Decision = "declined";
@@ -25,7 +25,7 @@ function emailNote(res: StatusChangeResponse): string {
 export function ConfirmCard({ appt }: { appt: AppointmentSummary }) {
   const change = useChangeStatus();
   const pending = useRef<{ to: Decision; id: string } | null>(null);
-  const vehicle = vehicleLine(appt.vehicle);
+  const vehicle = jobVehicleLine(appt);
   const address = addressLine(appt);
   // Entered by the owner: there's no customer request to decline, only his own quote to drop.
   const mine = appt.source === "owner";

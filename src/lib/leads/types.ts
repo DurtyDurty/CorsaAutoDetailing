@@ -1,7 +1,7 @@
 import type { BusinessMode } from "@/config/business";
 import type { EstimateSnapshot } from "@/lib/pricing";
 import type { AppointmentStatus, CancelledBy } from "@shared/appointment-status";
-import type { AppointmentEventType } from "@shared/api";
+import type { AppointmentEventType, ExtraVehicle } from "@shared/api";
 import type { PaymentKind, PaymentMethod } from "@shared/money";
 
 export type { AppointmentStatus } from "@shared/appointment-status";
@@ -152,13 +152,15 @@ export interface AppointmentRecord {
   cancelReason: string | null;
   cancelledBy: CancelledBy | null;
   discountCents: number;
+  /** More cars on the same visit (the first car is the lead's). Empty for a one-car job. */
+  extraVehicles: ExtraVehicle[];
 }
 
 export type NewAppointment = Omit<
   AppointmentRecord,
-  "id" | "createdAt" | "updatedAt" | "busyUntil" | "cancelReason" | "cancelledBy" | "discountCents"
+  "id" | "createdAt" | "updatedAt" | "busyUntil" | "cancelReason" | "cancelledBy" | "discountCents" | "extraVehicles"
 > &
-  Partial<Pick<AppointmentRecord, "discountCents">>;
+  Partial<Pick<AppointmentRecord, "discountCents" | "extraVehicles">>;
 
 export type AppointmentPatch = Partial<
   Pick<

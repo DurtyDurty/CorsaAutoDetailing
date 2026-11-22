@@ -7,6 +7,7 @@ import { isOfferSignup } from "@/lib/leads/shared";
 import { billingSuffix, formatUsd } from "@/lib/pricing";
 import { formatEastern } from "@/lib/time";
 import { shortRef } from "@/lib/utils";
+import { extraVehicleLine } from "@/lib/vehicles";
 
 /**
  * Notifications are always recorded AFTER the lead is durably saved and never
@@ -64,6 +65,8 @@ function ownerBody(lead: LeadRecord, booking?: AppointmentRecord, requested?: Ap
       `Vehicle: ${[lead.vehicleYear, lead.vehicleMake, lead.vehicleModel].filter(Boolean).join(" ") || "n/a"}${lead.vehicleCategory ? ` (${getVehicleCategory(lead.vehicleCategory)?.label ?? lead.vehicleCategory})` : ""}`,
     );
   }
+  const extras = (requested ?? booking)?.extraVehicles ?? [];
+  extras.forEach((v, i) => lines.push(`${i === 0 ? "Second car" : `Car ${i + 2}`}: ${extraVehicleLine(v, i)}`));
   if (lead.condition) {
     lines.push(
       `Condition: ${lead.condition}${lead.conditionFlags.length ? `. Flags: ${lead.conditionFlags.join(", ")}` : ""}`,
@@ -79,9 +82,10 @@ function ownerBody(lead: LeadRecord, booking?: AppointmentRecord, requested?: Ap
   if (lead.estimate) {
     lines.push(
       "",
-      `Estimate (${lead.estimate.pricingVersion}): ${lead.estimate.total !== null ? formatUsd(lead.estimate.total) : "custom quote"}`,
+      `Estimate (${lead.estimate.pricingVersion}): ${lead.estimate.total !== null ? formatUsd(lead.estimate.total) : "custom quote"}${extras.length ? " for the first car" : ""}`,
     );
   }
+  if (extras.length && requested) lines.push(`Both cars together: ${formatUsd(requested.quotedPriceCents / 100)}`);
   if (lead.estimate?.offer) lines.push(`Offer claimed: ${lead.estimate.offer}`);
   if (lead.notes) lines.push("", `Customer notes:`, lead.notes);
   if (lead.message) lines.push("", `Message:`, lead.message);

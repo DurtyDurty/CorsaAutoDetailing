@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { business } from "@/config/business";
-import { ON_SITE_PRICE, onSiteLines } from "@shared/api";
+import { business, getService } from "@/config/business";
+import { ON_SITE_PRICE, onSiteLines, vehiclesText } from "@shared/api";
+import { jobServiceName } from "@/lib/vehicles";
 import { formatCents } from "@shared/money";
 import { getLeadStore } from "@/lib/leads/store";
 import { loadQuoteByToken } from "@/lib/quotes/service";
@@ -44,8 +45,12 @@ export default async function QuotePage({ params, searchParams }: PageProps<"/qu
   const { quote: q, status, appointment: a, lead } = found;
   const name = lead ? [lead.firstName, lead.lastName].filter(Boolean).join(" ") : "Customer";
   const address = lead ? [lead.serviceAddress, lead.city, lead.zip].filter(Boolean).join(", ") : "";
-  const vehicle = lead ? [lead.vehicleYear, lead.vehicleMake, lead.vehicleModel].filter(Boolean).join(" ") : "";
-  const service = q.lines[0]?.label ?? "Detail";
+  const vehicle = lead
+    ? vehiclesText({ vehicle: { year: lead.vehicleYear, make: lead.vehicleMake, model: lead.vehicleModel }, extraVehicles: a.extraVehicles })
+    : "";
+  const first = q.lines[0]?.label ?? "Detail";
+  // A two-car quote's first line names one car; the heading names the whole visit.
+  const service = a.extraVehicles.length ? jobServiceName((a.serviceId && getService(a.serviceId)?.name) || first, a.extraVehicles) : first;
   const error = typeof sp.e === "string" ? ERRORS[sp.e] : undefined;
   const lostTime = status === "withdrawn" && q.responseNote === "Time no longer held when accepted";
   const contact = [business.contact.phone ? formatPhone(business.contact.phone.replace(/\D/g, "")) : null, business.contact.email].filter(Boolean).join(" · ");

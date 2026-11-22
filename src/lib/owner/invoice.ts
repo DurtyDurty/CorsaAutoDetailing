@@ -1,13 +1,14 @@
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
-import { business } from "@/config/business";
-import type { AppointmentDetail } from "@shared/api";
+import { business, getService } from "@/config/business";
+import { vehiclesText, type AppointmentDetail } from "@shared/api";
 import { PAYMENT_METHOD_LABELS } from "@shared/money";
 import type { LeadStore } from "@/lib/leads/types";
 import { renderInvoicePdf, type InvoiceDocument } from "@/lib/quotes/pdf";
 import { ZELLE } from "@/lib/quotes/zelle";
 import { formatEastern } from "@/lib/time";
 import { requestNotes } from "@/lib/pricing";
+import { perCarLines } from "@/lib/vehicles";
 import { getAppointmentDetail } from "./appointments";
 
 const INVOICE_TOKEN = /^[A-Za-z0-9_-]{43}$/;
@@ -72,13 +73,13 @@ export function invoiceDocument(a: AppointmentDetail, issuedAt = new Date().toIS
       startsAt: a.startsAt,
       endsAt: a.endsAt,
       serviceName,
-      vehicle: [a.vehicle.year, a.vehicle.make, a.vehicle.model].filter(Boolean).join(" ") || null,
+      vehicle: vehiclesText(a) || null,
       ...requestNotes(a.customerNotes.conditionFlags, a.customerNotes.offer),
     },
     lines:
       bookedCents === null
         ? [{ label: serviceName, amountCents: a.quotedPriceCents }]
-        : [...(quoted ?? [{ label: serviceName, amountCents: bookedCents }]), ...added.map((c) => ({ label: c.label, amountCents: c.amountCents }))],
+        : [...(quoted ?? bookedLines(a, bookedCents)), ...added.map((c) => ({ label: c.label, amountCents: c.amountCents }))],
     subtotalCents: a.quotedPriceCents,
     discountCents: Math.min(Math.max(0, a.discountCents), a.quotedPriceCents),
     totalCents: a.balance.totalCents,
@@ -86,6 +87,13 @@ export function invoiceDocument(a: AppointmentDetail, issuedAt = new Date().toIS
     balanceDueCents: a.balance.balanceDueCents,
     zelle: ZELLE,
   };
+}
+
+/** The booked price as one line, or one line per car on a multi-car job. */
+function bookedLines(a: AppointmentDetail, bookedCents: number) {
+  const extras = a.extraVehicles ?? [];
+  if (extras.length === 0) return [{ label: a.serviceName ?? "Detail", amountCents: bookedCents }];
+  return perCarLines((a.serviceId && getService(a.serviceId)?.name) || "Detail", a.vehicle, extras, bookedCents);
 }
 
 export const renderInvoice = (a: AppointmentDetail) => renderInvoicePdf(invoiceDocument(a));

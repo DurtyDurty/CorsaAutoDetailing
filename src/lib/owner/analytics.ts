@@ -57,6 +57,10 @@ export interface Analytics {
   /** Cancelled / no-show / declined share of jobs in the period (0-1); null with no jobs. */
   lostRate: { rate: number | null; lost: number; total: number };
   next7: { cents: number; jobs: number };
+  /** Every confirmed job from today on, however far out (not tied to the period). */
+  upcoming: { cents: number; jobs: number };
+  /** Held times still waiting on the customer (quote sent, or still to send), at their current price. Not booked yet. */
+  pending: { cents: number; jobs: number };
   series: { unit: "week" | "month"; points: SeriesPoint[] };
   funnel: CountRow[];
   services: CountRow[];
@@ -162,7 +166,8 @@ export async function computeAnalytics(store: LeadStore, range: AnalyticsRange, 
   const next7Iso = startOf(addDays(today, 8));
 
   const [appts, leads] = await Promise.all([
-    store.listAppointments({ from: prevFromIso, to: next7Iso }),
+    // No end date: upcoming income counts every future job, not just the next week.
+    store.listAppointments({ from: prevFromIso }),
     store.listLeads({ includeArchived: true, limit: 5000 }),
   ]);
   const items = await summarize(store, appts);
@@ -223,7 +228,10 @@ export async function computeAnalytics(store: LeadStore, range: AnalyticsRange, 
   const adJobs = (id: string) => items.filter((a) => a.leadId === id);
   const adPaid = adLeads.filter((l) => adJobs(l.id).some((a) => a.balance.collectedCents > 0));
 
-  const next7 = items.filter((a) => BOOKED.includes(a.status) && a.status !== "completed" && day(a.startsAt) >= today && a.startsAt < next7Iso);
+  const upcoming = items.filter((a) => BOOKED.includes(a.status) && a.status !== "completed" && day(a.startsAt) >= today);
+  const next7 = upcoming.filter((a) => a.startsAt < next7Iso);
+  const nowIso = now.toISOString();
+  const pending = items.filter((a) => a.status === "held" && a.depositStatus === "none" && a.endsAt >= nowIso);
 
   return {
     range,
@@ -244,6 +252,8 @@ export async function computeAnalytics(store: LeadStore, range: AnalyticsRange, 
       total: cur.booked.length + cur.lost,
     },
     next7: { cents: sum(next7.map((a) => a.balance.totalCents)), jobs: next7.length },
+    upcoming: { cents: sum(upcoming.map((a) => a.balance.totalCents)), jobs: upcoming.length },
+    pending: { cents: sum(pending.map((a) => a.balance.totalCents)), jobs: pending.length },
     series: { unit, points },
     funnel: [
       { label: "Requests", count: reqNow.length },

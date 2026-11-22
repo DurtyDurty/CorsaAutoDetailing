@@ -13,7 +13,7 @@ import { StatusPill } from "@/design/StatusPill";
 import { Text } from "@/design/Text";
 import { colors, fonts, MIN_TOUCH, radius, space } from "@/design/theme";
 import { BUSINESS_TIME_ZONE } from "@/config";
-import { formatTimeRange, vehicleLine } from "@/lib/format";
+import { formatTimeRange, jobVehicleLine } from "@/lib/format";
 
 /** YYYY-MM-DD in Eastern time. */
 const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: BUSINESS_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" });
@@ -42,7 +42,7 @@ function mondayOf(key: string): string {
 const HIDDEN = new Set(["cancelled", "declined"]);
 
 function JobRow({ a }: { a: AppointmentSummary }) {
-  const vehicle = vehicleLine(a.vehicle);
+  const vehicle = jobVehicleLine(a);
   return (
     <Pressable
       accessibilityRole="button"

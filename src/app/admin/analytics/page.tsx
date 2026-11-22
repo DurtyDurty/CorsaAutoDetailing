@@ -41,6 +41,26 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/admin/
         </a>
       </div>
 
+      {/* Income still to come: every future job, whatever period is picked below. */}
+      <section aria-labelledby="coming-up" className="flex flex-col gap-3">
+        <h2 id="coming-up" className="text-xs uppercase tracking-[0.16em] text-ink-muted">
+          Coming up
+        </h2>
+        <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <StatTile
+            label="Upcoming booked"
+            value={fullUsd(a.upcoming.cents)}
+            note={`${a.upcoming.jobs} confirmed ${a.upcoming.jobs === 1 ? "job" : "jobs"} from today on`}
+          />
+          <StatTile label="Next 7 days" value={fullUsd(a.next7.cents)} note={`${a.next7.jobs} ${a.next7.jobs === 1 ? "job" : "jobs"}`} />
+          <StatTile
+            label="Waiting on the customer"
+            value={fullUsd(a.pending.cents)}
+            note={`${a.pending.jobs} held ${a.pending.jobs === 1 ? "time" : "times"} with a quote out or to send. Not counted as booked.`}
+          />
+        </dl>
+      </section>
+
       {/* One filter row: the period scopes every number and chart below it. */}
       <nav aria-label="Period" className="flex flex-wrap gap-1 border border-line bg-white rounded-sm p-0.5 w-fit text-sm">
         {RANGES.map((r) => (
@@ -83,8 +103,8 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/admin/
         />
       </dl>
       <p className="text-xs text-ink-muted -mt-5">
-        {a.periodLabel}. Booked revenue is confirmed and completed jobs at their quoted price; collected is money recorded as paid. Next 7 days:{" "}
-        <strong className="text-ink">{fullUsd(a.next7.cents)}</strong> across {a.next7.jobs} {a.next7.jobs === 1 ? "job" : "jobs"}.
+        {a.periodLabel}, up to today. Booked revenue is confirmed and completed jobs dated in the period, at their price after discounts; collected is money
+        recorded as paid. Future jobs are in Coming up above.
       </p>
 
       <div className="grid gap-4 lg:grid-cols-2">

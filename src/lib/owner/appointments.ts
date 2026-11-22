@@ -17,6 +17,7 @@ import {
 } from "@shared/appointment-status";
 import { computeBalance, formatCents } from "@shared/money";
 import { ApiError } from "@/lib/api/http";
+import { extraVehicleSummary, jobServiceName } from "@/lib/vehicles";
 import { appointmentConfirmationEmail, requestDeclinedEmail, sendOwnerEmail } from "./email";
 import { effectiveStatus, isQuotable, quoteDraft, toQuoteSummary, withdrawOpenQuotes } from "@/lib/quotes/service";
 import type {
@@ -33,6 +34,7 @@ import type {
 
 export function toSummary(a: AppointmentRecord, lead: LeadRecord | null, payments: PaymentRecord[], latestQuote: QuoteRecord | null = null): AppointmentSummary {
   const serviceId = a.serviceId ?? lead?.serviceId ?? null;
+  const firstName = serviceId ? (getService(serviceId)?.name ?? lead?.estimate?.serviceName ?? serviceId) : null;
   return {
     id: a.id,
     leadId: a.leadId,
@@ -40,7 +42,7 @@ export function toSummary(a: AppointmentRecord, lead: LeadRecord | null, payment
     startsAt: a.startsAt,
     endsAt: a.endsAt,
     serviceId,
-    serviceName: serviceId ? (getService(serviceId)?.name ?? lead?.estimate?.serviceName ?? serviceId) : null,
+    serviceName: firstName === null && a.extraVehicles.length === 0 ? null : jobServiceName(firstName ?? "Package to choose", a.extraVehicles),
     customerName: lead ? [lead.firstName, lead.lastName].filter(Boolean).join(" ") : "Unknown customer",
     phone: lead?.phone ?? null,
     email: lead?.email ?? "",
@@ -53,6 +55,7 @@ export function toSummary(a: AppointmentRecord, lead: LeadRecord | null, payment
       model: lead?.vehicleModel ?? null,
       sizeLabel: lead?.vehicleCategory ? (getVehicleCategory(lead.vehicleCategory)?.label ?? null) : null,
     },
+    extraVehicles: a.extraVehicles.map(extraVehicleSummary),
     quotedPriceCents: a.quotedPriceCents,
     discountCents: a.discountCents,
     depositCents: a.depositCents,
@@ -320,7 +323,7 @@ async function emailCustomerAboutRequest(
     outcome === "confirmed"
       ? appointmentConfirmationEmail({
           firstName: lead.firstName,
-          serviceName: (appt.serviceId && getService(appt.serviceId)?.name) || "detail",
+          serviceName: jobServiceName((appt.serviceId && getService(appt.serviceId)?.name) || "detail", appt.extraVehicles),
           startsAt: appt.startsAt,
           address: [lead.serviceAddress, lead.city, lead.zip].filter(Boolean).join(", ") || null,
           priceCents: appt.quotedPriceCents - appt.discountCents,

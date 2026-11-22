@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { listAppointmentsQuery } from "@shared/api";
+import { listAppointmentsQuery, vehiclesText } from "@shared/api";
 import { requireOwner } from "@/lib/auth/owner";
 import { getLeadStore } from "@/lib/leads/store";
 import { listAppointmentSummaries } from "@/lib/owner/appointments";
@@ -143,7 +143,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/admin/c
                   <span className="block font-medium mt-1">{a.customerName}</span>
                   <span className="block text-sm text-ink-muted">
                     {a.serviceName ?? "Service not set"}
-                    {[a.vehicle.year, a.vehicle.make, a.vehicle.model].some(Boolean) && ` · ${[a.vehicle.year, a.vehicle.make, a.vehicle.model].filter(Boolean).join(" ")}`}
+                    {vehiclesText(a) && ` · ${vehiclesText(a)}`}
                   </span>
                   {a.status === "held" && (
                     <span className="block text-sm text-[#8a5a12] mt-1">

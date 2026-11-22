@@ -21,7 +21,7 @@ import { PaymentSheet } from "@/features/appointments/PaymentSheet";
 import { QuoteSheet } from "@/features/appointments/QuoteSheet";
 import { RescheduleSheet } from "@/features/appointments/RescheduleSheet";
 import { TotalSheet } from "@/features/appointments/TotalSheet";
-import { addressLine, formatShortDay, formatTime, formatTimeRange, vehicleLine } from "@/lib/format";
+import { addressLine, extraVehicleText, formatShortDay, formatTime, formatTimeRange, vehicleLine } from "@/lib/format";
 import { callPhone, navigateTo, sendEmail, textPhone } from "@/lib/native";
 
 const offline = (err: unknown) => err instanceof ApiClientError && (err.code === "network" || err.code === "timeout");
@@ -368,7 +368,10 @@ function Body({ a, openQuote }: { a: AppointmentDetail; openQuote: boolean }) {
 
       <Card style={styles.card}>
         <Text variant="label">Job</Text>
-        <Row label="Vehicle" value={vehicle ? `${vehicle}${a.vehicle.sizeLabel ? ` (${a.vehicle.sizeLabel})` : ""}` : null} />
+        <Row label={a.extraVehicles?.length ? "First car" : "Vehicle"} value={vehicle ? `${vehicle}${a.vehicle.sizeLabel ? ` (${a.vehicle.sizeLabel})` : ""}` : null} />
+        {(a.extraVehicles ?? []).map((v, i) => (
+          <Row key={i} label={i === 0 ? "Second car" : `Car ${i + 2}`} value={extraVehicleText(v, i)} />
+        ))}
         <Row label="Offer claimed" value={a.customerNotes.offer ?? null} />
         <Row label="Customer checked"value={a.customerNotes.needs?.join("; ") || null} />
         <Row label="Condition" value={a.customerNotes.condition} />

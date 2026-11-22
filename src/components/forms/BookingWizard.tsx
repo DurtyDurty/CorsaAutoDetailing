@@ -16,7 +16,12 @@ const FIELD_STEP: Record<string, number> = {
   serviceId: 0,
   conditionFlags: 0,
   addOns: 0,
+  car2Category: 0,
+  car2ServiceId: 0,
   vehicleYear: 1,
+  car2Year: 1,
+  car2Make: 1,
+  car2Model: 1,
   vehicleMake: 1,
   vehicleModel: 1,
   town: 1,
@@ -79,6 +84,10 @@ export function BookingWizard({
   const [vehicle, setVehicle] = useState("");
   const [town, setTown] = useState("");
   const [firstTime, setFirstTime] = useState(firstTimeOffer);
+  // A second car on the same visit (2026-11-22).
+  const [secondCar, setSecondCar] = useState(false);
+  const [car2Size, setCar2Size] = useState("");
+  const [car2Service, setCar2Service] = useState("");
   const [photoError, setPhotoError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const headingRef = useRef<HTMLParagraphElement>(null);
@@ -109,6 +118,10 @@ export function BookingWizard({
   const club = business.services.find((s) => s.plan);
   const addOns = optionalAddOns();
   const holdService = serviceId === "help" ? business.booking.helpHoldService : serviceId;
+  const car2Package = packages.find((s) => s.id === car2Service);
+  const firstPackage = packages.find((s) => s.id === serviceId);
+  // Both cars' prices once both are known (Corsa Club and "help" are priced by the owner).
+  const bothTotal = secondCar && firstPackage && vehicle && car2Package && car2Size ? sizedPrice(firstPackage, vehicle) + sizedPrice(car2Package, car2Size) : null;
 
   function goNext() {
     const form = formRef.current;
@@ -247,6 +260,61 @@ export function BookingWizard({
             </p>
           )}
         </fieldset>
+        {/* Owner, 2026-11-22: two cars on one ticket. Each car is priced by its own size and package. */}
+        <div className="flex flex-col gap-3 rounded-md border border-line bg-white p-4">
+          <label className="flex cursor-pointer items-start gap-3">
+            <input type="checkbox" name="secondCar" className="checkbox mt-0.5" checked={secondCar} onChange={(e) => setSecondCar(e.target.checked)} />
+            <span>
+              <span className="block font-semibold leading-snug">{f.secondCar.toggle}</span>
+              <span className="mt-0.5 block text-sm text-ink-muted">{f.secondCar.toggleNote}</span>
+            </span>
+          </label>
+          {secondCar && (
+            <>
+              <fieldset className="flex flex-col gap-2" aria-describedby={fieldError("car2Category") ? "size2-err" : undefined}>
+                <legend className="mb-1.5 text-sm font-medium">{f.secondCar.sizeLegend}</legend>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {f.sizes.map((s) => (
+                    <label
+                      key={s.id}
+                      className={cn(
+                        "flex cursor-pointer flex-col rounded-md border bg-white px-4 py-3 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-apex-deep",
+                        car2Size === s.id ? "border-2 border-apex-deep px-[15px] py-[11px]" : "border-line hover:border-ink-muted",
+                      )}
+                    >
+                      <input type="radio" name="car2Category" value={s.id} required checked={car2Size === s.id} onChange={() => setCar2Size(s.id)} className="sr-only" />
+                      <span className="font-semibold leading-snug">{s.title}</span>
+                      <span className="mt-0.5 text-xs text-ink-muted">{s.eg}</span>
+                    </label>
+                  ))}
+                </div>
+                {fieldError("car2Category") && (
+                  <p id="size2-err" className="text-sm text-error" role="alert">
+                    {fieldError("car2Category")}
+                  </p>
+                )}
+              </fieldset>
+              <Field name="car2ServiceId" label={f.secondCar.packageLegend} error={fieldError("car2ServiceId")}>
+                {(p) => (
+                  <Select name="car2ServiceId" required value={car2Service} onChange={(e) => setCar2Service(e.target.value)} {...p}>
+                    <option value="">{f.secondCar.choose}</option>
+                    {packages.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} · {car2Size ? formatUsd(sizedPrice(s, car2Size)) : `${formatUsd(s.price)}+`}
+                      </option>
+                    ))}
+                    <option value="help">{f.secondCar.help}</option>
+                  </Select>
+                )}
+              </Field>
+              {bothTotal !== null && (
+                <p className="text-sm">
+                  {f.secondCar.total}: <strong className="font-display text-xl">{formatUsd(bothTotal)}</strong>
+                </p>
+              )}
+            </>
+          )}
+        </div>
         {/* One list (owner, 2026-10-28): what the car has, then the add-ons. Two field names, one group. */}
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1.5 text-sm font-medium">
@@ -288,6 +356,22 @@ export function BookingWizard({
             </Field>
           </div>
         </fieldset>
+        {secondCar && (
+          <fieldset className="flex flex-col gap-1.5">
+            <legend className="mb-1.5 text-sm font-medium">{f.secondCar.vehicle}</legend>
+            <div className="grid grid-cols-[5.5rem_1fr_1fr] gap-2">
+              <Field name="car2Year" label={f.year} error={fieldError("car2Year")}>
+                {(p) => <TextInput name="car2Year" inputMode="numeric" maxLength={4} pattern="\d{4}" placeholder="2021" required={step === 1} {...p} />}
+              </Field>
+              <Field name="car2Make" label={f.make} error={fieldError("car2Make")}>
+                {(p) => <TextInput name="car2Make" placeholder="Honda" maxLength={60} required={step === 1} {...p} />}
+              </Field>
+              <Field name="car2Model" label={f.model} error={fieldError("car2Model")}>
+                {(p) => <TextInput name="car2Model" placeholder="Civic" maxLength={60} required={step === 1} {...p} />}
+              </Field>
+            </div>
+          </fieldset>
+        )}
         <div className="grid gap-5 sm:grid-cols-2">
           <Field name="town" label={f.town} error={fieldError("town")}>
             {(p) => (
@@ -359,7 +443,14 @@ export function BookingWizard({
 
       {/* Step 3: day and part of the day */}
       <div data-step="2" hidden={step !== 2} className="flex flex-col gap-5">
-        <DayPartPicker serviceId={holdService} required={step === 2} lang={lang} error={fieldError("slotStart") ?? fieldError("dayPart")} />
+        <DayPartPicker
+          serviceId={holdService}
+          secondServiceId={secondCar && car2Service ? car2Service : undefined}
+          required={step === 2}
+          lang={lang}
+          error={fieldError("slotStart") ?? fieldError("dayPart")}
+        />
+        {secondCar && <p className="-mt-2 text-xs text-ink-muted">{f.secondCar.timeNote}</p>}
         <p className="text-xs leading-relaxed text-ink-muted">
           {lang === "es"
             ? f.ack(business.consent.es.serviceText, business.consent.es.priceAcknowledgmentText)
